@@ -7,7 +7,7 @@ package:
       agent_image_domain: registry1.dso.mil/
       agent_image: ironbank/opensource/defenseunicorns/zarf/zarf-agent
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
-      agent_image_tag: v0.32.6
+      agent_image_tag: v0.33.0
 
       # Tag for the zarf injector binary to use
       injector_version: 2023-08-02
