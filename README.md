@@ -13,3 +13,4 @@ This is a custom init package used by delivery with the following features:
   - Supports s3 IRSA
 - No Gitea
 - No Logging Stack
+- No k3s
