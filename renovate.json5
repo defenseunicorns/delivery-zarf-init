@@ -16,10 +16,6 @@
   ],
   // If we don't specify a timezone then Renovate will use UTC
   "timezone": "America/New_York",
-  // fires between 4 am and 5 am EST on mondays
-  "schedule": [
-    "after 4am and before 11am on Monday"
-  ],
   // Using a value of "conflicted" means that Renovate will only rebase PRs if they are in a conflicted state. See https://docs.renovatebot.com/configuration-options/#rebasewhen
   "rebaseWhen": "auto",
   // Labels to set in Pull Request. See https://docs.renovatebot.com/configuration-options/#labels
