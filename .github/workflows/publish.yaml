@@ -1,9 +1,13 @@
 name: release
 
+# triggered when a push is made to the main branch AND either zarf.yaml or zarf-config.yaml are modified
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - main
+    paths:
+      - "zarf.yaml"
+      - "zarf-config.yaml"
   workflow_dispatch:
 
 jobs:
@@ -30,7 +34,7 @@ jobs:
       - name: Install Zarf
         uses: defenseunicorns/setup-zarf@main
         with:
-          # renovate: datasource=github-tags depName=defenseunicorns/zarf versioning=semver
+          # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
           version: v0.32.6
           download-init-package: false
       - name: Build and Publish IB Package
