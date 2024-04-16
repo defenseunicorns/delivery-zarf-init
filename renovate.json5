@@ -1,5 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "automerge": true,
   "baseBranches": ["main"],
   "extends": [
     // Tells Renovate to maintain one GitHub issue as the "dependency dashboard". See https://docs.renovatebot.com/key-concepts/dashboard
@@ -16,6 +17,7 @@
   ],
   // If we don't specify a timezone then Renovate will use UTC
   "timezone": "America/New_York",
+  "schedule": ["at any time"],
   // Using a value of "conflicted" means that Renovate will only rebase PRs if they are in a conflicted state. See https://docs.renovatebot.com/configuration-options/#rebasewhen
   "rebaseWhen": "auto",
   // Labels to set in Pull Request. See https://docs.renovatebot.com/configuration-options/#labels
