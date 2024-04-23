@@ -1,6 +1,8 @@
 # Zarf Init for Delivery
 
-This is a custom init package used by delivery with the following features:
+This repository contains zarf init packages for delivery.
+
+## zarf-init-registry1
 
 - Registry1 agent image
   - Registry1 repo:
@@ -11,6 +13,7 @@ This is a custom init package used by delivery with the following features:
   - Waiting on a registry1 image to be available
     - <https://repo1.dso.mil/dsop/opensource/docker/registry-v2/-/issues/112>
   - Supports s3 IRSA
-- No Gitea
-- No Logging Stack
-- No k3s
+
+## zarf-init-gitea-registry1
+
+- same as zarf-init-registry1, but also includes gitea
