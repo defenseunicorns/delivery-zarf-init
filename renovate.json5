@@ -36,13 +36,15 @@
     // Custom regex manager for the .env file that follows the pattern documented here: https://docs.renovatebot.com/modules/manager/regex/#advanced-capture
     {
       "fileMatch": [
-        "(^|/)zarf-config(-.+)?\\.ya?ml$",
-        ".github/workflows/publish.yaml"
+        "(^|/)zarf(-.+)?\\.ya?ml$", // Matches "zarf*.yaml" and "zarf*.yml"
+        ".github/workflows/publish.yaml" // Matches ".github/workflows/publish.yaml"
       ],
       "matchStrings": [
         "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*agent_image_tag: (?<currentValue>.*)\\s",
         "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*registry_image_tag: (?<currentValue>.*)\\s",
-        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*version: (?<currentValue>.*)\\s"
+        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*version: (?<currentValue>.*)\\s",
+        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?gitea_image: (?<currentValue>[^\\s]+)\\s",
+        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?init: (?<currentValue>[^\\s]+)\\s" // https://regex101.com/r/ZpKhgH/1 - updating init package import based on zarf-agent version in registry1
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }

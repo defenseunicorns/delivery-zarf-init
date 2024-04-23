@@ -1,6 +1,5 @@
 package:
   create:
-    flavor: registry1
     architecture: amd64
     set:
       # The image reference to use for the Zarf agent, defaults to a locally built image
@@ -20,4 +19,5 @@ package:
       # renovate: datasource=docker depName=docker.io/library/registry versioning=loose
       registry_image_tag: 3.0.0-alpha.1
 
-      GITEA_IMAGE: ""
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea
+      GITEA_IMAGE: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.21.5"
