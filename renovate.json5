@@ -1,6 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "automerge": true,
+  // no tests, no approvals needed, https://docs.renovatebot.com/configuration-options/#ignoretests
+  "ignoreTests": true,
   "baseBranches": ["main"],
   "extends": [
     // Tells Renovate to maintain one GitHub issue as the "dependency dashboard". See https://docs.renovatebot.com/key-concepts/dashboard
@@ -25,9 +27,9 @@
     "renovate"
   ],
   // Rate limit PRs to maximum x created per hour. 0 means no limit. See https://docs.renovatebot.com/configuration-options/#prhourlylimit
-  "prHourlyLimit": 1,
+  "prHourlyLimit": 0,
   // Limit to a maximum of x concurrent branches/PRs. 0 means no limit. See https://docs.renovatebot.com/configuration-options/#prconcurrentlimit
-  "prConcurrentLimit": 1,
+  "prConcurrentLimit": 0,
   // Enable updates to the pre-commit-config.yaml file. See https://docs.renovatebot.com/modules/manager/pre-commit/
   "pre-commit": {
     "enabled": true
