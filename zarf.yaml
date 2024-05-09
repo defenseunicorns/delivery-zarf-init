@@ -10,7 +10,7 @@ components:
     required: true
     import:
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
-      url: oci://ghcr.io/defenseunicorns/packages/init:v0.33.0
+      url: oci://ghcr.io/defenseunicorns/packages/init:v0.33.1
 
   # Creates the temporary seed-registry
   - name: zarf-seed-registry
@@ -31,11 +31,11 @@ components:
     required: true
     import:
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
-      url: oci://ghcr.io/defenseunicorns/packages/init:v0.33.0
+      url: oci://ghcr.io/defenseunicorns/packages/init:v0.33.1
 
   - name: git-server
     import:
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
-      url: oci://ghcr.io/defenseunicorns/packages/init:v0.33.0
+      url: oci://ghcr.io/defenseunicorns/packages/init:v0.33.1
     only:
       flavor: gitea-registry1
