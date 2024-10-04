@@ -47,7 +47,6 @@
         "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*version: (?<currentValue>.*)\\s",
         "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?gitea_image: \"[^\"]+:(?<currentValue>[^\"]+)\"\\s", // https://regex101.com/r/dUa0rx/1 - capture gitea_image version
         "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?init:(?<currentValue>[^\\s]+)\\s", // https://regex101.com/r/ZpKhgH/1 - updating init package import based on zarf-agent version in registry1
-        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s.*oci://ghcr\\.io/(?<currentValue>[^\"]+)" -- oci test
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
