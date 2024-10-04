@@ -9,9 +9,9 @@ package:
       agent_image_tag: v0.41.0
 
       # Tag for the zarf injector binary to use
-      injector_version: "2024-05-15"
-      injector_amd64_shasum: 1b34519ac30daf0e5a4a2f0a0766dbcd0852c0b5364b35576eea4ac9e22d9e82
-      injector_arm64_shasum: ca20f427f9cf91ff42646a785c4772be5892a6752fa14924c5085b2d0109b008
+      injector_version: "2024-10-03"
+      injector_amd64_shasum: 71b00b2c196ad392acecf691ac72e5d77278d4cfd49554dc3f5c8616c6987437
+      injector_arm64_shasum: f9b0765c4bb2b82fae050d3fb25f6f2a2390d7fdcc1533fc46d3c38f0ad83f95
 
       # The image reference to use for the registry that Zarf deploys into the cluster
       registry_image_domain: ""
