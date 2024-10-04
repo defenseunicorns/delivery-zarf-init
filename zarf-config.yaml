@@ -6,7 +6,7 @@ package:
       agent_image_domain: registry1.dso.mil/
       agent_image: ironbank/opensource/defenseunicorns/zarf/zarf-agent
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
-      agent_image_tag: v0.34.0
+      agent_image_tag: v0.41.0
 
       # Tag for the zarf injector binary to use
       injector_version: "2024-05-15"
@@ -20,4 +20,4 @@ package:
       registry_image_tag: 3.0.0-beta.1
 
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea
-      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.22.0"
+      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.22.2"
