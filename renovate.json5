@@ -20,13 +20,14 @@
   // If we don't specify a timezone then Renovate will use UTC
   "timezone": "America/New_York",
   "schedule": ["at any time"],
+  "postUpdateOptions": [
+    "git-push"  // Ensure Renovate pushes its changes after updating
+  ],
   // Using a value of "conflicted" means that Renovate will only rebase PRs if they are in a conflicted state. See https://docs.renovatebot.com/configuration-options/#rebasewhen
   "rebaseWhen": "auto",
   // Labels to set in Pull Request. See https://docs.renovatebot.com/configuration-options/#labels
-  "labels": [
-    "renovate"
-  ],
-  // Rate limit PRs to maximum x created per hour. 0 means no limit. See https://docs.renovatebot.com/configuration-options/#prhourlylimit
+  "labels": ["renovate"],
+   // Rate limit PRs to maximum x created per hour. 0 means no limit. See https://docs.renovatebot.com/configuration-options/#prhourlylimit
   "prHourlyLimit": 0,
   // Limit to a maximum of x concurrent branches/PRs. 0 means no limit. See https://docs.renovatebot.com/configuration-options/#prconcurrentlimit
   "prConcurrentLimit": 0,
@@ -35,7 +36,7 @@
     "enabled": true
   },
   "regexManagers": [
-    // Custom regex manager for the .env file that follows the pattern documented here: https://docs.renovatebot.com/modules/manager/regex/#advanced-capture
+   // Custom regex manager for the .env file that follows the pattern documented here: https://docs.renovatebot.com/modules/manager/regex/#advanced-capture
     {
       "fileMatch": [
         "(^|/)zarf(-.+)?\\.ya?ml$", // Matches "zarf*.yaml" and "zarf*.yml"
@@ -53,11 +54,11 @@
   ],
   "hostRules": [
     {
-        "matchHost": "registry1.dso.mil",
-        "hostType": "docker",
-        "description": "Encrypted creds for registry1, scoped to this Github org using: https://docs.renovatebot.com/getting-started/migrating-secrets/#migrate-your-secrets-in-encrypted-form",
-        "username": "{{ secrets.IRONBANK_USERNAME }}",
-        "password": "{{ secrets.IRONBANK_PASSWORD }}"
+      "matchHost": "registry1.dso.mil",
+      "hostType": "docker",
+      "description": "Encrypted creds for registry1, scoped to this Github org using: https://docs.renovatebot.com/getting-started/migrating-secrets/#migrate-your-secrets-in-encrypted-form",
+      "username": "{{ secrets.IRONBANK_USERNAME }}",
+      "password": "{{ secrets.IRONBANK_PASSWORD }}"
     }
   ],
   "vulnerabilityAlerts": {
