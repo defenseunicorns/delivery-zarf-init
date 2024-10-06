@@ -1,14 +1,10 @@
 name: release
 
-# triggered when a push is made to the main branch AND either zarf.yaml or zarf-config.yaml are modified
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "zarf.yaml"
-      - "zarf-config.yaml"
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["Zarf Injector Update"] # Name of the Zarf injector workflow
+    types:
+      - completed
 
 jobs:
   release:
