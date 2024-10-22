@@ -36,7 +36,7 @@ jobs:
         uses: defenseunicorns/setup-zarf@main
         with:
           # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
-          version: v0.41.0
+          version: v0.42.0
           download-init-package: false
       - name: Build and Publish IB Package
         run: zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --no-progress --flavor ${{ matrix.flavor }}
