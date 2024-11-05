@@ -5,6 +5,7 @@
   "ignoreTests": true,
   "baseBranches": ["main"],
   "extends": [
+    "github>defenseunicorns/narwhal-delivery-renovate-config:hostRules_registry1.json5",
     // Tells Renovate to maintain one GitHub issue as the "dependency dashboard". See https://docs.renovatebot.com/key-concepts/dashboard
     ":dependencyDashboard",
     // Use semantic commit type fix for dependencies and chore for all others if semantic commits are in use. See https://docs.renovatebot.com/presets-default/#semanticprefixfixdepschoreothers
@@ -50,15 +51,6 @@
         "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?init:(?<currentValue>[^\\s]+)\\s" // https://regex101.com/r/ZpKhgH/1 - updating init package import based on zarf-agent version in registry1
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
-    }
-  ],
-  "hostRules": [
-    {
-      "matchHost": "registry1.dso.mil",
-      "hostType": "docker",
-      "description": "Encrypted creds for registry1, scoped to this Github org using: https://docs.renovatebot.com/getting-started/migrating-secrets/#migrate-your-secrets-in-encrypted-form",
-      "username": "{{ secrets.IRONBANK_USERNAME }}",
-      "password": "{{ secrets.IRONBANK_PASSWORD }}"
     }
   ],
   "vulnerabilityAlerts": {
