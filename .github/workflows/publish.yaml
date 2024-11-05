@@ -1,16 +1,17 @@
 name: release
 
 on:
-  workflow_run:
-    workflows: ["Zarf Injector Update"] # Name of the Zarf injector workflow
-    types:
-      - completed
+  push:
+    branches:
+      - main
+    paths:
+      - "zarf.yaml"
+      - "zarf-config.yaml"
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      # id-token: write # needed for keyless signing
       contents: read
       packages: write # needed for ghcr access
     strategy:
