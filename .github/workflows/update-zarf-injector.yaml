@@ -1,18 +1,23 @@
 name: Zarf Injector Update
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
     paths:
       - "zarf.yaml"
       - "zarf-config.yaml"
+    branches:
+      - "main"
   workflow_dispatch:
 
 jobs:
   update-injector-version:
+    permissions:
+      contents: write
+      pull-requests: write
     runs-on: ubuntu-latest
-
+    if:
+      # if this workflow is triggered by renovate bot
+      github.actor == 'renovate[bot]'
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -79,11 +84,10 @@ jobs:
             echo "changes=true" >> $GITHUB_ENV
           fi
 
-      - name: Commit and push changes
+      - name: Sign and push changes using graphql
         if: env.changes == 'true'
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "GitHub Actions Bot"
-          git add zarf-config.yaml
-          git commit -m "Update Zarf injector version and shasums from zarf-config.toml"
-          git push
+        uses: planetscale/ghcommit-action@v0.2.0
+        with:
+          commit_message: "Update Zarf injector version and shasums from upstream"
+          repo: ${{ github.repository }}
+          branch: ${{ github.head_ref || github.ref_name }}
