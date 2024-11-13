@@ -1,71 +1,68 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "automerge": true,
-  // no tests, no approvals needed, https://docs.renovatebot.com/configuration-options/#ignoretests
-  "ignoreTests": true,
-  "baseBranches": ["main"],
-  "extends": [
-    "github>defenseunicorns/narwhal-delivery-renovate-config:hostRules_registry1.json5",
-    // Tells Renovate to maintain one GitHub issue as the "dependency dashboard". See https://docs.renovatebot.com/key-concepts/dashboard
-    ":dependencyDashboard",
-    // Use semantic commit type fix for dependencies and chore for all others if semantic commits are in use. See https://docs.renovatebot.com/presets-default/#semanticprefixfixdepschoreothers
-    ":semanticPrefixFixDepsChoreOthers",
-    // Group all updates together. See https://docs.renovatebot.com/presets-group/#groupall
-    // Other less drastic groupings that may be of interest include: group:allNonMajor, group:recommended, group:monorepos
-    "group:all",
-    // Apply crowd-sourced package replacement rules. See https://docs.renovatebot.com/presets-replacements/#replacementsall
-    "replacements:all",
-    // Apply crowd-sourced workarounds for known problems with packages. See https://docs.renovatebot.com/presets-workarounds/#workaroundsall
-    "workarounds:all"
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  automerge: true,
+  ignoreTests: true,
+  baseBranches: [
+    'main',
   ],
-  // If we don't specify a timezone then Renovate will use UTC
-  "timezone": "America/New_York",
-  "schedule": ["at any time"],
-  "postUpdateOptions": [
-    "git-push"  // Ensure Renovate pushes its changes after updating
+  extends: [
+    'github>defenseunicorns/narwhal-delivery-renovate-config:hostRules_registry1.json5',
+    ':dependencyDashboard',
+    ':semanticPrefixFixDepsChoreOthers',
+    'group:all',
+    'replacements:all',
+    'workarounds:all',
   ],
-  // Using a value of "conflicted" means that Renovate will only rebase PRs if they are in a conflicted state. See https://docs.renovatebot.com/configuration-options/#rebasewhen
-  "rebaseWhen": "auto",
-  // Labels to set in Pull Request. See https://docs.renovatebot.com/configuration-options/#labels
-  "labels": ["renovate"],
-   // Rate limit PRs to maximum x created per hour. 0 means no limit. See https://docs.renovatebot.com/configuration-options/#prhourlylimit
-  "prHourlyLimit": 0,
-  // Limit to a maximum of x concurrent branches/PRs. 0 means no limit. See https://docs.renovatebot.com/configuration-options/#prconcurrentlimit
-  "prConcurrentLimit": 0,
-  // Enable updates to the pre-commit-config.yaml file. See https://docs.renovatebot.com/modules/manager/pre-commit/
-  "pre-commit": {
-    "enabled": true
+  timezone: 'America/New_York',
+  schedule: [
+    'at any time',
+  ],
+  postUpdateOptions: [
+    'git-push',
+  ],
+  rebaseWhen: 'auto',
+  labels: [
+    'renovate',
+  ],
+  prHourlyLimit: 0,
+  prConcurrentLimit: 0,
+  'pre-commit': {
+    enabled: true,
   },
-  "regexManagers": [
-   // Custom regex manager for the .env file that follows the pattern documented here: https://docs.renovatebot.com/modules/manager/regex/#advanced-capture
+  customManagers: [
     {
-      "fileMatch": [
-        "(^|/)zarf(-.+)?\\.ya?ml$", // Matches "zarf*.yaml" and "zarf*.yml"
-        ".github/workflows/publish.yaml" // Matches ".github/workflows/publish.yaml"
+      customType: 'regex',
+      fileMatch: [
+        '(^|/)zarf(-.+)?\\.ya?ml$',
+        '.github/workflows/publish.yaml',
       ],
-      "matchStrings": [
-        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*agent_image_tag: (?<currentValue>.*)\\s",
-        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*registry_image_tag: (?<currentValue>.*)\\s",
-        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*version: (?<currentValue>.*)\\s",
-        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?gitea_image: \"[^\"]+:(?<currentValue>[^\"]+)\"\\s", // https://regex101.com/r/dUa0rx/1 - capture gitea_image version
-        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?init:(?<currentValue>[^\\s]+)\\s" // https://regex101.com/r/ZpKhgH/1 - updating init package import based on zarf-agent version in registry1
+      matchStrings: [
+        'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*agent_image_tag: (?<currentValue>.*)\\s',
+        'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*registry_image_tag: (?<currentValue>.*)\\s',
+        'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*version: (?<currentValue>.*)\\s',
+        'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?gitea_image: "[^"]+:(?<currentValue>[^"]+)"\\s',
+        'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?init:(?<currentValue>[^\\s]+)\\s',
       ],
-      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
-    }
+      versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
+    },
   ],
-  "vulnerabilityAlerts": {
-    "enabled": true,
-    "groupName": "Security Updates",
-    "schedule": [],
-    "dependencyDashboardApproval": false,
-    "minimumReleaseAge": null,
-    "rangeStrategy": "update-lockfile",
-    "commitMessageSuffix": "[SECURITY]",
-    "branchTopic": "{{{datasource}}}-{{{depName}}}-vulnerability",
-    "prCreation": "immediate",
-    "labels": ["security"],
-    "automerge": true,
-    "assignees": ["@defenseunicorns/delivery-aws-iac"]
+  vulnerabilityAlerts: {
+    enabled: true,
+    groupName: 'Security Updates',
+    schedule: [],
+    dependencyDashboardApproval: false,
+    minimumReleaseAge: null,
+    rangeStrategy: 'update-lockfile',
+    commitMessageSuffix: '[SECURITY]',
+    branchTopic: '{{{datasource}}}-{{{depName}}}-vulnerability',
+    prCreation: 'immediate',
+    labels: [
+      'security',
+    ],
+    automerge: true,
+    assignees: [
+      '@defenseunicorns/delivery-aws-iac',
+    ],
   },
-  "osvVulnerabilityAlerts": true
+  osvVulnerabilityAlerts: true,
 }
