@@ -86,7 +86,7 @@ jobs:
 
       - name: Sign and push changes using graphql
         if: env.changes == 'true'
-        uses: planetscale/ghcommit-action@v0.2.6
+        uses: planetscale/ghcommit-action@v0.2.7
         with:
           commit_message: "Update Zarf injector version and shasums from upstream"
           repo: ${{ github.repository }}
