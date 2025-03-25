@@ -20,4 +20,4 @@ package:
       registry_image_tag: 3.0.0-rc.3
 
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea
-      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.23.5"
+      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.23.6"
