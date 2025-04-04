@@ -45,9 +45,13 @@ jobs:
           download-init-package: false
       - name: Build and Publish IB Package
         run: |
-          zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --no-progress --flavor ${{ matrix.flavor }}
-
-          # retag base package as registry1
           if [[ "${{ matrix.flavor }}" == "" ]]; then
-              zarf tools registry copy ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION} ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION}-registry1
+            # Run without the flavor flag for the default package
+            zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --no-progress
+
+            # retag the package for registry1
+            zarf tools registry copy ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION} ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION}-registry1
+          else
+            # Run with the flavor flag for the specific flavor
+            zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --no-progress --flavor ${{ matrix.flavor }}
           fi
