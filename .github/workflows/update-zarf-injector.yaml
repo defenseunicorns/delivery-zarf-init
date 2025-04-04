@@ -15,9 +15,7 @@ jobs:
       contents: write
       pull-requests: write
     runs-on: ubuntu-latest
-    if:
-      # if this workflow is triggered by renovate bot
-      github.actor == 'renovate[bot]'
+    if: github.actor == 'renovate[bot]' || github.event_name == 'workflow_dispatch' # Only run if the actor is Renovate bot or if manually triggered
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
