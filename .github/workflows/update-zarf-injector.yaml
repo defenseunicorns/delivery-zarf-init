@@ -2,9 +2,6 @@ name: Zarf Injector Update
 
 on:
   pull_request:
-    paths:
-      - "zarf.yaml"
-      - "zarf-config.yaml"
     branches:
       - "main"
   workflow_dispatch:
