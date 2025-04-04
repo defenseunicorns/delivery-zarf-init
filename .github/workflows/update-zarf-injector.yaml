@@ -81,6 +81,7 @@ jobs:
             echo "changes=false" >> $GITHUB_ENV
           else
             echo "Changes detected."
+            git diff
             echo "changes=true" >> $GITHUB_ENV
           fi
 
@@ -91,3 +92,35 @@ jobs:
           commit_message: "Update Zarf injector version and shasums from upstream"
           repo: ${{ github.repository }}
           branch: ${{ github.head_ref || github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  report-status:
+    needs:
+      - update-injector-version
+    permissions:
+      statuses: write
+    runs-on: ubuntu-latest
+    if: always() # This job will run regardless of whether update-injector-version runs or its result
+    steps:
+      - name: Determine status
+        id: determine_status
+        run: |
+          if [[ "${{ needs.update-injector-version.result }}" == "success" ]]; then
+            echo "STATUS=success" >> $GITHUB_ENV
+            echo "DESCRIPTION=Zarf injector updates completed successfully" >> $GITHUB_ENV
+          elif [[ "${{ needs.update-injector-version.result }}" == "skipped" ]]; then
+            echo "STATUS=success" >> $GITHUB_ENV
+            echo "DESCRIPTION=Zarf injector update was skipped - not a Renovate PR" >> $GITHUB_ENV
+          else
+            echo "STATUS=failure" >> $GITHUB_ENV
+            echo "DESCRIPTION=Zarf injector update failed" >> $GITHUB_ENV
+          fi
+
+      - name: Report status
+        uses: defenseunicorns/delivery-github-actions-workflows/.github/actions/report-status-context@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status-check: "Zarf Injector check"
+          status: ${{ env.STATUS }}
+          description: ${{ env.DESCRIPTION }}
