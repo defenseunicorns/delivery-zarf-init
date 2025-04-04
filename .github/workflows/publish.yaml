@@ -47,11 +47,26 @@ jobs:
         run: |
           if [[ "${{ matrix.flavor }}" == "" ]]; then
             # Run without the flavor flag for the default package
+            echo "Creating default package (no flavor)..."
             zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --no-progress
 
-            # retag the package for registry1
-            zarf tools registry copy ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION} ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION}-registry1
+            # Retag with better logging and error handling
+            echo "================================"
+            echo "Starting retagging operation for registry1..."
+            echo "Source: ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION}"
+            echo "Target: ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION}-registry1"
+            echo "================================"
+
+            if zarf tools registry copy ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION} ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION}-registry1; then
+              echo "✅ Retagging SUCCESSFUL"
+            else
+              echo "❌ Retagging FAILED with exit code $?"
+              echo "Check for errors above. You may need to run with -v flag for more details."
+              exit 1
+            fi
+            echo "================================"
           else
             # Run with the flavor flag for the specific flavor
+            echo "Creating package with flavor: ${{ matrix.flavor }}..."
             zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --no-progress --flavor ${{ matrix.flavor }}
           fi
