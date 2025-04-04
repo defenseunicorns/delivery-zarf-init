@@ -7,6 +7,11 @@ on:
     paths:
       - "zarf.yaml"
       - "zarf-config.yaml"
+  workflow_dispatch:
+
+env:
+    # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
+    ZARF_VERSION: v0.51.0
 
 jobs:
   release:
@@ -17,7 +22,7 @@ jobs:
     strategy:
       matrix:
         flavor:
-          - registry1
+          - ""
           - gitea-registry1
     steps:
       - uses: actions/checkout@v4
@@ -36,8 +41,13 @@ jobs:
       - name: Install Zarf
         uses: defenseunicorns/setup-zarf@main
         with:
-          # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
-          version: v0.51.0
+          version: ${{ env.ZARF_VERSION }}
           download-init-package: false
       - name: Build and Publish IB Package
-        run: zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --no-progress --flavor ${{ matrix.flavor }}
+        run: |
+          zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --no-progress --flavor ${{ matrix.flavor }}
+
+          # retag base package as registry1
+          if [[ "${{ matrix.flavor }}" == "" ]]; then
+              zarf tools registry copy ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION} ghcr.io/defenseunicorns/delivery-zarf-init/init:${ZARF_VERSION}-registry1
+          fi
