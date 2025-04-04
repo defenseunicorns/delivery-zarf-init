@@ -19,6 +19,7 @@
     'replacements:all',
     // Apply crowd-sourced workarounds for known problems with packages. See https://docs.renovatebot.com/presets-workarounds/#workaroundsall
     'workarounds:all',
+    "helpers:pinGitHubActionDigests"
   ],
   // If we don't specify a timezone then Renovate will use UTC
   timezone: 'America/New_York',
