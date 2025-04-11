@@ -1,19 +1,9 @@
-# Zarf Init for Delivery
-
-This repository contains zarf init packages for delivery.
+# Zarf Init packages for Delivery
 
 ## zarf-init-registry1
 
-- Registry1 agent image
-  - Registry1 repo:
-    - <https://repo1.dso.mil/dsop/opensource/defenseunicorns/zarf/zarf-agent>
-- distribution/distribution image registry v3
-  - In beta as of 10 July 24
-    - <https://github.com/distribution/distribution/releases/tag/v3.0.0-beta.1>
-  - Waiting on a registry1 image to be available
-    - <https://repo1.dso.mil/dsop/opensource/docker/registry-v2/-/issues/112>
-  - Supports s3 IRSA
+zarf-init-registry1 is a set of zarf init packages for delivery, using registry1 images
 
 ## zarf-init-gitea-registry1
 
-- same as zarf-init-registry1, but also includes gitea
+same as zarf-init-registry1, but also includes gitea
