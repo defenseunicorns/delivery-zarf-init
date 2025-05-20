@@ -11,7 +11,7 @@ on:
 
 env:
   # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
-  ZARF_VERSION: v0.51.0
+  ZARF_VERSION: v0.55.2
   # renovate: datasource=github-tags depName=k3d-io/k3d versioning=semver-coerced
   K3D_VERSION: v5.8.3
 
@@ -25,17 +25,17 @@ jobs:
       package_tag: ${{ steps.build.outputs.package_tag }}
       package_file: ${{ steps.build.outputs.package_file }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to registry1
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
         with:
           registry: registry1.dso.mil
           username: ${{ secrets.IRON_BANK_ROBOT_USERNAME }}
@@ -66,7 +66,7 @@ jobs:
           echo "package_file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
 
       - name: Upload package as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: zarf-init-package
           path: ${{ steps.build.outputs.package_file }}
@@ -79,10 +79,10 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Download package artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: zarf-init-package
 
@@ -129,17 +129,17 @@ jobs:
           - ""
           - gitea-registry1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to registry1
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
         with:
           registry: registry1.dso.mil
           username: ${{ secrets.IRON_BANK_ROBOT_USERNAME }}
@@ -153,7 +153,7 @@ jobs:
 
       - name: Download package artifact (for default flavor)
         if: matrix.flavor == ''
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: zarf-init-package
 

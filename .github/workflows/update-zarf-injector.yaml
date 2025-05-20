@@ -15,7 +15,7 @@ jobs:
     if: github.actor == 'renovate[bot]' || github.event_name == 'workflow_dispatch' # Only run if the actor is Renovate bot or if manually triggered
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Log zarf-config.yaml contents
         run: |
@@ -82,7 +82,7 @@ jobs:
 
       - name: Sign and push changes using graphql
         if: env.changes == 'true'
-        uses: planetscale/ghcommit-action@v0.2.10
+        uses: planetscale/ghcommit-action@2675e0864d08c642df6064d3eb71d71452aeeb29 # v0.2.14
         with:
           commit_message: "Update Zarf injector version and shasums from upstream"
           repo: ${{ github.repository }}
