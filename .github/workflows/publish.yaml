@@ -114,6 +114,7 @@ jobs:
 
           # check if all pods are healthy and ready
           zarf tools kubectl wait --for=condition=ready pods --all -n dos-games --timeout=180s
+
   publish:
     needs: [build, test]
     runs-on: ubuntu-latest
