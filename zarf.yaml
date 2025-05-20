@@ -1,6 +1,7 @@
 kind: ZarfInitConfig
 metadata:
   name: init
+  architecture: amd64
   description: Used to establish a new Zarf cluster
   source: https://github.com/defenseunicorns/delivery-zarf-init
 
