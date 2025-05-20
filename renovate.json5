@@ -2,7 +2,7 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   automerge: true,
   platformAutomerge: true,
-  pinDigests: true,
+  // pinDigests: true,
   // All checks must pass for automerge, default setting
   ignoreTests: false,
   baseBranches: ["main"],
