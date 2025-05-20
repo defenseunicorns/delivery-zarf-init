@@ -1,0 +1,74 @@
+name: e2e-test
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest init package tag
+        id: init
+        run: |
+          PACKAGE_PATH="${{ github.repository_owner }}/delivery-zarf-init/init"
+          token_url="https://ghcr.io/token?service=ghcr.io&scope=repository:${PACKAGE_PATH}:pull"
+          encoded=$(printf '%s' "${{ github.actor }}:${GITHUB_TOKEN}" | base64)
+          token=$(curl -s -H "Authorization: Basic $encoded" "$token_url" | jq -r '.token')
+          url="https://ghcr.io/v2/${PACKAGE_PATH}/tags/list"
+          latest=$(curl -s -H "Authorization: Bearer $token" "$url" | \
+            jq -r '.tags[] | select(endswith("-registry1")) | select(startswith("v"))' | \
+            sort -V | tail -n 1)
+          echo "tag=$latest" >> "$GITHUB_OUTPUT"
+          echo "version=${latest%-registry1}" >> "$GITHUB_OUTPUT"
+
+      - name: Install Zarf
+        uses: defenseunicorns/setup-zarf@main
+        with:
+          version: ${{ steps.init.outputs.version }}
+          download-init-package: false
+
+      - name: Create k3d cluster
+        uses: AbsaOSS/k3d-action@v2
+        with:
+          cluster-name: zarf
+          args: --wait
+
+      - name: Deploy init package
+        run: |
+          zarf package deploy \
+            oci://ghcr.io/defenseunicorns/delivery-zarf-init/init:${{ steps.init.outputs.tag }} \
+            --confirm --no-progress
+
+      - name: Smoke test zarf
+        run: |
+          zarf tools kubectl wait --for=condition=ready pods --all -n zarf --timeout=180s
+
+      - name: Get latest nginx package tag
+        id: nginx
+        run: |
+          PACKAGE_PATH="defenseunicorns/packages/uds/nginx"
+          token_url="https://ghcr.io/token?service=ghcr.io&scope=repository:${PACKAGE_PATH}:pull"
+          encoded=$(printf '%s' "${{ github.actor }}:${GITHUB_TOKEN}" | base64)
+          token=$(curl -s -H "Authorization: Basic $encoded" "$token_url" | jq -r '.token')
+          url="https://ghcr.io/v2/${PACKAGE_PATH}/tags/list"
+          latest=$(curl -s -H "Authorization: Bearer $token" "$url" | \
+            jq -r '.tags[] | select(endswith("-registry1"))' | \
+            sort -V | tail -n 1)
+          echo "tag=$latest" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy nginx package to cluster
+        run: |
+          zarf package deploy \
+            oci://ghcr.io/defenseunicorns/packages/uds/nginx:${{ steps.nginx.outputs.tag }} \
+            --confirm --no-progress
+
+      - name: Wait for nginx deployment
+        run: |
+          zarf tools kubectl wait --for=condition=available deployment/nginx -n uds-nginx --timeout=180s
