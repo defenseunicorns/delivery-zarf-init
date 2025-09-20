@@ -11,7 +11,7 @@ on:
 
 env:
   # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
-  ZARF_VERSION: v0.61.2
+  ZARF_VERSION: v0.62.0
   # renovate: datasource=github-tags depName=k3d-io/k3d versioning=semver-coerced
   K3D_VERSION: v5.8.3
 
