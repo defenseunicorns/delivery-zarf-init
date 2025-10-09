@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
+  # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
   ZARF_VERSION: v0.63.0
   # renovate: datasource=github-tags depName=k3d-io/k3d versioning=semver-coerced
   K3D_VERSION: v5.8.3
@@ -51,7 +51,7 @@ jobs:
         id: build
         run: |
           # Build the package (Zarf will name it automatically)
-          zarf package create --confirm --no-progress -a amd64
+          zarf package create --confirm -a amd64
 
           # Locate the created package file and capture the filename
           PACKAGE_FILE=$(ls zarf-init-amd64-*.tar.zst)
