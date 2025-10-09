@@ -10,33 +10,33 @@ components:
   - name: zarf-injector
     required: true
     import:
-      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
       url: oci://ghcr.io/zarf-dev/packages/init:v0.63.0
 
   # Creates the temporary seed-registry
   - name: zarf-seed-registry
     required: true
     import:
-      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
       url: oci://ghcr.io/zarf-dev/packages/init:v0.63.0
 
   # Creates the permanent registry
   - name: zarf-registry
     required: true
     import:
-      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
       url: oci://ghcr.io/zarf-dev/packages/init:v0.63.0
 
   # Creates the pod+git mutating webhook
   - name: zarf-agent
     required: true
     import:
-      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
       url: oci://ghcr.io/zarf-dev/packages/init:v0.63.0
 
   - name: git-server
     import:
-      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
       url: oci://ghcr.io/zarf-dev/packages/init:v0.63.0
     only:
       flavor: gitea-registry1

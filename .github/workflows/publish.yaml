@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
+  # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
   ZARF_VERSION: v0.63.0
   # renovate: datasource=github-tags depName=k3d-io/k3d versioning=semver-coerced
   K3D_VERSION: v5.8.3
@@ -51,7 +51,7 @@ jobs:
         id: build
         run: |
           # Build the package (Zarf will name it automatically)
-          zarf package create --confirm --no-progress -a amd64
+          zarf package create --confirm -a amd64
 
           # Locate the created package file and capture the filename
           PACKAGE_FILE=$(ls zarf-init-amd64-*.tar.zst)
@@ -104,7 +104,7 @@ jobs:
 
       - name: install zarf init package
         run: |
-          zarf package deploy zarf-init-amd64-*.tar.zst --confirm --no-progress
+          zarf package deploy zarf-init-amd64-*.tar.zst --confirm
 
           # check if all pods are healthy and ready
           zarf tools kubectl wait --for=condition=ready pods --all -n zarf --timeout=180s
@@ -112,7 +112,7 @@ jobs:
       - name: Deploy DOS games package
         run: |
           # Deploy the DOS games package
-          zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.2.0 --confirm --no-progress -a amd64 --skip-signature-validation
+          zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.2.0 --confirm -a amd64 --skip-signature-validation
 
           # check if all pods are healthy and ready
           zarf tools kubectl wait --for=condition=ready pods --all -n dos-games --timeout=180s
@@ -183,5 +183,5 @@ jobs:
             echo "================================"
           else
             # For other flavors, build and publish directly
-            zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --no-progress --flavor ${{ matrix.flavor }} -a amd64
+            zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --flavor ${{ matrix.flavor }} -a amd64
           fi

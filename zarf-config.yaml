@@ -4,8 +4,8 @@ package:
     set:
       # The image reference to use for the Zarf agent, defaults to a locally built image
       agent_image_domain: registry1.dso.mil/
-      agent_image: ironbank/opensource/defenseunicorns/zarf/zarf-agent
-      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/defenseunicorns/zarf/zarf-agent
+      agent_image: ironbank/opensource/zarf-dev/zarf/zarf-agent
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
       agent_image_tag: v0.63.0
 
       # The image reference to use for the registry that Zarf deploys into the cluster
