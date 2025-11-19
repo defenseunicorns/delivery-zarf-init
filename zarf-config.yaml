@@ -14,5 +14,10 @@ package:
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/docker/registry-v3
       registry_image_tag: 3.0.0
 
+      proxy_image_domain: registry1.dso.mil/
+      proxy_image: ironbank/opensource/docker/registry-v3
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/docker/registry-v3
+      proxy_image_tag: 3.0.0
+
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea
       gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.25.1"
