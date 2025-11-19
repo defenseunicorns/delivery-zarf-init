@@ -6,7 +6,7 @@ package:
       agent_image_domain: registry1.dso.mil/
       agent_image: ironbank/opensource/zarf-dev/zarf/zarf-agent
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
-      agent_image_tag: v0.65.1
+      agent_image_tag: v0.66.0
 
       # The image reference to use for the registry that Zarf deploys into the cluster
       registry_image_domain: registry1.dso.mil/
