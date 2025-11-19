@@ -11,7 +11,7 @@ on:
 
 env:
   # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
-  ZARF_VERSION: v0.65.1
+  ZARF_VERSION: v0.66.0
   # renovate: datasource=github-tags depName=k3d-io/k3d versioning=semver-coerced
   K3D_VERSION: v5.8.3
 
@@ -25,7 +25,7 @@ jobs:
       package_tag: ${{ steps.build.outputs.package_tag }}
       package_file: ${{ steps.build.outputs.package_file }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
@@ -79,7 +79,7 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Download package artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
@@ -129,7 +129,7 @@ jobs:
           - ""
           - gitea-registry1
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
