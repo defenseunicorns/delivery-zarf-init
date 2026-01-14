@@ -6,7 +6,7 @@ package:
       agent_image_domain: registry1.dso.mil/
       agent_image: ironbank/opensource/zarf-dev/zarf/zarf-agent
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
-      agent_image_tag: v0.67.0
+      agent_image_tag: v0.68.1
 
       # The image reference to use for the registry that Zarf deploys into the cluster
       registry_image_domain: registry1.dso.mil/
@@ -20,4 +20,4 @@ package:
       proxy_image_tag: 3.0.0
 
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea
-      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.25.2"
+      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.25.3"
