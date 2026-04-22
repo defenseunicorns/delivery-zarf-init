@@ -54,7 +54,7 @@
       matchPackageNames: [
         'registry1.dso.mil/ironbank/opensource/go-gitea/gitea',
       ],
-      matchCurrentValue: 'rootless',
+      matchCurrentValue: 'rootless-amd64',
       pinDigests: true,
       groupName: 'gitea rootless digest',
       prBodyNotes: [
