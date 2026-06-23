@@ -1,0 +1,7 @@
+# This repository is owned by the delivery-iac-coe team
+* @defenseunicorns/delivery-iac-coe
+
+
+# Additional privileged files
+/CODEOWNERS @jeff-mccoy @daveworth
+/LICENS* @jeff-mccoy @austenbryan
