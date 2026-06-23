@@ -20,4 +20,4 @@ package:
       proxy_image_tag: 3.0.0
 
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea
-      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:rootless-amd64@sha256:6624ad3198f6fe420286c83a423284c0a1bc97372b48756c138172127a864b0f"
+      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:rootless-amd64@sha256:73a9a2c83a2f7847a51128c5775d8686108eafe70dacbf9c08bd3c78cf14115c"
