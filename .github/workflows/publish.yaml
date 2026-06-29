@@ -8,6 +8,11 @@ on:
       - "variants/**"
       - "zarf-config/**"
       - ".github/workflows/publish.yaml"
+  pull_request:
+    paths:
+      - "variants/**"
+      - "zarf-config/**"
+      - ".github/workflows/publish.yaml"
   workflow_dispatch:
 
 env:
@@ -98,6 +103,7 @@ jobs:
 
   publish:
     needs: test
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
