@@ -1,23 +1,23 @@
+# Iron Bank ships arm64 under separate "-arm64" tags (not multi-arch manifests).
 package:
   create:
-    architecture: amd64
     set:
-      # The image reference to use for the Zarf agent, defaults to a locally built image
+      pkg_version: registry1
+
       agent_image_domain: registry1.dso.mil/
       agent_image: ironbank/opensource/zarf-dev/zarf/zarf-agent
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
-      agent_image_tag: v0.79.0
+      agent_image_tag: v0.80.0-arm64
 
-      # The image reference to use for the registry that Zarf deploys into the cluster
       registry_image_domain: registry1.dso.mil/
       registry_image: ironbank/opensource/docker/registry-v3
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/docker/registry-v3
-      registry_image_tag: 3.1.1
+      registry_image_tag: 3.1.1-arm64
 
       proxy_image_domain: registry1.dso.mil/
       proxy_image: ironbank/opensource/docker/registry-v3
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/docker/registry-v3
-      proxy_image_tag: 3.0.0
+      proxy_image_tag: 3.1.1-arm64
 
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea
-      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:rootless-amd64@sha256:73a9a2c83a2f7847a51128c5775d8686108eafe70dacbf9c08bd3c78cf14115c"
+      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.26.4-arm64"

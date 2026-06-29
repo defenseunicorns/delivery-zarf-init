@@ -1,0 +1,23 @@
+# Agent reuses the upstream image (already Chainguard-built); registry/proxy/gitea are Chainguard FIPS.
+package:
+  create:
+    set:
+      pkg_version: unicorn
+
+      agent_image_domain: "ghcr.io/"
+      agent_image: zarf-dev/zarf/agent
+      # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent
+      agent_image_tag: v0.80.0
+
+      registry_image_domain: cgr.dev/defenseunicorns.com/
+      registry_image: distribution-fips
+      # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/distribution-fips
+      registry_image_tag: 3.1.1
+
+      proxy_image_domain: cgr.dev/defenseunicorns.com/
+      proxy_image: socat-fips
+      # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/socat-fips
+      proxy_image_tag: 1.8.1.3
+
+      # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/gitea-fips
+      gitea_image: "cgr.dev/defenseunicorns.com/gitea-fips:1.26.4"
