@@ -9,13 +9,13 @@ package:
       # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent
       agent_image_tag: v0.80.0
 
-      registry_image_domain: cgr.dev/defenseunicorns.com/
-      registry_image: distribution-fips
+      registry_image_domain: cgr.dev/
+      registry_image: defenseunicorns.com/distribution-fips
       # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/distribution-fips
       registry_image_tag: 3.1.1
 
-      proxy_image_domain: cgr.dev/defenseunicorns.com/
-      proxy_image: socat-fips
+      proxy_image_domain: cgr.dev/
+      proxy_image: defenseunicorns.com/socat-fips
       # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/socat-fips
       proxy_image_tag: 1.8.1.3
 
