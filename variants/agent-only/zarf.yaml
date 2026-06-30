@@ -1,0 +1,27 @@
+kind: ZarfInitConfig
+metadata:
+  name: init
+  version: "###ZARF_PKG_TMPL_PKG_VERSION###"
+  description: Used to establish a new Zarf cluster (agent only, no registry)
+  source: https://github.com/defenseunicorns/delivery-zarf-init
+
+# Defined once per flavor so every --flavor matches a component.
+components:
+  - name: zarf-agent
+    required: true
+    import:
+      path: ../../.zarf-src/packages/zarf-agent
+    only:
+      flavor: upstream
+  - name: zarf-agent
+    required: true
+    import:
+      path: ../../.zarf-src/packages/zarf-agent
+    only:
+      flavor: registry1
+  - name: zarf-agent
+    required: true
+    import:
+      path: ../../.zarf-src/packages/zarf-agent
+    only:
+      flavor: unicorn

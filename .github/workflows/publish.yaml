@@ -5,25 +5,41 @@ on:
     branches:
       - main
     paths:
-      - "zarf.yaml"
-      - "zarf-config.yaml"
+      - "variants/**"
+      - "zarf-config/**"
+      - ".github/workflows/publish.yaml"
+  pull_request:
+    paths:
+      - "variants/**"
+      - "zarf-config/**"
+      - ".github/workflows/publish.yaml"
   workflow_dispatch:
 
 env:
   # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
-  ZARF_VERSION: v0.79.0
+  ZARF_VERSION: v0.80.0
   # renovate: datasource=github-tags depName=k3d-io/k3d versioning=semver-coerced
   K3D_VERSION: v5.8.3
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  test:
+    runs-on: ${{ matrix.platform.runner }}
     permissions:
       contents: read
-      packages: write
-    outputs:
-      package_tag: ${{ steps.build.outputs.package_tag }}
-      package_file: ${{ steps.build.outputs.package_file }}
+      packages: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor:
+          - upstream
+          - registry1
+          - unicorn
+        platform:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
@@ -41,56 +57,32 @@ jobs:
           username: ${{ secrets.IRON_BANK_ROBOT_USERNAME }}
           password: ${{ secrets.IRON_BANK_ROBOT_PASSWORD }}
 
+      - name: Chainguard Login
+        uses: chainguard-dev/setup-chainctl@2cddd35a2f120d9973e58094dc6878c93cf58c28 # v0.5.1
+        with:
+          identity: ${{ secrets.CHAINGUARD_IDENTITY }}
+
       - name: Install Zarf
         uses: defenseunicorns/setup-zarf@745f0990f3d0611774b552930ea053ac61ebf0a6 # main
         with:
           version: ${{ env.ZARF_VERSION }}
           download-init-package: false
 
-      - name: Build Package
-        id: build
+      - name: Vendor Zarf packages
         run: |
-          # Build the package (Zarf will name it automatically)
-          zarf package create --confirm -a amd64
+          git clone --depth 1 --branch "${ZARF_VERSION}" --filter=blob:none --sparse \
+            https://github.com/zarf-dev/zarf.git .zarf-src
+          git -C .zarf-src sparse-checkout set packages
 
-          # Locate the created package file and capture the filename
-          PACKAGE_FILE=$(ls zarf-init-amd64-*.tar.zst)
-          echo "Created package: $PACKAGE_FILE"
-
-          # Extract version from filename
-          VERSION_FROM_FILENAME=$(echo $PACKAGE_FILE | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+')
-          echo "Extracted version: $VERSION_FROM_FILENAME"
-
-          # Save outputs for later use
-          echo "package_tag=${VERSION_FROM_FILENAME:-$ZARF_VERSION}" >> $GITHUB_OUTPUT
-          echo "package_file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
-
-      - name: Upload package as artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: zarf-init-package
-          path: ${{ steps.build.outputs.package_file }}
-          retention-days: 1
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-
-      - name: Download package artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: zarf-init-package
-
-      - name: Install Zarf
-        uses: defenseunicorns/setup-zarf@745f0990f3d0611774b552930ea053ac61ebf0a6 # main
-        with:
-          version: ${{ env.ZARF_VERSION }}
-          download-init-package: false
+      - name: Build default package (${{ matrix.flavor }} / ${{ matrix.platform.arch }})
+        env:
+          FLAVOR: ${{ matrix.flavor }}
+          ARCH: ${{ matrix.platform.arch }}
+        run: |
+          config="zarf-config/${FLAVOR}-${ARCH}.yaml"
+          [ -f "${config}" ] || config="zarf-config/${FLAVOR}.yaml"
+          ZARF_CONFIG="${config}" zarf package create variants/default \
+            --flavor "${FLAVOR}" --set PKG_VERSION="${ZARF_VERSION}" -a "${ARCH}" --confirm
 
       - name: install k3d
         run: |
@@ -98,36 +90,45 @@ jobs:
           curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG="${K3D_VERSION}" bash
 
       - name: Create k3d cluster
-        run: |
-          echo "Creating k3d cluster"
-          k3d cluster create zarf
+        run: k3d cluster create zarf
 
-      - name: install zarf init package
+      - name: Deploy zarf init package
         run: |
-          zarf package deploy zarf-init-amd64-*.tar.zst --confirm
-
-          # check if all pods are healthy and ready
+          zarf package deploy zarf-init-${{ matrix.platform.arch }}-*.tar.zst --confirm
           zarf tools kubectl wait --for=condition=ready pods --all -n zarf --timeout=180s
 
       - name: Deploy DOS games package
         run: |
-          # Deploy the DOS games package
-          zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.2.0 --confirm -a amd64 --skip-signature-validation
-
-          # check if all pods are healthy and ready
+          zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.2.0 --confirm -a ${{ matrix.platform.arch }} --skip-signature-validation
           zarf tools kubectl wait --for=condition=ready pods --all -n dos-games --timeout=180s
 
   publish:
-    needs: [build, test]
+    needs: test
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      id-token: write
     strategy:
+      fail-fast: false
       matrix:
         flavor:
-          - ""
-          - gitea-registry1
+          - upstream
+          - registry1
+          - unicorn
+        variant:
+          - name: default
+            dir: "variants/default"
+            suffix: ""
+          - name: agent-only
+            dir: "variants/agent-only"
+            suffix: "-agent-only"
+          - name: gitea
+            dir: "variants/gitea"
+            suffix: "-gitea"
+    env:
+      REPO: ghcr.io/defenseunicorns/delivery-zarf-init
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
@@ -145,43 +146,37 @@ jobs:
           username: ${{ secrets.IRON_BANK_ROBOT_USERNAME }}
           password: ${{ secrets.IRON_BANK_ROBOT_PASSWORD }}
 
+      - name: Chainguard Login
+        uses: chainguard-dev/setup-chainctl@2cddd35a2f120d9973e58094dc6878c93cf58c28 # v0.5.1
+        with:
+          identity: ${{ secrets.CHAINGUARD_IDENTITY }}
+
       - name: Install Zarf
         uses: defenseunicorns/setup-zarf@745f0990f3d0611774b552930ea053ac61ebf0a6 # main
         with:
           version: ${{ env.ZARF_VERSION }}
           download-init-package: false
 
-      - name: Download package artifact (for default flavor)
-        if: matrix.flavor == ''
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: zarf-init-package
-
-      - name: Publish Package
+      - name: Vendor Zarf packages
         run: |
-          if [[ "${{ matrix.flavor }}" == "" ]]; then
-            # List files to find the package
-            ls -la
+          git clone --depth 1 --branch "${ZARF_VERSION}" --filter=blob:none --sparse \
+            https://github.com/zarf-dev/zarf.git .zarf-src
+          git -C .zarf-src sparse-checkout set packages
 
-            # Push the already-built package to OCI
-            zarf package publish zarf-init-amd64-*.tar.zst oci://ghcr.io/defenseunicorns/delivery-zarf-init
+      - name: Build and publish (${{ matrix.flavor }} / ${{ matrix.variant.name }})
+        env:
+          FLAVOR: ${{ matrix.flavor }}
+          SUFFIX: ${{ matrix.variant.suffix }}
+          DIR: ${{ matrix.variant.dir }}
+        run: |
+          pkg_version="${ZARF_VERSION}${SUFFIX}"
+          tag="${ZARF_VERSION}-${FLAVOR}${SUFFIX}"
 
-            # Do your retagging operations
-            echo "================================"
-            echo "Starting retagging operation for registry1..."
-            echo "Source: ghcr.io/defenseunicorns/delivery-zarf-init/init:${{ needs.build.outputs.package_tag }}"
-            echo "Target: ghcr.io/defenseunicorns/delivery-zarf-init/init:${{ needs.build.outputs.package_tag }}-registry1"
-            echo "================================"
+          for arch in amd64 arm64; do
+            config="zarf-config/${FLAVOR}-${arch}.yaml"
+            [ -f "${config}" ] || config="zarf-config/${FLAVOR}.yaml"
 
-            if zarf tools registry copy ghcr.io/defenseunicorns/delivery-zarf-init/init:${{ needs.build.outputs.package_tag }} ghcr.io/defenseunicorns/delivery-zarf-init/init:${{ needs.build.outputs.package_tag }}-registry1; then
-              echo "✅ Retagging SUCCESSFUL"
-            else
-              echo "❌ Retagging FAILED with exit code $?"
-              echo "Check for errors above. You may need to run with -v flag for more details."
-              exit 1
-            fi
-            echo "================================"
-          else
-            # For other flavors, build and publish directly
-            zarf package create --confirm --output oci://ghcr.io/defenseunicorns/delivery-zarf-init --flavor ${{ matrix.flavor }} -a amd64
-          fi
+            ZARF_CONFIG="${config}" zarf package create "${DIR}" \
+              --flavor "${FLAVOR}" --set PKG_VERSION="${pkg_version}" -a "${arch}" --confirm
+            zarf package publish zarf-init-"${arch}"-*.tar.zst "oci://${REPO}" --tag "${tag}"
+          done
