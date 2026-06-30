@@ -169,13 +169,14 @@ jobs:
           SUFFIX: ${{ matrix.variant.suffix }}
           DIR: ${{ matrix.variant.dir }}
         run: |
-          version="${ZARF_VERSION}-${FLAVOR}${SUFFIX}"
+          pkg_version="${ZARF_VERSION}${SUFFIX}"
+          tag="${ZARF_VERSION}-${FLAVOR}${SUFFIX}"
 
           for arch in amd64 arm64; do
             config="zarf-config/${FLAVOR}-${arch}.yaml"
             [ -f "${config}" ] || config="zarf-config/${FLAVOR}.yaml"
 
             ZARF_CONFIG="${config}" zarf package create "${DIR}" \
-              --flavor "${FLAVOR}" --set PKG_VERSION="${version}" -a "${arch}" --confirm
-            zarf package publish zarf-init-"${arch}"-*.tar.zst "oci://${REPO}" --tag "${version}"
+              --flavor "${FLAVOR}" --set PKG_VERSION="${pkg_version}" -a "${arch}" --confirm
+            zarf package publish zarf-init-"${arch}"-*.tar.zst "oci://${REPO}" --tag "${tag}"
           done
