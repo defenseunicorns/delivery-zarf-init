@@ -82,7 +82,7 @@ jobs:
           config="zarf-config/${FLAVOR}-${ARCH}.yaml"
           [ -f "${config}" ] || config="zarf-config/${FLAVOR}.yaml"
           ZARF_CONFIG="${config}" zarf package create variants/default \
-            --flavor "${FLAVOR}" --set PKG_VERSION="${ZARF_VERSION}-${FLAVOR}" -a "${ARCH}" --confirm
+            --flavor "${FLAVOR}" --set PKG_VERSION="${ZARF_VERSION}" -a "${ARCH}" --confirm
 
       - name: install k3d
         run: |
