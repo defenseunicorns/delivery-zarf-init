@@ -52,22 +52,36 @@ tasks:
             condition: Available
       - description: DOS Games pods were mutated by the zarf agent
         cmd: |
-          patched=$(zarf tools kubectl get pods -n dos-games -l zarf-agent=patched --no-headers | wc -l)
+          patched=$(uds zarf tools kubectl get pods -n dos-games -l zarf-agent=patched --no-headers | wc -l)
           if [ "$patched" -lt 1 ]; then
             echo "expected at least one pod with the zarf-agent=patched label"
             exit 1
           fi
           echo "agent mutation verified ($patched patched pod(s))"
 
-  # tests/zarf-values-override.yaml scales the agent to one replica (chart default is 2);
-  # seeing 1 proves the zarf values passthrough reaches the charts imported from upstream
+  # tests/zarf-values-override.yaml sets one observable override per chart key; these assertions
+  # prove the zarf values passthrough reaches every chart imported from upstream
   - name: values
     actions:
       - description: Zarf values override landed on the agent deployment
         cmd: |
-          replicas=$(zarf tools kubectl get deploy agent-hook -n zarf -o jsonpath='{.spec.replicas}')
+          replicas=$(uds zarf tools kubectl get deploy agent-hook -n zarf -o jsonpath='{.spec.replicas}')
           if [ "$replicas" != "1" ]; then
             echo "expected agent-hook replicas=1 from values override, got $replicas"
             exit 1
           fi
           echo "zarf values override verified (agent-hook replicas=$replicas)"
+      - description: Zarf values override landed on the registry deployment
+        cmd: |
+          if ! uds zarf tools kubectl get deploy zarf-docker-registry -n zarf -o yaml | grep -q "values-test: registry"; then
+            echo "expected values-test label on the registry deployment from values override"
+            exit 1
+          fi
+          echo "zarf values override verified (registry podLabels)"
+      - description: Zarf values override landed on the gitea deployment
+        cmd: |
+          if ! uds zarf tools kubectl get deploy zarf-gitea -n zarf -o yaml | grep -q "values-test: gitea"; then
+            echo "expected values-test label on the gitea deployment from values override"
+            exit 1
+          fi
+          echo "zarf values override verified (gitea deployment labels)"

@@ -26,8 +26,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
-  ZARF_VERSION: v0.80.0
   # renovate: datasource=github-tags depName=k3d-io/k3d versioning=semver-coerced
   K3D_VERSION: v5.8.3
 
@@ -72,12 +70,6 @@ jobs:
         uses: chainguard-dev/setup-chainctl@2cddd35a2f120d9973e58094dc6878c93cf58c28 # v0.5.1
         with:
           identity: ${{ secrets.CHAINGUARD_IDENTITY }}
-
-      - name: Install Zarf
-        uses: defenseunicorns/setup-zarf@745f0990f3d0611774b552930ea053ac61ebf0a6 # main
-        with:
-          version: ${{ env.ZARF_VERSION }}
-          download-init-package: false
 
       - name: Install UDS CLI
         uses: defenseunicorns/setup-uds@ab842abcad1f7a3305c2538e3dd1950d0daacfa5 # v1.0.1

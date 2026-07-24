@@ -6,6 +6,7 @@
 includes:
   - test: ./tasks/test.yaml
   - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.27.0/tasks/lint.yaml
+  - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.27.0/tasks/actions.yaml
 
 variables:
   - name: FLAVOR
@@ -21,7 +22,9 @@ variables:
     default: zarf
   - name: ZARF_VERSION
     # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
-    default: v0.80.0
+    default: v0.82.0
+  - name: REPO
+    default: ghcr.io/defenseunicorns/delivery-zarf-init
 
 tasks:
   - name: default
@@ -75,7 +78,7 @@ tasks:
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
           config="zarf-config/${FLAVOR}-$pkg_arch.yaml"
           [ -f "$config" ] || config="zarf-config/${FLAVOR}.yaml"
-          ZARF_CONFIG="$config" zarf package create "variants/${{ .inputs.variant }}" \
+          ZARF_CONFIG="$config" uds zarf package create "variants/${{ .inputs.variant }}" \
             --flavor "${FLAVOR}" --set PKG_VERSION="${ZARF_VERSION}" -a "$pkg_arch" --confirm
 
   - name: create-all
@@ -92,11 +95,13 @@ tasks:
           variant: gitea
 
   - name: setup-cluster
-    description: Create a fresh, bare k3d test cluster (init packages must land on an uninitialized cluster)
+    description: Create a fresh uds-k3d test cluster (not zarf-initialized; cluster shape and k3s version are owned by uds-k3d)
     actions:
       - cmd: |
           k3d cluster delete "${CLUSTER_NAME}" >/dev/null 2>&1 || true
-          k3d cluster create "${CLUSTER_NAME}"
+          # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds-k3d
+          uds zarf package deploy oci://ghcr.io/defenseunicorns/packages/uds-k3d:0.20.2 \
+            --set CLUSTER_NAME="${CLUSTER_NAME}" --confirm
 
   - name: deploy
     description: Deploy the VARIANT init package with the test values override applied
@@ -105,7 +110,7 @@ tasks:
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
-          zarf package deploy zarf-init-"$pkg_arch"-*.tar.zst \
+          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}"*.tar.zst \
             --values tests/zarf-values-override.yaml --confirm
 
   - name: deploy-workload
@@ -114,7 +119,7 @@ tasks:
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
-          zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.2.0 \
+          uds zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.2.0 \
             --confirm -a "$pkg_arch"
 
   - name: setup-uds-cluster
@@ -131,13 +136,36 @@ tasks:
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
-          zarf package deploy zarf-init-"$pkg_arch"-*.tar.zst \
+          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}"*.tar.zst \
             --values tests/zarf-values-override.yaml --values tests/zarf-values-s3.yaml --confirm
 
   - name: remove
     description: Remove the deployed init package (only one init package can exist per cluster; run this before deploying a different variant)
     actions:
-      - cmd: zarf package remove init --confirm
+      - cmd: uds zarf package remove init --confirm
+
+  - name: publish
+    description: Build and publish the VARIANT for FLAVOR (both architectures) to REPO
+    inputs:
+      variant:
+        description: The variant (component set) to publish
+        default: ${VARIANT}
+    actions:
+      - cmd: |
+          variant="${{ .inputs.variant }}"
+          suffix=""
+          [ "$variant" = "default" ] || suffix="-$variant"
+          pkg_version="${ZARF_VERSION}${suffix}"
+          tag="${ZARF_VERSION}-${FLAVOR}${suffix}"
+
+          for arch in amd64 arm64; do
+            config="zarf-config/${FLAVOR}-${arch}.yaml"
+            [ -f "$config" ] || config="zarf-config/${FLAVOR}.yaml"
+
+            ZARF_CONFIG="$config" uds zarf package create "variants/$variant" \
+              --flavor "${FLAVOR}" --set PKG_VERSION="$pkg_version" -a "$arch" --confirm
+            uds zarf package publish zarf-init-"$arch"-"$pkg_version"*.tar.zst "oci://${REPO}" --tag "$tag"
+          done
 
   - name: pre-commit-all
     description: Run all pre-commit hooks and fix SPDX license headers on all files
