@@ -58,30 +58,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Login to registry1
-        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4
-        with:
-          registry: registry1.dso.mil
-          username: ${{ secrets.IRON_BANK_ROBOT_USERNAME }}
-          password: ${{ secrets.IRON_BANK_ROBOT_PASSWORD }}
-
-      - name: Chainguard Login
-        uses: chainguard-dev/setup-chainctl@2cddd35a2f120d9973e58094dc6878c93cf58c28 # v0.5.1
-        with:
-          identity: ${{ secrets.CHAINGUARD_IDENTITY }}
-
       - name: Install UDS CLI
         uses: defenseunicorns/setup-uds@ab842abcad1f7a3305c2538e3dd1950d0daacfa5 # v1.0.1
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.34.2
+
+      - name: Environment setup
+        run: |
+          echo "MARU_AUTH=\"{\"raw.githubusercontent.com\": \"${{ secrets.GITHUB_TOKEN }}\"}\"" >> "$GITHUB_ENV"
+          uds run actions:setup-environment \
+          --set REGISTRY1_USERNAME="${{ secrets.IRON_BANK_ROBOT_USERNAME }}" \
+          --set REGISTRY1_PASSWORD="${{ secrets.IRON_BANK_ROBOT_PASSWORD }}" \
+          --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+          --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
+        shell: bash
 
       - name: Build and publish (${{ matrix.flavor }} / ${{ matrix.variant }})
         run: |
