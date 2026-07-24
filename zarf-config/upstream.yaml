@@ -8,8 +8,8 @@ package:
 
       agent_image_domain: ghcr.io/
       agent_image: zarf-dev/zarf/agent
-      # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent
-      agent_image_tag: v0.82.0
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
+      agent_image_tag: v0.81.1
 
       registry_image_domain: ""
       registry_image: library/registry
@@ -21,5 +21,7 @@ package:
       # renovate: datasource=docker depName=alpine/socat
       proxy_image_tag: 1.8.1.3
 
+      # ghcr tag format (-rootless, no v prefix) can't cross-anchor to IB; the renovate
+      # packageRule cap keeps this in minor-lockstep with the IB-anchored flavors
       # renovate: datasource=docker depName=ghcr.io/go-gitea/gitea
-      gitea_image: ghcr.io/go-gitea/gitea:1.24.6-rootless
+      gitea_image: ghcr.io/go-gitea/gitea:1.27.0-rootless

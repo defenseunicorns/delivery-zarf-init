@@ -62,13 +62,13 @@
   ],
   packageRules: [
     {
-      description: 'gitea must stay on the minor supported by the gitea chart vendored in upstream zarf (chart 12.3.0 -> gitea 1.24.x); newer gitea drops the environment-to-ini -o flag the chart init uses. Revisit when ZARF_VERSION bumps the vendored chart.',
+      description: 'gitea images (all flavors, kept in lockstep) must stay on the minor supported by the gitea chart version pinned in variants/gitea/zarf.yaml (chart 12.7.0 -> gitea 1.27.x). Bump the chart pin and this cap together.',
       matchPackageNames: [
         'ghcr.io/go-gitea/gitea',
         'registry1.dso.mil/ironbank/opensource/go-gitea/gitea',
         'cgr.dev/defenseunicorns.com/gitea-fips',
       ],
-      allowedVersions: '/^v?1\\.24\\./',
+      allowedVersions: '/^v?1\\.27\\./',
     },
   ],
   vulnerabilityAlerts: {

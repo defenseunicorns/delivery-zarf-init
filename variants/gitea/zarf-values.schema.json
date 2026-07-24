@@ -53,6 +53,121 @@
         "extraVolumes": {
           "type": "array"
         },
+        "gatewayAPI": {
+          "properties": {
+            "core": {
+              "properties": {
+                "backendTLSPolicy": {
+                  "properties": {
+                    "annotations": {
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "labels": {
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "targetRefs": {
+                      "type": "array"
+                    },
+                    "validation": {
+                      "properties": {},
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                },
+                "httpRoute": {
+                  "properties": {
+                    "annotations": {
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "hostnames": {
+                      "type": "array"
+                    },
+                    "labels": {
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "parentRefs": {
+                      "type": "array"
+                    },
+                    "rules": {
+                      "type": "array"
+                    },
+                    "tls": {
+                      "type": "boolean"
+                    }
+                  },
+                  "type": "object"
+                },
+                "tcpRoute": {
+                  "properties": {
+                    "annotations": {
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "labels": {
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "parentRefs": {
+                      "type": "array"
+                    },
+                    "rules": {
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "nginx": {
+              "properties": {
+                "clientSettingsPolicies": {
+                  "properties": {
+                    "annotations": {
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "body": {
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "labels": {
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "targetRef": {
+                      "properties": {},
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
         "gitea": {
           "properties": {
             "additionalConfigFromEnvs": {
@@ -150,6 +265,9 @@
                 }
               },
               "type": "object"
+            },
+            "extraEnvSourceFile": {
+              "type": "string"
             },
             "ldap": {
               "type": "array"
@@ -400,6 +518,17 @@
         "nodeSelector": {
           "type": "string"
         },
+        "openshift": {
+          "properties": {
+            "enabled": {
+              "type": "string"
+            },
+            "hostUsers": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
         "persistence": {
           "properties": {
             "accessModes": {
@@ -496,11 +625,70 @@
               },
               "type": "object"
             },
+            "image": {
+              "properties": {
+                "repository": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "metrics": {
+              "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
             "primary": {
               "properties": {
                 "persistence": {
                   "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
                     "size": {
+                      "type": "string"
+                    },
+                    "storageClass": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "readReplicas": {
+              "properties": {
+                "persistence": {
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "size": {
+                      "type": "string"
+                    },
+                    "storageClass": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "volumePermissions": {
+              "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
                       "type": "string"
                     }
                   },
@@ -536,9 +724,28 @@
               },
               "type": "object"
             },
+            "metrics": {
+              "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
             "persistence": {
               "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
                 "size": {
+                  "type": "string"
+                },
+                "storageClass": {
                   "type": "string"
                 }
               },
@@ -549,6 +756,14 @@
                 "adminPassword": {
                   "type": "string"
                 },
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
                 "srCheckPassword": {
                   "type": "string"
                 }
@@ -557,6 +772,14 @@
             },
             "postgresql": {
               "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
                 "password": {
                   "type": "string"
                 },
@@ -575,6 +798,19 @@
                   "properties": {
                     "postgresql": {
                       "type": "number"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "volumePermissions": {
+              "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
                     }
                   },
                   "type": "object"
@@ -625,6 +861,50 @@
                 }
               },
               "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "route": {
+          "properties": {
+            "annotations": {
+              "properties": {},
+              "type": "object"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "host": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "tls": {
+              "properties": {
+                "caCertificate": {
+                  "type": "string"
+                },
+                "certificate": {
+                  "type": "string"
+                },
+                "destinationCACertificate": {
+                  "type": "string"
+                },
+                "insecureEdgeTerminationPolicy": {
+                  "type": "string"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "termination": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "wildcardPolicy": {
+              "type": "string"
             }
           },
           "type": "object"
@@ -843,6 +1123,27 @@
               },
               "type": "object"
             },
+            "image": {
+              "properties": {
+                "repository": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "kubectl": {
+              "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
             "master": {
               "properties": {
                 "count": {
@@ -857,6 +1158,83 @@
                         }
                       },
                       "type": "object"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "metrics": {
+              "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "primary": {
+              "properties": {
+                "persistence": {
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "size": {
+                      "type": "string"
+                    },
+                    "storageClass": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "replica": {
+              "properties": {
+                "persistence": {
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "size": {
+                      "type": "string"
+                    },
+                    "storageClass": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "sentinel": {
+              "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "volumePermissions": {
+              "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
                     }
                   },
                   "type": "object"
@@ -883,6 +1261,41 @@
             "enabled": {
               "type": "boolean"
             },
+            "image": {
+              "properties": {
+                "repository": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "metrics": {
+              "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "persistence": {
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "size": {
+                  "type": "string"
+                },
+                "storageClass": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
             "service": {
               "properties": {
                 "ports": {
@@ -896,11 +1309,32 @@
               },
               "type": "object"
             },
+            "sysctlImage": {
+              "properties": {
+                "repository": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
             "usePassword": {
               "type": "boolean"
             },
             "usePasswordFiles": {
               "type": "boolean"
+            },
+            "volumePermissions": {
+              "properties": {
+                "image": {
+                  "properties": {
+                    "repository": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
             }
           },
           "type": "object"

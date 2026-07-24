@@ -121,6 +121,10 @@ components:
       path: ../../.zarf-src/packages/gitea
     charts:
       - name: gitea
+        # Newer chart than upstream zarf's pin (12.3.0, gitea <=1.24): all flavors run gitea 1.27,
+        # which requires a chart that dropped the environment-to-ini -o bootstrap flag.
+        # renovate: datasource=docker depName=registry-1.docker.io/giteacharts/gitea
+        version: 12.7.0
         values:
           - sourcePath: .gitea
             targetPath: .

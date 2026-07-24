@@ -22,7 +22,7 @@ variables:
     default: zarf
   - name: ZARF_VERSION
     # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
-    default: v0.82.0
+    default: v0.81.1
   - name: REPO
     default: ghcr.io/defenseunicorns/delivery-zarf-init
 
@@ -110,7 +110,7 @@ tasks:
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
-          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}"*.tar.zst \
+          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}"-"${FLAVOR}".tar.zst \
             --values tests/zarf-values-override.yaml --confirm
 
   - name: deploy-workload
@@ -136,7 +136,7 @@ tasks:
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
-          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}"*.tar.zst \
+          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}"-"${FLAVOR}".tar.zst \
             --values tests/zarf-values-override.yaml --values tests/zarf-values-s3.yaml --confirm
 
   - name: remove
@@ -164,7 +164,7 @@ tasks:
 
             ZARF_CONFIG="$config" uds zarf package create "variants/$variant" \
               --flavor "${FLAVOR}" --set PKG_VERSION="$pkg_version" -a "$arch" --confirm
-            uds zarf package publish zarf-init-"$arch"-"$pkg_version"*.tar.zst "oci://${REPO}" --tag "$tag"
+            uds zarf package publish zarf-init-"$arch"-"$pkg_version"-"${FLAVOR}".tar.zst "oci://${REPO}" --tag "$tag"
           done
 
   - name: pre-commit-all
