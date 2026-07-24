@@ -1,5 +1,5 @@
 # Copyright 2026 Defense Unicorns
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 # yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
 
@@ -11,8 +11,8 @@ includes:
 variables:
   - name: FLAVOR
     default: upstream
-  - name: VARIANT
-    # gitea is the superset variant (injector, registry, agent, gitea) so it gets deploy-tested
+  - name: PACKAGE
+    # gitea is the superset package (injector, registry, agent, gitea) so it gets deploy-tested
     default: gitea
   - name: ARCH
     # empty resolves to the host architecture (UDS_ARCH)
@@ -21,14 +21,14 @@ variables:
     # override to run side-by-side clusters, e.g. --set CLUSTER_NAME=zarf-unicorn
     default: zarf
   - name: ZARF_VERSION
-    # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
+    # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
     default: v0.81.1
   - name: REPO
     default: ghcr.io/defenseunicorns/delivery-zarf-init
 
 tasks:
   - name: default
-    description: Local dev loop - vendor, build the VARIANT, deploy and test on a fresh k3d cluster
+    description: Local dev loop - vendor, build the PACKAGE, deploy and test on a fresh uds-k3d cluster
     actions:
       - task: vendor
       - task: create
@@ -38,14 +38,14 @@ tasks:
       - task: test:all
 
   - name: dev
-    description: Rebuild and redeploy the VARIANT on the existing cluster (for iteration/dev speed)
+    description: Rebuild and redeploy the PACKAGE on the existing cluster (for iteration/dev speed)
     actions:
       - task: vendor
       - task: create
       - task: deploy
 
   - name: ci-test
-    description: CI flow - build every variant, then deploy and test the VARIANT on a fresh cluster
+    description: CI flow - build every package, then deploy and test the PACKAGE on a fresh uds-k3d cluster
     actions:
       - task: vendor
       - task: create-all
@@ -67,44 +67,44 @@ tasks:
           git -C .zarf-src sparse-checkout set packages
 
   - name: create
-    description: Build one variant for FLAVOR/ARCH (config resolved from zarf-config/)
+    description: Build one package for FLAVOR/ARCH (config resolved from zarf-config/)
     inputs:
-      variant:
-        description: The variant (component set) to build
-        default: ${VARIANT}
+      package:
+        description: The package (component set) to build
+        default: ${PACKAGE}
     actions:
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
           config="zarf-config/${FLAVOR}-$pkg_arch.yaml"
           [ -f "$config" ] || config="zarf-config/${FLAVOR}.yaml"
-          ZARF_CONFIG="$config" uds zarf package create "variants/${{ .inputs.variant }}" \
+          ZARF_CONFIG="$config" uds zarf package create "packages/${{ .inputs.package }}" \
             --flavor "${FLAVOR}" --set PKG_VERSION="${ZARF_VERSION}" -a "$pkg_arch" --confirm
 
   - name: create-all
-    description: Build every variant for FLAVOR/ARCH (builds share a filename; the gitea build lands last for deploy)
+    description: Build every package for FLAVOR/ARCH (builds share a filename; the gitea build lands last for deploy)
     actions:
       - task: create
         with:
-          variant: default
+          package: default
       - task: create
         with:
-          variant: agent-only
+          package: agent-only
       - task: create
         with:
-          variant: gitea
+          package: gitea
 
   - name: setup-cluster
     description: Create a fresh uds-k3d test cluster (not zarf-initialized; cluster shape and k3s version are owned by uds-k3d)
     actions:
       - cmd: |
           k3d cluster delete "${CLUSTER_NAME}" >/dev/null 2>&1 || true
-          # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds-k3d
+          # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds-k3d versioning=docker
           uds zarf package deploy oci://ghcr.io/defenseunicorns/packages/uds-k3d:0.20.2 \
             --set CLUSTER_NAME="${CLUSTER_NAME}" --confirm
 
   - name: deploy
-    description: Deploy the VARIANT init package with the test values override applied
+    description: Deploy the PACKAGE init package with the test values override applied
     actions:
       # zarf's built-in health checks gate each chart install, so no extra wait is needed here
       - cmd: |
@@ -126,12 +126,13 @@ tasks:
     description: Create a uds-k3d cluster (with MinIO) using the test overrides in tests/uds-config.yaml
     actions:
       - cmd: |
+          # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev versioning=docker
           UDS_CONFIG=tests/uds-config.yaml uds deploy \
-            oci://defenseunicorns/uds/bundles/k3d-core-slim-dev:latest \
+            oci://ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev:0.58.1 \
             -p uds-k3d-dev --confirm
 
   - name: deploy-s3
-    description: Deploy the VARIANT init package with the registry backed by uds-k3d MinIO (see tests/zarf-values-s3.yaml)
+    description: Deploy the PACKAGE init package with the registry backed by uds-k3d MinIO (see tests/zarf-values-s3.yaml)
     actions:
       - cmd: |
           pkg_arch="${ARCH}"
@@ -140,21 +141,21 @@ tasks:
             --values tests/zarf-values-override.yaml --values tests/zarf-values-s3.yaml --confirm
 
   - name: remove
-    description: Remove the deployed init package (only one init package can exist per cluster; run this before deploying a different variant)
+    description: Remove the deployed init package (only one init package can exist per cluster; run this before deploying a different package)
     actions:
       - cmd: uds zarf package remove init --confirm
 
   - name: publish
-    description: Build and publish the VARIANT for FLAVOR (both architectures) to REPO
+    description: Build and publish the PACKAGE for FLAVOR (both architectures) to REPO
     inputs:
-      variant:
-        description: The variant (component set) to publish
-        default: ${VARIANT}
+      package:
+        description: The package (component set) to publish
+        default: ${PACKAGE}
     actions:
       - cmd: |
-          variant="${{ .inputs.variant }}"
+          package="${{ .inputs.package }}"
           suffix=""
-          [ "$variant" = "default" ] || suffix="-$variant"
+          [ "$package" = "default" ] || suffix="-$package"
           pkg_version="${ZARF_VERSION}${suffix}"
           tag="${ZARF_VERSION}-${FLAVOR}${suffix}"
 
@@ -162,7 +163,7 @@ tasks:
             config="zarf-config/${FLAVOR}-${arch}.yaml"
             [ -f "$config" ] || config="zarf-config/${FLAVOR}.yaml"
 
-            ZARF_CONFIG="$config" uds zarf package create "variants/$variant" \
+            ZARF_CONFIG="$config" uds zarf package create "packages/$package" \
               --flavor "${FLAVOR}" --set PKG_VERSION="$pkg_version" -a "$arch" --confirm
             uds zarf package publish zarf-init-"$arch"-"$pkg_version"-"${FLAVOR}".tar.zst "oci://${REPO}" --tag "$tag"
           done
@@ -176,7 +177,7 @@ tasks:
           fix: "true"
 
   - name: cleanup
-    description: Tear down the k3d test cluster and build artifacts
+    description: Tear down the uds-k3d test cluster and build artifacts
     actions:
       - cmd: |
           k3d cluster delete "${CLUSTER_NAME}" || true

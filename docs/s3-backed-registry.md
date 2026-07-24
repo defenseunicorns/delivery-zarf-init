@@ -1,9 +1,14 @@
 # S3-backed registry
 
-The registry deployed by the `default` and `gitea` variants can store its blobs in any S3-compatible
-object store instead of a PVC, configured entirely at deploy time through the Zarf values
-passthrough. Verified end-to-end against the MinIO instance shipped by
-[uds-k3d](https://github.com/defenseunicorns/uds-k3d)'s dev stack.
+**Prefer S3 backing for the registry whenever the environment provides object storage.** Object
+storage removes the PVC as a single point of failure, lets the registry scale horizontally without
+RWX volumes, and survives node loss with no data migration. The PVC default exists for environments
+with no object store, not as the recommended posture.
+
+The registry deployed by the `default` and `gitea` packages is configured for S3 entirely at deploy
+time through the Zarf values passthrough. Verified end-to-end against the MinIO instance shipped by
+[uds-k3d](https://github.com/defenseunicorns/uds-k3d)'s dev stack; for production use AWS S3 with
+IRSA, or any S3-compatible store backed by stable out-of-cluster storage.
 
 ## Local dev flow (uds-k3d MinIO)
 

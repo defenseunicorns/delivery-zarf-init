@@ -1,0 +1,77 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/zarf-dev/zarf/main/zarf.schema.json
+# Shared component definitions (values passthrough, healthChecks, chart pins) imported by the
+# packages/*; flavor tagging stays in src/init/zarf.yaml.
+kind: ZarfPackageConfig
+metadata:
+  name: common
+
+components:
+  - name: zarf-agent
+    required: true
+    import:
+      path: ../../../.zarf-src/packages/zarf-agent
+    charts:
+      - name: zarf-agent
+        values:
+          - sourcePath: .zarf-agent
+            targetPath: .
+            excludePaths:
+              - .zarf-agent.image
+              - .zarf-agent.secret
+              - .zarf-agent.mutationPolicy
+    healthChecks:
+      - name: agent-hook
+        namespace: zarf
+        apiVersion: apps/v1
+        kind: Deployment
+
+  - name: zarf-registry
+    required: true
+    import:
+      path: ../../../.zarf-src/packages/zarf-registry
+    charts:
+      - name: docker-registry
+        values:
+          - sourcePath: .zarf-registry
+            targetPath: .
+            excludePaths:
+              - .zarf-registry.image
+              - .zarf-registry.imagePullSecrets
+              - .zarf-registry.proxy.image
+              - .zarf-registry.proxy.registry
+              - .zarf-registry.proxy.injector
+              - .zarf-registry.secrets
+              - .zarf-registry.mtls
+              - .zarf-registry.fullnameOverride
+              - .zarf-registry.ipv6Only
+    healthChecks:
+      - name: zarf-docker-registry
+        namespace: zarf
+        apiVersion: apps/v1
+        kind: Deployment
+
+  - name: git-server
+    required: true
+    import:
+      path: ../../../.zarf-src/packages/gitea
+    charts:
+      - name: gitea
+        # newer than upstream zarf's chart pin; gitea >=1.26 requires it
+        # renovate: datasource=docker depName=registry-1.docker.io/giteacharts/gitea versioning=docker
+        version: 12.7.0
+        values:
+          - sourcePath: .gitea
+            targetPath: .
+            excludePaths:
+              - .gitea.image
+              - .gitea.gitea.admin
+              - .gitea.podSecurityContext
+              - .gitea.containerSecurityContext
+    healthChecks:
+      - name: zarf-gitea
+        namespace: zarf
+        apiVersion: apps/v1
+        kind: Deployment

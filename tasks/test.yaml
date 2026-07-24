@@ -1,11 +1,11 @@
 # Copyright 2026 Defense Unicorns
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 # yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
 
 tasks:
   - name: all
-    description: Full validation for the gitea (superset) variant
+    description: Full validation for the gitea (superset) package
     actions:
       - task: health-check
       - task: gitea-health-check

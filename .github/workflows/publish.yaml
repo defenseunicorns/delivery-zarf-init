@@ -1,5 +1,5 @@
 # Copyright 2026 Defense Unicorns
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 name: Publish
 
@@ -8,7 +8,8 @@ on:
     branches:
       - main
     paths:
-      - variants/**
+      - packages/**
+      - src/**
       - zarf-config/**
       - tasks.yaml
       - tasks/**
@@ -51,7 +52,7 @@ jobs:
           - upstream
           - registry1
           - unicorn
-        variant:
+        package:
           - default
           - agent-only
           - gitea
@@ -74,10 +75,10 @@ jobs:
           --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
         shell: bash
 
-      - name: Build and publish (${{ matrix.flavor }} / ${{ matrix.variant }})
+      - name: Build and publish (${{ matrix.flavor }} / ${{ matrix.package }})
         run: |
           uds run vendor --no-progress
           uds run publish \
             --set FLAVOR=${{ matrix.flavor }} \
-            --set VARIANT=${{ matrix.variant }} \
+            --set PACKAGE=${{ matrix.package }} \
             --no-progress

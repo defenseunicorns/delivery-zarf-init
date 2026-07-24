@@ -1,5 +1,5 @@
 # Copyright 2026 Defense Unicorns
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 # Iron Bank ships arm64 under separate "-arm64" tags (not multi-arch manifests).
 package:
@@ -9,18 +9,18 @@ package:
 
       agent_image_domain: registry1.dso.mil/
       agent_image: ironbank/opensource/zarf-dev/zarf/zarf-agent
-      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
       agent_image_tag: v0.81.1-arm64
 
       registry_image_domain: registry1.dso.mil/
       registry_image: ironbank/opensource/docker/registry-v3
-      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/docker/registry-v3
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/docker/registry-v3 versioning=docker
       registry_image_tag: 3.1.1-arm64
 
       proxy_image_domain: registry1.dso.mil/
       proxy_image: ironbank/opensource/docker/registry-v3
-      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/docker/registry-v3
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/docker/registry-v3 versioning=docker
       proxy_image_tag: 3.1.1-arm64
 
-      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea
+      # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea versioning=docker
       gitea_image: registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.27.0-arm64

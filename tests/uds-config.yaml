@@ -1,5 +1,5 @@
 # Copyright 2026 Defense Unicorns
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 # MinIO bucket/user for the S3 registry test (replaces uds-k3d defaults); dev-only creds
 variables:

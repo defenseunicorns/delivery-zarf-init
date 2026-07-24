@@ -1,7 +1,7 @@
 # Copyright 2026 Defense Unicorns
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
-# test overrides: one observable value per chart; unknown keys are ignored per variant
+# test overrides: one observable value per chart; unknown keys are ignored per package
 zarf-agent:
   # chart default is 2
   deployment:

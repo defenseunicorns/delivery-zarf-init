@@ -5,7 +5,8 @@ Customized [Zarf init](https://docs.zarf.dev/ref/init-package/) packages, publis
 
 The component definitions are imported from the upstream
 [zarf-dev/zarf `packages/`](https://github.com/zarf-dev/zarf/tree/main/packages) tree at the pinned
-Zarf version, so the packages track upstream behavior exactly; only the images are swapped per flavor.
+Zarf version, so the packages track upstream behavior; images are swapped per flavor and shared
+config is layered on top.
 
 ## Flavors
 
@@ -28,7 +29,7 @@ Pulling the unicorn flavor images requires Chainguard registry access
 Iron Bank ships arm64 images under separate `-arm64` tags rather than multi-arch manifests, which is
 why `zarf-config/registry1-arm64.yaml` exists alongside `zarf-config/registry1.yaml`.
 
-## Variants (component set)
+## Packages (component set)
 
 - `default` — injector, registry, agent
 - `agent-only` — agent only (for clusters using an external registry)
@@ -36,7 +37,7 @@ why `zarf-config/registry1-arm64.yaml` exists alongside `zarf-config/registry1.y
 
 ## Tags
 
-For Zarf version `x.x.x`, each variant publishes `x.x.x-<flavor>` plus a variant suffix:
+For Zarf version `x.x.x`, each package publishes `x.x.x-<flavor>` plus a package suffix:
 
 | | default | agent-only | gitea |
 |--|---------|-----------|-------|
@@ -55,8 +56,8 @@ zarf package deploy oci://ghcr.io/defenseunicorns/delivery-zarf-init/init:v0.81.
 ## Development
 
 Local tasks are run with the [UDS CLI](https://github.com/defenseunicorns/uds-cli) (maru). The
-default loop — vendor upstream packages, build the `gitea` (superset) variant, then deploy and test
-on a fresh k3d cluster:
+default loop — vendor upstream packages, build the `gitea` (superset) package, then deploy and test
+on a fresh uds-k3d cluster:
 
 ```bash
 uds run
@@ -66,18 +67,22 @@ Useful tasks (see `uds run --list-all`):
 
 ```bash
 uds run dev                                      # rebuild + redeploy on the existing cluster
-uds run create --set FLAVOR=registry1            # build one variant (VARIANT=gitea by default)
-uds run create-all --set FLAVOR=unicorn          # build all three variants
+uds run create --set FLAVOR=registry1            # build one package (PACKAGE=gitea by default)
+uds run create-all --set FLAVOR=unicorn          # build all three packages
 uds run remove                                   # remove the deployed init package
 uds run test:all                                 # health checks + agent mutation + values assertions
-uds run cleanup                                  # tear down the k3d cluster and artifacts
-uds run lint:yaml                                # yamllint (matches CI)
+uds run cleanup                                  # tear down the uds-k3d cluster and artifacts
+uds run lint:all                                 # full lint suite (matches CI)
+uds run pre-commit-all                           # pre-commit hooks + SPDX header fix
 ```
 
-Only one init package can exist per cluster: redeploying the same variant upgrades in place, but
-switching variants needs `uds run remove` first (or a fresh cluster). To compare flavors or variants
+Only one init package can exist per cluster: redeploying the same package upgrades in place, but
+switching packages needs `uds run remove` first (or a fresh cluster). To compare flavors or packages
 side by side, use separate clusters: `uds run --set CLUSTER_NAME=zarf-unicorn --set FLAVOR=unicorn`
-(note `k3d cluster create` switches the current kubeconfig context, so start clusters one at a time).
+(note cluster creation switches the current kubeconfig context, so start clusters one at a time).
 
-Building the `registry1` flavor requires Iron Bank credentials (`zarf tools registry login registry1.dso.mil`),
+Building the `registry1` flavor requires Iron Bank credentials (`uds zarf tools registry login registry1.dso.mil`),
 and `unicorn` requires Chainguard access as noted above.
+
+The registry can be backed by S3-compatible object storage; see
+[docs/s3-backed-registry.md](./docs/s3-backed-registry.md).

@@ -1,0 +1,44 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/zarf-dev/zarf/main/zarf.schema.json
+kind: ZarfInitConfig
+metadata:
+  name: init
+  version: "###ZARF_PKG_TMPL_PKG_VERSION###"
+  description: Used to establish a new Zarf cluster (agent, registry, and gitea git-server)
+  source: https://github.com/defenseunicorns/delivery-zarf-init
+  annotations:
+    dev.uds.title: Zarf Init (gitea)
+    dev.uds.tagline: Customized Zarf init package - injector, registry, agent, and gitea git-server
+
+values:
+  files:
+    - zarf-values.yaml
+  schema: zarf-values.schema.json
+
+components:
+  - name: zarf-injector
+    required: true
+    import:
+      path: ../../src/init
+
+  - name: zarf-seed-registry
+    required: true
+    import:
+      path: ../../src/init
+
+  - name: zarf-registry
+    required: true
+    import:
+      path: ../../src/init
+
+  - name: zarf-agent
+    required: true
+    import:
+      path: ../../src/init
+
+  - name: git-server
+    required: true
+    import:
+      path: ../../src/init

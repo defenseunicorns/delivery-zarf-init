@@ -1,0 +1,24 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/zarf-dev/zarf/main/zarf.schema.json
+kind: ZarfInitConfig
+metadata:
+  name: init
+  version: "###ZARF_PKG_TMPL_PKG_VERSION###"
+  description: Used to establish a new Zarf cluster (agent only, no registry)
+  source: https://github.com/defenseunicorns/delivery-zarf-init
+  annotations:
+    dev.uds.title: Zarf Init (agent only)
+    dev.uds.tagline: Customized Zarf init package - agent only, for clusters using an external registry
+
+values:
+  files:
+    - zarf-values.yaml
+  schema: zarf-values.schema.json
+
+components:
+  - name: zarf-agent
+    required: true
+    import:
+      path: ../../src/init

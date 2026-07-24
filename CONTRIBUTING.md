@@ -12,7 +12,7 @@ Local development uses the [UDS CLI](https://github.com/defenseunicorns/uds-cli)
 the [README Development section](./README.md#development) for the task reference. The typical loop:
 
 ```bash
-uds run                 # vendor, build, deploy, and test on a fresh k3d cluster
+uds run                 # vendor, build, deploy, and test on a fresh uds-k3d cluster
 uds run dev             # rebuild + redeploy on the existing cluster while iterating
 uds run pre-commit-all  # pre-commit hooks + SPDX license header fix before pushing
 ```
@@ -21,6 +21,13 @@ Note this repository is *not* a UDS package: it publishes customized [Zarf init
 packages](https://docs.zarf.dev/ref/init-package/) and does not integrate with the uds-operator, so
 some uds-common conventions (bundles, the Package CR, uds-pk releases) intentionally do not apply.
 Versioning tracks the upstream Zarf release rather than release-please.
+
+## Zarf values schemas
+
+`packages/*/zarf-values.schema.json` are generated (`uds zarf dev generate-schema packages/<name> -u`
+with the flavor template sets). The generator types templated fields as strings; re-apply structured
+types (extraEnvVars array, persistence.enabled boolean, affinity/nodeSelector objects, tolerations
+arrays) after regenerating.
 
 ## Documentation
 
