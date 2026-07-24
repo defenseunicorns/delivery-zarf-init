@@ -82,8 +82,7 @@ uds run create-all --set FLAVOR=unicorn          # build all three packages
 uds run remove                                   # remove the deployed init package
 uds run test:all                                 # health checks + agent mutation + values assertions
 uds run cleanup                                  # tear down the uds-k3d cluster and artifacts
-uds run lint:all                                 # full lint suite (matches CI)
-uds run pre-commit-all                           # pre-commit hooks + SPDX header fix
+uds run pre-commit-all                           # hooks + lint suite + SPDX header fix (CI runs lint:all)
 ```
 
 Only one init package can exist per cluster: redeploying the same package upgrades in place, but

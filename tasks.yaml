@@ -64,7 +64,7 @@ tasks:
           fi
           git clone --depth 1 --branch "${ZARF_VERSION}" --filter=blob:none --sparse \
             https://github.com/zarf-dev/zarf.git .zarf-src
-          git -C .zarf-src sparse-checkout set packages
+          git -C .zarf-src sparse-checkout set packages/zarf-agent packages/zarf-registry packages/gitea
 
   - name: create
     description: Build one package for FLAVOR/ARCH (config resolved from zarf-config/)
@@ -114,7 +114,7 @@ tasks:
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
           suffix=""
           [ "${PACKAGE}" = "default" ] || suffix="-${PACKAGE}"
-          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}$suffix"-"${FLAVOR}".tar.zst \
+          uds zarf package deploy "zarf-init-${pkg_arch}-${ZARF_VERSION}${suffix}-${FLAVOR}.tar.zst" \
             --values tests/zarf-values-override.yaml --confirm
 
   - name: deploy-workload
@@ -143,7 +143,7 @@ tasks:
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
           suffix=""
           [ "${PACKAGE}" = "default" ] || suffix="-${PACKAGE}"
-          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}$suffix"-"${FLAVOR}".tar.zst \
+          uds zarf package deploy "zarf-init-${pkg_arch}-${ZARF_VERSION}${suffix}-${FLAVOR}.tar.zst" \
             --values tests/zarf-values-override.yaml --values tests/zarf-values-s3.yaml --confirm
 
   - name: remove
@@ -171,13 +171,26 @@ tasks:
 
             ZARF_CONFIG="$config" uds zarf package create "packages/$package" \
               --flavor "${FLAVOR}" --set PKG_VERSION="$pkg_version" -a "$arch" --confirm
-            uds zarf package publish zarf-init-"$arch"-"$pkg_version"-"${FLAVOR}".tar.zst "oci://${REPO}" --tag "$tag"
+            uds zarf package publish "zarf-init-${arch}-${pkg_version}-${FLAVOR}.tar.zst" "oci://${REPO}" --tag "$tag"
           done
 
   - name: pre-commit-all
-    description: Run all pre-commit hooks and fix SPDX license headers on all files
+    description: Run pre-commit hooks, the uds-common lint suite, and fix SPDX license headers
     actions:
       - cmd: pre-commit run --all-files --show-diff-on-fail --color=always
+      - task: lint:yaml
+      - task: lint:shell
+      # quiet on success; the tasks linter dry-runs every task and prints each rendered script
+      - cmd: |
+          log=$(mktemp)
+          uds run lint:tasks --no-progress >"$log" 2>&1 || { cat "$log"; exit 1; }
+      # helm linters scoped to repo-owned paths (the vendored .zarf-src charts are upstream's)
+      - task: lint:helm
+        with:
+          paths: src packages
+      - task: lint:helm-template
+        with:
+          paths: src packages
       - task: lint:license
         with:
           fix: "true"
