@@ -1,12 +1,9 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: Apache-2.0
 
-# S3-backed registry against uds-k3d's MinIO, using the bucket/user provisioned by
-# tests/uds-config.yaml. Only the permanent registry flips to S3 - the seed registry
-# intentionally stays self-contained for bootstrap.
+# registry on uds-k3d MinIO (bucket/user from tests/uds-config.yaml); seed registry stays local
 zarf-registry:
-  # The chart injects the filesystem storage driver when persistence is on; distribution
-  # panics if two drivers are configured, so the PVC must be disabled for S3.
+  # PVC off: chart would add a second storage driver and distribution panics
   persistence:
     enabled: false
   extraEnvVars:

@@ -1,9 +1,7 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: Apache-2.0
 
-# Zarf Values defaults for the gitea init package variant. Each top-level key maps onto one
-# chart (see zarf.yaml). Defaults intentionally stay empty so the upstream chart values remain
-# the single source of truth; deployers override only what they need.
+# empty defaults: upstream chart values are the source of truth; keys map to charts in zarf.yaml
 zarf-registry: {}
 zarf-agent: {}
 gitea: {}

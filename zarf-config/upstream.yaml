@@ -21,7 +21,6 @@ package:
       # renovate: datasource=docker depName=alpine/socat
       proxy_image_tag: 1.8.1.3
 
-      # ghcr tag format (-rootless, no v prefix) can't cross-anchor to IB; the renovate
-      # packageRule cap keeps this in minor-lockstep with the IB-anchored flavors
+      # tag format prevents IB anchoring; renovate cap enforces lockstep
       # renovate: datasource=docker depName=ghcr.io/go-gitea/gitea
       gitea_image: ghcr.io/go-gitea/gitea:1.27.0-rootless

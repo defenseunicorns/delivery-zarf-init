@@ -1,15 +1,13 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: Apache-2.0
 
-# Deploy-time zarf values overrides used by the test tasks - one observable override per chart
-# key so the tests can assert the passthrough reaches every imported chart. Keys not present in
-# a variant (e.g. gitea on the default variant) are ignored.
+# test overrides: one observable value per chart; unknown keys are ignored per variant
 zarf-agent:
-  # chart default is 2 replicas; seeing 1 proves the override landed
+  # chart default is 2
   deployment:
     replicaCount: 1
 zarf-registry:
-  # merged additively with the chart's own podLabels (zarf.dev/agent: ignore is preserved)
+  # merges additively with chart podLabels
   podLabels:
     values-test: registry
 gitea:
