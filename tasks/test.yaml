@@ -1,0 +1,73 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
+
+tasks:
+  - name: all
+    description: Full validation for the gitea (superset) variant
+    actions:
+      - task: health-check
+      - task: gitea-health-check
+      - task: mutation
+      - task: values
+
+  # Ensure the init package deploys successfully and becomes available
+  - name: health-check
+    actions:
+      - description: Zarf Agent Health Check
+        wait:
+          cluster:
+            kind: Deployment
+            name: agent-hook
+            namespace: zarf
+            condition: Available
+      - description: Zarf Registry Health Check
+        wait:
+          cluster:
+            kind: Deployment
+            name: zarf-docker-registry
+            namespace: zarf
+            condition: Available
+
+  - name: gitea-health-check
+    actions:
+      - description: Gitea Health Check
+        wait:
+          cluster:
+            kind: Deployment
+            name: zarf-gitea
+            namespace: zarf
+            condition: Available
+
+  # The DOS games workload proves the registry serves images and the agent mutates pods
+  - name: mutation
+    actions:
+      - description: DOS Games Health Check
+        wait:
+          cluster:
+            kind: Deployment
+            name: game
+            namespace: dos-games
+            condition: Available
+      - description: DOS Games pods were mutated by the zarf agent
+        cmd: |
+          patched=$(zarf tools kubectl get pods -n dos-games -l zarf-agent=patched --no-headers | wc -l)
+          if [ "$patched" -lt 1 ]; then
+            echo "expected at least one pod with the zarf-agent=patched label"
+            exit 1
+          fi
+          echo "agent mutation verified ($patched patched pod(s))"
+
+  # tests/zarf-values-override.yaml scales the agent to one replica (chart default is 2);
+  # seeing 1 proves the zarf values passthrough reaches the charts imported from upstream
+  - name: values
+    actions:
+      - description: Zarf values override landed on the agent deployment
+        cmd: |
+          replicas=$(zarf tools kubectl get deploy agent-hook -n zarf -o jsonpath='{.spec.replicas}')
+          if [ "$replicas" != "1" ]; then
+            echo "expected agent-hook replicas=1 from values override, got $replicas"
+            exit 1
+          fi
+          echo "zarf values override verified (agent-hook replicas=$replicas)"

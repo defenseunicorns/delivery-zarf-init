@@ -1,0 +1,42 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
+name: Lint
+
+on:
+  pull_request:
+    branches: [main]
+    # milestoned is added here so that a PR can be re-triggered if it is milestoned.
+    types: [milestoned, opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Install UDS CLI
+        uses: defenseunicorns/setup-uds@ab842abcad1f7a3305c2538e3dd1950d0daacfa5 # v1.0.1
+        with:
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.34.2
+
+      - name: Install lint deps
+        run: uds run lint:deps --set RUN_LICENSE_CHECKS=true --no-progress
+
+      - name: Lint YAML
+        run: uds run lint:yaml --no-progress
+
+      - name: Lint shell
+        run: uds run lint:shell --no-progress
+
+      - name: Lint license headers
+        run: |
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          uds run lint:license --no-progress

@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "zarf-agent": {
+      "properties": {
+        "affinity": {
+          "type": "object"
+        },
+        "clusterRole": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "clusterRoleBinding": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "deployment": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "replicaCount": {
+              "type": "number"
+            }
+          },
+          "type": "object"
+        },
+        "nodeSelector": {
+          "type": "object"
+        },
+        "resources": {
+          "properties": {
+            "limits": {
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "requests": {
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "role": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "roleBinding": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "service": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "serviceAccount": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "tolerations": {
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "type": "object"
+}

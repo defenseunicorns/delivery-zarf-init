@@ -1,0 +1,8 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
+# Deploy-time zarf values override used by the test tasks. Scales the agent down to one replica
+# (chart default is 2) so the test can assert the passthrough reached the imported chart.
+zarf-agent:
+  deployment:
+    replicaCount: 1

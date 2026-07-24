@@ -1,0 +1,34 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
+# S3-backed registry against uds-k3d's MinIO, using the bucket/user provisioned by
+# tests/uds-config.yaml. Only the permanent registry flips to S3 - the seed registry
+# intentionally stays self-contained for bootstrap.
+zarf-registry:
+  # The chart injects the filesystem storage driver when persistence is on; distribution
+  # panics if two drivers are configured, so the PVC must be disabled for S3.
+  persistence:
+    enabled: false
+  extraEnvVars:
+    - name: REGISTRY_STORAGE
+      value: s3
+    # The S3 driver redirects blob pulls to presigned URLs by default; containerd on the
+    # node can't resolve the in-cluster MinIO hostname, so the registry must proxy blobs.
+    - name: REGISTRY_STORAGE_REDIRECT_DISABLE
+      value: "true"
+    - name: REGISTRY_STORAGE_S3_BUCKET
+      value: zarf-init
+    - name: REGISTRY_STORAGE_S3_ROOTDIRECTORY
+      value: /registry
+    - name: REGISTRY_STORAGE_S3_REGION
+      value: us-east-1
+    - name: REGISTRY_STORAGE_S3_REGIONENDPOINT
+      value: http://minio.uds-dev-stack.svc.cluster.local:9000
+    - name: REGISTRY_STORAGE_S3_FORCEPATHSTYLE
+      value: "true"
+    - name: REGISTRY_STORAGE_S3_SECURE
+      value: "false"
+    - name: REGISTRY_STORAGE_S3_ACCESSKEY
+      value: doug
+    - name: REGISTRY_STORAGE_S3_SECRETKEY
+      value: unicorn123!@#UN

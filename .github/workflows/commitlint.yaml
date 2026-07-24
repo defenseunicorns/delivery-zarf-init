@@ -1,0 +1,18 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
+name: PR Title Check
+
+on:
+  pull_request:
+    branches: [main]
+    # milestoned is added here so that a PR can be re-triggered if it is milestoned.
+    types: [milestoned, opened, edited, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  run:
+    uses: defenseunicorns/uds-common/.github/workflows/callable-commitlint.yaml@12b03eba879f9e1c90fd0301cd8cd4b6a0b49960 # v1.27.0

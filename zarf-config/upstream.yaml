@@ -1,9 +1,12 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
 package:
   create:
     set:
       pkg_version: upstream
 
-      agent_image_domain: "ghcr.io/"
+      agent_image_domain: ghcr.io/
       agent_image: zarf-dev/zarf/agent
       # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent
       agent_image_tag: v0.80.0
@@ -19,4 +22,4 @@ package:
       proxy_image_tag: 1.8.1.3
 
       # renovate: datasource=docker depName=ghcr.io/go-gitea/gitea
-      gitea_image: "ghcr.io/go-gitea/gitea:1.26.4-rootless"
+      gitea_image: ghcr.io/go-gitea/gitea:1.24.6-rootless

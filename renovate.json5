@@ -1,21 +1,19 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'github>defenseunicorns/uds-common//config/renovate.json5',
+    ':semanticCommits',
+    ':semanticPrefixFixDepsChoreOthers',
+    'group:all',
+    'replacements:all',
+    'workarounds:all',
+  ],
   automerge: true,
   platformAutomerge: true,
   ignoreTests: false,
   baseBranchPatterns: [
     'main',
   ],
-  extends: [
-    'github>defenseunicorns/narwhal-delivery-renovate-config:hostRules_registry1.json5',
-    ':dependencyDashboard',
-    ':semanticPrefixFixDepsChoreOthers',
-    'group:all',
-    'replacements:all',
-    'workarounds:all',
-    'helpers:pinGitHubActionDigests',
-  ],
-  timezone: 'America/New_York',
   schedule: [
     'before 6am on monday',
   ],
@@ -28,40 +26,48 @@
   ],
   prHourlyLimit: 0,
   prConcurrentLimit: 0,
-  'pre-commit': {
-    enabled: true,
-  },
   customManagers: [
     {
       customType: 'regex',
       managerFilePatterns: [
         '/(^|/)zarf(-.+)?\\.ya?ml$/',
         '/(^|/)zarf-config/.+\\.ya?ml$/',
-        '/.github/workflows/publish.yaml/',
+        '/(^|/)tasks(/.+)?\\.ya?ml$/',
+        '/.github/workflows/.+\\.ya?ml$/',
       ],
       matchStrings: [
         'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*agent_image_tag: (?<currentValue>.*)\\s',
         'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*registry_image_tag: (?<currentValue>.*)\\s',
         'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*proxy_image_tag: (?<currentValue>.*)\\s',
         'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*version: (?<currentValue>.*)\\s',
-        'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?gitea_image: "[^"]+:(?<currentValue>[^"@]+)@(?<currentDigest>sha256:[a-f0-9]+)"\\s',
+        'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?gitea_image: "?[^"\\s]+:(?<currentValue>[^"@\\s]+)(@(?<currentDigest>sha256:[a-f0-9]+))?"?\\s',
         'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?init:(?<currentValue>[^\\s]+)\\s',
         'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*ZARF_VERSION: (?<currentValue>.*)\\s',
+        'datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s+default: (?<currentValue>.*)\\s',
       ],
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/(^|/)tasks\\.ya?ml$/',
+      ],
+      matchStrings: [
+        'raw\\.githubusercontent\\.com/(?<depName>defenseunicorns/uds-common)/(?<currentValue>v[\\d.]+)/',
+      ],
+      datasourceTemplate: 'github-tags',
+      versioningTemplate: 'semver',
     },
   ],
   packageRules: [
     {
+      description: 'gitea must stay on the minor supported by the gitea chart vendored in upstream zarf (chart 12.3.0 -> gitea 1.24.x); newer gitea drops the environment-to-ini -o flag the chart init uses. Revisit when ZARF_VERSION bumps the vendored chart.',
       matchPackageNames: [
+        'ghcr.io/go-gitea/gitea',
         'registry1.dso.mil/ironbank/opensource/go-gitea/gitea',
+        'cgr.dev/defenseunicorns.com/gitea-fips',
       ],
-      matchCurrentValue: 'rootless-amd64',
-      pinDigests: true,
-      groupName: 'gitea rootless digest',
-      prBodyNotes: [
-        'Resolved version: `crane config {{depName}}@{{newDigest}} | jq -r \'.config.Labels["org.opencontainers.image.version"]\'`',
-      ],
+      allowedVersions: '/^v?1\\.24\\./',
     },
   ],
   vulnerabilityAlerts: {

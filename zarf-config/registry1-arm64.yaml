@@ -1,3 +1,6 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
 # Iron Bank ships arm64 under separate "-arm64" tags (not multi-arch manifests).
 package:
   create:
@@ -20,4 +23,4 @@ package:
       proxy_image_tag: 3.1.1-arm64
 
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea
-      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.26.4-arm64"
+      gitea_image: registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.24.6-arm64

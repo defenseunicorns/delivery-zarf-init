@@ -1,0 +1,155 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
+
+includes:
+  - test: ./tasks/test.yaml
+  - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.27.0/tasks/lint.yaml
+
+variables:
+  - name: FLAVOR
+    default: upstream
+  - name: VARIANT
+    # gitea is the superset variant (injector, registry, agent, gitea) so it gets deploy-tested
+    default: gitea
+  - name: ARCH
+    # empty resolves to the host architecture (UDS_ARCH)
+    default: ""
+  - name: CLUSTER_NAME
+    # override to run side-by-side clusters, e.g. --set CLUSTER_NAME=zarf-unicorn
+    default: zarf
+  - name: ZARF_VERSION
+    # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
+    default: v0.80.0
+
+tasks:
+  - name: default
+    description: Local dev loop - vendor, build the VARIANT, deploy and test on a fresh k3d cluster
+    actions:
+      - task: vendor
+      - task: create
+      - task: setup-cluster
+      - task: deploy
+      - task: deploy-workload
+      - task: test:all
+
+  - name: dev
+    description: Rebuild and redeploy the VARIANT on the existing cluster (for iteration/dev speed)
+    actions:
+      - task: vendor
+      - task: create
+      - task: deploy
+
+  - name: ci-test
+    description: CI flow - build every variant, then deploy and test the VARIANT on a fresh cluster
+    actions:
+      - task: vendor
+      - task: create-all
+      - task: setup-cluster
+      - task: deploy
+      - task: deploy-workload
+      - task: test:all
+
+  - name: vendor
+    description: Vendor the upstream Zarf package definitions matching ZARF_VERSION (skips if already vendored)
+    actions:
+      - cmd: |
+          if [ -d .zarf-src ]; then
+            echo ".zarf-src already vendored; 'rm -rf .zarf-src' to re-vendor"
+            exit 0
+          fi
+          git clone --depth 1 --branch "${ZARF_VERSION}" --filter=blob:none --sparse \
+            https://github.com/zarf-dev/zarf.git .zarf-src
+          git -C .zarf-src sparse-checkout set packages
+
+  - name: create
+    description: Build one variant for FLAVOR/ARCH (config resolved from zarf-config/)
+    inputs:
+      variant:
+        description: The variant (component set) to build
+        default: ${VARIANT}
+    actions:
+      - cmd: |
+          pkg_arch="${ARCH}"
+          [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
+          config="zarf-config/${FLAVOR}-$pkg_arch.yaml"
+          [ -f "$config" ] || config="zarf-config/${FLAVOR}.yaml"
+          ZARF_CONFIG="$config" zarf package create "variants/${{ .inputs.variant }}" \
+            --flavor "${FLAVOR}" --set PKG_VERSION="${ZARF_VERSION}" -a "$pkg_arch" --confirm
+
+  - name: create-all
+    description: Build every variant for FLAVOR/ARCH (builds share a filename; the gitea build lands last for deploy)
+    actions:
+      - task: create
+        with:
+          variant: default
+      - task: create
+        with:
+          variant: agent-only
+      - task: create
+        with:
+          variant: gitea
+
+  - name: setup-cluster
+    description: Create a fresh, bare k3d test cluster (init packages must land on an uninitialized cluster)
+    actions:
+      - cmd: |
+          k3d cluster delete "${CLUSTER_NAME}" >/dev/null 2>&1 || true
+          k3d cluster create "${CLUSTER_NAME}"
+
+  - name: deploy
+    description: Deploy the VARIANT init package with the test values override applied
+    actions:
+      # zarf's built-in health checks gate each chart install, so no extra wait is needed here
+      - cmd: |
+          pkg_arch="${ARCH}"
+          [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
+          zarf package deploy zarf-init-"$pkg_arch"-*.tar.zst \
+            --values tests/zarf-values-override.yaml --confirm
+
+  - name: deploy-workload
+    description: Deploy the DOS games package (exercises the registry and agent mutation)
+    actions:
+      - cmd: |
+          pkg_arch="${ARCH}"
+          [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
+          zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.2.0 \
+            --confirm -a "$pkg_arch"
+
+  - name: setup-uds-cluster
+    description: Create a uds-k3d cluster (with MinIO) using the test overrides in tests/uds-config.yaml
+    actions:
+      - cmd: |
+          UDS_CONFIG=tests/uds-config.yaml uds deploy \
+            oci://defenseunicorns/uds/bundles/k3d-core-slim-dev:latest \
+            -p uds-k3d-dev --confirm
+
+  - name: deploy-s3
+    description: Deploy the VARIANT init package with the registry backed by uds-k3d MinIO (see tests/zarf-values-s3.yaml)
+    actions:
+      - cmd: |
+          pkg_arch="${ARCH}"
+          [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
+          zarf package deploy zarf-init-"$pkg_arch"-*.tar.zst \
+            --values tests/zarf-values-override.yaml --values tests/zarf-values-s3.yaml --confirm
+
+  - name: remove
+    description: Remove the deployed init package (only one init package can exist per cluster; run this before deploying a different variant)
+    actions:
+      - cmd: zarf package remove init --confirm
+
+  - name: pre-commit-all
+    description: Run all pre-commit hooks and fix SPDX license headers on all files
+    actions:
+      - cmd: pre-commit run --all-files --show-diff-on-fail --color=always
+      - task: lint:license
+        with:
+          fix: "true"
+
+  - name: cleanup
+    description: Tear down the k3d test cluster and build artifacts
+    actions:
+      - cmd: |
+          k3d cluster delete "${CLUSTER_NAME}" || true
+          rm -f zarf-init-*.tar.zst

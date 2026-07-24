@@ -1,6 +1,8 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
 package:
   create:
-    architecture: amd64
     set:
       pkg_version: registry1
 
@@ -20,4 +22,4 @@ package:
       proxy_image_tag: 3.1.1
 
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea
-      gitea_image: "registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.26.4-amd64"
+      gitea_image: registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.24.6-amd64

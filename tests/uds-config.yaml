@@ -1,0 +1,16 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
+# Deploy-time overrides for the uds-k3d-dev package (see tasks.yaml setup-uds-cluster).
+# Provisions a dedicated MinIO bucket/user for the S3-backed registry test; note these
+# replace the default `uds` bucket and user. Dev-only credentials.
+variables:
+  uds-k3d-dev:
+    buckets:
+      - name: zarf-init
+        policy: private
+        purge: false
+    users:
+      - accessKey: doug
+        secretKey: unicorn123!@#UN
+        policy: readwrite

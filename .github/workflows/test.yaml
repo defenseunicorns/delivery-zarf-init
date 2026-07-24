@@ -1,0 +1,103 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: Apache-2.0
+
+name: Test
+
+on:
+  pull_request:
+    paths:
+      - variants/**
+      - zarf-config/**
+      - tasks.yaml
+      - tasks/**
+      - tests/**
+      - .github/workflows/test.yaml
+      - .github/workflows/publish.yaml
+  # Allows publish.yaml to reuse this workflow so packages are tested before publishing
+  workflow_call:
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent
+  ZARF_VERSION: v0.80.0
+  # renovate: datasource=github-tags depName=k3d-io/k3d versioning=semver-coerced
+  K3D_VERSION: v5.8.3
+
+jobs:
+  test:
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor:
+          - upstream
+          - registry1
+          - unicorn
+        platform:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to registry1
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        with:
+          registry: registry1.dso.mil
+          username: ${{ secrets.IRON_BANK_ROBOT_USERNAME }}
+          password: ${{ secrets.IRON_BANK_ROBOT_PASSWORD }}
+
+      - name: Chainguard Login
+        uses: chainguard-dev/setup-chainctl@2cddd35a2f120d9973e58094dc6878c93cf58c28 # v0.5.1
+        with:
+          identity: ${{ secrets.CHAINGUARD_IDENTITY }}
+
+      - name: Install Zarf
+        uses: defenseunicorns/setup-zarf@745f0990f3d0611774b552930ea053ac61ebf0a6 # main
+        with:
+          version: ${{ env.ZARF_VERSION }}
+          download-init-package: false
+
+      - name: Install UDS CLI
+        uses: defenseunicorns/setup-uds@ab842abcad1f7a3305c2538e3dd1950d0daacfa5 # v1.0.1
+        with:
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.34.2
+
+      - name: Install k3d
+        run: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG="${K3D_VERSION}" bash
+
+      - name: Build all variants, deploy, and test (${{ matrix.flavor }} / ${{ matrix.platform.arch }})
+        run: |
+          uds run ci-test \
+            --set FLAVOR=${{ matrix.flavor }} \
+            --set ARCH=${{ matrix.platform.arch }} \
+            --no-progress
+
+  verify-test:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Success
+        run: echo "All tests passed successfully!"
