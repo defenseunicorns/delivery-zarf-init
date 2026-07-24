@@ -76,13 +76,15 @@ tasks:
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
+          suffix=""
+          [ "${{ .inputs.package }}" = "default" ] || suffix="-${{ .inputs.package }}"
           config="zarf-config/${FLAVOR}-$pkg_arch.yaml"
           [ -f "$config" ] || config="zarf-config/${FLAVOR}.yaml"
           ZARF_CONFIG="$config" uds zarf package create "packages/${{ .inputs.package }}" \
-            --flavor "${FLAVOR}" --set PKG_VERSION="${ZARF_VERSION}" -a "$pkg_arch" --confirm
+            --flavor "${FLAVOR}" --set PKG_VERSION="${ZARF_VERSION}${suffix}" -a "$pkg_arch" --confirm
 
   - name: create-all
-    description: Build every package for FLAVOR/ARCH (builds share a filename; the gitea build lands last for deploy)
+    description: Build every package for FLAVOR/ARCH
     actions:
       - task: create
         with:
@@ -110,7 +112,9 @@ tasks:
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
-          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}"-"${FLAVOR}".tar.zst \
+          suffix=""
+          [ "${PACKAGE}" = "default" ] || suffix="-${PACKAGE}"
+          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}$suffix"-"${FLAVOR}".tar.zst \
             --values tests/zarf-values-override.yaml --confirm
 
   - name: deploy-workload
@@ -137,7 +141,9 @@ tasks:
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
-          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}"-"${FLAVOR}".tar.zst \
+          suffix=""
+          [ "${PACKAGE}" = "default" ] || suffix="-${PACKAGE}"
+          uds zarf package deploy zarf-init-"$pkg_arch"-"${ZARF_VERSION}$suffix"-"${FLAVOR}".tar.zst \
             --values tests/zarf-values-override.yaml --values tests/zarf-values-s3.yaml --confirm
 
   - name: remove
