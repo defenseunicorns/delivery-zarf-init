@@ -76,7 +76,10 @@ tasks:
           [ "$status" = "200" ] || { echo "expected /explore/repos status 200, got $status"; exit 1; }
 
           version=$(curl -fsS "$base_url/api/v1/version" | uds zarf tools yq -p=json -r '.version')
-          [ -n "$version" ] && [ "$version" != "null" ] || { echo "expected gitea version"; exit 1; }
+          if [ -z "$version" ] || [ "$version" = "null" ]; then
+            echo "expected gitea version"
+            exit 1
+          fi
 
           login=$(curl -fsS -u "$push_user:$push_pass" "$base_url/api/v1/user" | uds zarf tools yq -p=json -r '.login')
           [ "$login" = "zarf-git-user" ] || { echo "expected push login zarf-git-user, got $login"; exit 1; }
