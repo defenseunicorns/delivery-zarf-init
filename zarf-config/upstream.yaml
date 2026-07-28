@@ -8,11 +8,13 @@ package:
 
       agent_image_domain: ghcr.io/
       agent_image: zarf-dev/zarf/agent
+      # Renovate anchor: Registry1 lags upstream; keep this trigger tied to the IB release.
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
       agent_image_tag: v0.81.1
 
       registry_image_domain: ""
       registry_image: library/registry
+      # Renovate anchor: Registry1 lags Docker Hub; keep this trigger tied to the IB release.
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/docker/registry-v3 versioning=docker
       registry_image_tag: 3.1.1
 
