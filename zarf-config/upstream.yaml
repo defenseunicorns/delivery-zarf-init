@@ -25,4 +25,4 @@ package:
 
       # tag format prevents IB anchoring; renovate cap enforces lockstep
       # renovate: datasource=docker depName=ghcr.io/go-gitea/gitea versioning=docker
-      gitea_image: ghcr.io/go-gitea/gitea:1.27.0-rootless
+      gitea_image: ghcr.io/go-gitea/gitea:1.27.1-rootless
