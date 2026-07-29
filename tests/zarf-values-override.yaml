@@ -1,0 +1,16 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# test overrides: one observable value per chart; unknown keys are ignored per package
+zarf-agent:
+  # chart default is 2
+  deployment:
+    replicaCount: 1
+zarf-registry:
+  # merges additively with chart podLabels
+  podLabels:
+    values-test: registry
+gitea:
+  deployment:
+    labels:
+      values-test: gitea

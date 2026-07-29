@@ -1,0 +1,14 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# MinIO bucket/user for the S3 registry test (replaces uds-k3d defaults); dev-only creds
+variables:
+  uds-k3d-dev:
+    buckets:
+      - name: zarf-init
+        policy: private
+        purge: false
+    users:
+      - accessKey: doug
+        secretKey: unicorn123!@#UN
+        policy: readwrite

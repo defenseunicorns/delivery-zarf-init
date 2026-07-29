@@ -1,13 +1,16 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: check-added-large-files
-        args: ["--maxkb=1024"]
+        args: [--maxkb=1024]
       - id: check-merge-conflict
       - id: detect-aws-credentials
         args:
-          - "--allow-missing-credentials"
+          - --allow-missing-credentials
       - id: detect-private-key
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
@@ -15,8 +18,8 @@ repos:
         args: [--markdown-linebreak-ext=md]
       - id: check-yaml
         args:
-          - "--allow-multiple-documents"
-          - "--unsafe"
+          - --allow-multiple-documents
+          - --unsafe
   - repo: https://github.com/sirosen/texthooks
     rev: 0.7.1
     hooks:

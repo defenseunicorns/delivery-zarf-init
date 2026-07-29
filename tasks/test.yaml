@@ -1,0 +1,150 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
+
+tasks:
+  - name: all
+    description: Full validation for the gitea (superset) package
+    actions:
+      - task: health-check
+      - task: gitea-health-check
+      - task: gitea-smoke
+      - task: mutation
+      - task: values
+
+  # Ensure the init package deploys successfully and becomes available
+  - name: health-check
+    actions:
+      - description: Zarf Agent Health Check
+        wait:
+          cluster:
+            kind: Deployment
+            name: agent-hook
+            namespace: zarf
+            condition: Available
+      - description: Zarf Registry Health Check
+        wait:
+          cluster:
+            kind: Deployment
+            name: zarf-docker-registry
+            namespace: zarf
+            condition: Available
+
+  - name: gitea-health-check
+    actions:
+      - description: Gitea Health Check
+        wait:
+          cluster:
+            kind: Deployment
+            name: zarf-gitea
+            namespace: zarf
+            condition: Available
+
+  - name: gitea-smoke
+    actions:
+      - description: Gitea API smoke test
+        cmd: |
+          log=$(mktemp)
+
+          uds zarf connect git --no-color >"$log" 2>&1 &
+          tunnel_pid=$!
+          cleanup() {
+            kill "$tunnel_pid" >/dev/null 2>&1 || true
+            wait "$tunnel_pid" 2>/dev/null || true
+            rm -f "$log"
+          }
+          trap cleanup EXIT
+
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
+            base_url=$(sed -n 's/.*urls=\(http:\/\/127\.0\.0\.1:[0-9][0-9]*\).*/\1/p' "$log" | tail -n 1)
+            [ -n "$base_url" ] || { sleep 1; continue; }
+            if curl -fsS "$base_url/api/v1/version" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          [ -n "$base_url" ] || { echo "expected zarf connect git to report a localhost url"; cat "$log"; exit 1; }
+
+          state=$(uds zarf tools kubectl get secret zarf-state -n zarf -o jsonpath='{.data.state}' | base64 -d)
+          push_user=$(printf '%s' "$state" | uds zarf tools yq -p=json -r '.gitServer.pushUsername')
+          push_pass=$(printf '%s' "$state" | uds zarf tools yq -p=json -r '.gitServer.pushPassword')
+          read_user=$(printf '%s' "$state" | uds zarf tools yq -p=json -r '.gitServer.pullUsername')
+          read_pass=$(printf '%s' "$state" | uds zarf tools yq -p=json -r '.gitServer.pullPassword')
+
+          status=$(curl -L -o /dev/null -s -w "%{http_code}" "$base_url/explore/repos")
+          [ "$status" = "200" ] || { echo "expected /explore/repos status 200, got $status"; exit 1; }
+
+          version=$(curl -fsS "$base_url/api/v1/version" | uds zarf tools yq -p=json -r '.version')
+          if [ -z "$version" ] || [ "$version" = "null" ]; then
+            echo "expected gitea version"
+            exit 1
+          fi
+
+          login=$(curl -fsS -u "$push_user:$push_pass" "$base_url/api/v1/user" | uds zarf tools yq -p=json -r '.login')
+          [ "$login" = "zarf-git-user" ] || { echo "expected push login zarf-git-user, got $login"; exit 1; }
+
+          login=$(curl -fsS -u "$read_user:$read_pass" "$base_url/api/v1/user" | uds zarf tools yq -p=json -r '.login')
+          [ "$login" = "zarf-git-read-user" ] || { echo "expected read login zarf-git-read-user, got $login"; exit 1; }
+
+          status=$(curl -o /dev/null -s -w "%{http_code}" "$base_url/api/v1/repos/search")
+          [ "$status" = "200" ] || { echo "expected repo search status 200, got $status"; exit 1; }
+
+          repo="zarf-smoke-$(date +%s)"
+          status=$(curl -o /dev/null -s -w "%{http_code}" -u "$push_user:$push_pass" \
+            -H "content-type: application/json" \
+            -d "{\"name\":\"$repo\",\"auto_init\":true}" \
+            "$base_url/api/v1/user/repos")
+          [ "$status" = "201" ] || { echo "expected repo create status 201, got $status"; exit 1; }
+
+          status=$(curl -o /dev/null -s -w "%{http_code}" -u "$push_user:$push_pass" \
+            "$base_url/api/v1/repos/$push_user/$repo")
+          [ "$status" = "200" ] || { echo "expected created repo status 200, got $status"; exit 1; }
+
+          echo "gitea api smoke verified (version=$version)"
+
+  # The DOS games workload proves the registry serves images and the agent mutates pods
+  - name: mutation
+    actions:
+      - description: DOS Games Health Check
+        wait:
+          cluster:
+            kind: Deployment
+            name: game
+            namespace: dos-games
+            condition: Available
+      - description: DOS Games pods were mutated by the zarf agent
+        cmd: |
+          patched=$(uds zarf tools kubectl get pods -n dos-games -l zarf-agent=patched --no-headers | wc -l)
+          if [ "$patched" -lt 1 ]; then
+            echo "expected at least one pod with the zarf-agent=patched label"
+            exit 1
+          fi
+          echo "agent mutation verified ($patched patched pod(s))"
+
+  # tests/zarf-values-override.yaml sets one observable override per chart key; these assertions
+  # prove the zarf values passthrough reaches every chart imported from upstream
+  - name: values
+    actions:
+      - description: Zarf values override landed on the agent deployment
+        cmd: |
+          replicas=$(uds zarf tools kubectl get deploy agent-hook -n zarf -o jsonpath='{.spec.replicas}')
+          if [ "$replicas" != "1" ]; then
+            echo "expected agent-hook replicas=1 from values override, got $replicas"
+            exit 1
+          fi
+          echo "zarf values override verified (agent-hook replicas=$replicas)"
+      - description: Zarf values override landed on the registry deployment
+        cmd: |
+          if ! uds zarf tools kubectl get deploy zarf-docker-registry -n zarf -o yaml | grep -q "values-test: registry"; then
+            echo "expected values-test label on the registry deployment from values override"
+            exit 1
+          fi
+          echo "zarf values override verified (registry podLabels)"
+      - description: Zarf values override landed on the gitea deployment
+        cmd: |
+          if ! uds zarf tools kubectl get deploy zarf-gitea -n zarf -o yaml | grep -q "values-test: gitea"; then
+            echo "expected values-test label on the gitea deployment from values override"
+            exit 1
+          fi
+          echo "zarf values override verified (gitea deployment labels)"

@@ -1,12 +1,10 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
-name: Publish
+name: Test
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
     paths:
       - packages/**
       - src/**
@@ -16,34 +14,25 @@ on:
       - tests/**
       - .github/workflows/test.yaml
       - .github/workflows/publish.yaml
-  workflow_dispatch:
+  # Allows publish.yaml to reuse this workflow so packages are tested before publishing
+  workflow_call:
 
 permissions:
   contents: read
-  packages: write
+  packages: read
   id-token: write
 
-# Queue publishes; never cancel one mid-flight
 concurrency:
-  group: publish-${{ github.ref }}
-  cancel-in-progress: false
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
-    uses: ./.github/workflows/test.yaml
-    secrets: inherit
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 45
     permissions:
       contents: read
       packages: read
-      id-token: write
-
-  publish:
-    needs: test
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    permissions:
-      contents: read
-      packages: write
       id-token: write
     strategy:
       fail-fast: false
@@ -52,10 +41,11 @@ jobs:
           - upstream
           - registry1
           - unicorn
-        package:
-          - default
-          - agent-only
-          - gitea
+        platform:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -75,10 +65,16 @@ jobs:
           --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
         shell: bash
 
-      - name: Build and publish (${{ matrix.flavor }} / ${{ matrix.package }})
+      - name: Build all packages, deploy, and test (${{ matrix.flavor }} / ${{ matrix.platform.arch }})
         run: |
-          uds run vendor --no-progress
-          uds run publish \
+          uds run ci-test \
             --set FLAVOR=${{ matrix.flavor }} \
-            --set PACKAGE=${{ matrix.package }} \
+            --set ARCH=${{ matrix.platform.arch }} \
             --no-progress
+
+  verify-test:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Success
+        run: echo "All tests passed successfully!"

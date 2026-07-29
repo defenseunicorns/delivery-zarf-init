@@ -1,0 +1,31 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# registry on uds-k3d MinIO (bucket/user from tests/uds-config.yaml); seed registry stays local
+zarf-registry:
+  # PVC off: chart would add a second storage driver and distribution panics
+  persistence:
+    enabled: false
+  extraEnvVars:
+    - name: REGISTRY_STORAGE
+      value: s3
+    # The S3 driver redirects blob pulls to presigned URLs by default; containerd on the
+    # node can't resolve the in-cluster MinIO hostname, so the registry must proxy blobs.
+    - name: REGISTRY_STORAGE_REDIRECT_DISABLE
+      value: "true"
+    - name: REGISTRY_STORAGE_S3_BUCKET
+      value: zarf-init
+    - name: REGISTRY_STORAGE_S3_ROOTDIRECTORY
+      value: /registry
+    - name: REGISTRY_STORAGE_S3_REGION
+      value: us-east-1
+    - name: REGISTRY_STORAGE_S3_REGIONENDPOINT
+      value: http://minio.uds-dev-stack.svc.cluster.local:9000
+    - name: REGISTRY_STORAGE_S3_FORCEPATHSTYLE
+      value: "true"
+    - name: REGISTRY_STORAGE_S3_SECURE
+      value: "false"
+    - name: REGISTRY_STORAGE_S3_ACCESSKEY
+      value: doug
+    - name: REGISTRY_STORAGE_S3_SECRETKEY
+      value: unicorn123!@#UN

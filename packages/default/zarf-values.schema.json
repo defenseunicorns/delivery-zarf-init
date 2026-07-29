@@ -1,0 +1,296 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "zarf-agent": {
+      "properties": {
+        "affinity": {
+          "type": "object"
+        },
+        "clusterRole": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "clusterRoleBinding": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "deployment": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "replicaCount": {
+              "type": "number"
+            }
+          },
+          "type": "object"
+        },
+        "nodeSelector": {
+          "type": "object"
+        },
+        "resources": {
+          "properties": {
+            "limits": {
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "requests": {
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "role": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "roleBinding": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "service": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "serviceAccount": {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "tolerations": {
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "zarf-registry": {
+      "properties": {
+        "affinity": {
+          "properties": {
+            "custom": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "autoscaling": {
+          "properties": {
+            "enabled": {
+              "type": "string"
+            },
+            "mapReplicasToNodes": {
+              "type": "string"
+            },
+            "maxReplicas": {
+              "type": "string"
+            },
+            "minReplicas": {
+              "type": "string"
+            },
+            "targetCPUUtilizationPercentage": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "caBundle": {
+          "type": "string"
+        },
+        "extraEnvVars": {
+          "type": "array"
+        },
+        "nodeSelector": {
+          "type": "object"
+        },
+        "opentelemetry": {
+          "properties": {
+            "exporter": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "persistence": {
+          "properties": {
+            "accessMode": {
+              "type": "string"
+            },
+            "deleteEnabled": {
+              "type": "boolean"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "existingClaim": {
+              "type": "string"
+            },
+            "size": {
+              "type": "string"
+            },
+            "storageClass": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "podDisruptionBudget": {
+          "properties": {
+            "minAvailable": {
+              "type": "number"
+            }
+          },
+          "type": "object"
+        },
+        "podLabels": {
+          "properties": {
+            "zarf.dev/agent": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "proxy": {
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "hostNetwork": {
+              "type": "boolean"
+            },
+            "injectorHostPort": {
+              "type": "number"
+            },
+            "tolerations": {
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "replicaCount": {
+          "type": "number"
+        },
+        "resources": {
+          "properties": {
+            "limits": {
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "requests": {
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "securityContext": {
+          "properties": {
+            "fsGroup": {
+              "type": "string"
+            },
+            "runAsGroup": {
+              "type": "string"
+            },
+            "runAsUser": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "service": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "nodePort": {
+              "type": "string"
+            },
+            "port": {
+              "type": "number"
+            },
+            "registryPort": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "serviceAccount": {
+          "properties": {
+            "annotations": {
+              "type": "string"
+            },
+            "create": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "tolerations": {
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "type": "object"
+}
