@@ -5,8 +5,8 @@
 
 includes:
   - test: ./tasks/test.yaml
-  - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.27.0/tasks/lint.yaml
-  - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.27.0/tasks/actions.yaml
+  - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.27.1/tasks/lint.yaml
+  - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.27.1/tasks/actions.yaml
 
 variables:
   - name: FLAVOR

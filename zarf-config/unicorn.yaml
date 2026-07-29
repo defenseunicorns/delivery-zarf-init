@@ -26,4 +26,4 @@ package:
 
       # Renovate anchor: Registry1 gates this coordinated version; image source remains cgr.dev.
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea versioning=docker
-      gitea_image: cgr.dev/defenseunicorns.com/gitea-fips:v1.27.0
+      gitea_image: cgr.dev/defenseunicorns.com/gitea-fips:v1.27.1
