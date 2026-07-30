@@ -4,7 +4,6 @@
     'github>defenseunicorns/uds-common//config/renovate.json5',
     ':semanticCommits',
     ':semanticPrefixFixDepsChoreOthers',
-    'group:all',
     'replacements:all',
     'workarounds:all',
   ],
@@ -28,13 +27,20 @@
   prConcurrentLimit: 0,
   packageRules: [
     {
-      description: 'gitea images (all flavors, kept in lockstep) must stay on the minor supported by the gitea chart version pinned in src/init/common/zarf.yaml (chart 12.7.0 -> gitea 1.27.x). Bump the chart pin and this cap together.',
+      description: 'gitea images must stay on the minor supported by the gitea chart version pinned in src/init/common/zarf.yaml (chart 12.7.0 -> gitea 1.27.x). Bump the chart pin and this cap together.',
       matchPackageNames: [
         'ghcr.io/go-gitea/gitea',
         'registry1.dso.mil/ironbank/opensource/go-gitea/gitea',
         'cgr.dev/defenseunicorns.com/gitea-fips',
       ],
       allowedVersions: '/^v?1\\.27\\./',
+    },
+    {
+      description: 'Keep Iron Bank updates isolated so slower Registry1 publication does not block upstream or Unicorn flavor updates.',
+      matchPackageNames: [
+        'registry1.dso.mil/ironbank/**',
+      ],
+      groupName: 'Registry1 image updates',
     },
   ],
   vulnerabilityAlerts: {
