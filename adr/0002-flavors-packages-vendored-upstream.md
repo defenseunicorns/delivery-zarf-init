@@ -25,8 +25,13 @@ behavior.
   - `packages/{default,agent-only,gitea}/zarf.yaml` one-shot import components from `src/init`
     without redefining flavors; each publishes a separate artifact so consumers pull only the
     components they deploy.
-- Publish tags as `<zarf-version>-<flavor>[-<package>]`, multi-arch. Versioning is anchored to
-  Iron Bank as the lowest common denominator; there is no independent semver or release-please.
+- Publish tags as `<zarf-version>[-<package>]-<flavor>`, multi-arch. Public flavors publish under
+  `ghcr.io/defenseunicorns/delivery-zarf-init`; `unicorn` publishes under
+  `ghcr.io/defenseunicorns/packages/private/delivery-zarf-init`.
+- Each flavor resolves its own Zarf source version: upstream tracks the upstream Zarf agent image,
+  registry1 tracks the Iron Bank Zarf agent image, and unicorn tracks the Chainguard FIPS Zarf agent
+  image. `ZARF_VERSION` remains an explicit local override, but routine builds use the
+  flavor-specific `ZARF_VERSION_*` variables.
 - Gitea runs on a newer chart than upstream zarf's pin (overridden in common) because Chainguard
   only ships gitea >=1.26; a renovate packageRule keeps the gitea images on the chart-supported
   minor across all flavors.
@@ -38,9 +43,10 @@ behavior.
 
 ## Consequences
 
-- Upstream zarf behavior is inherited at a pinned version; upgrades are a single renovate-driven
-  `ZARF_VERSION` bump gated on Iron Bank publishing.
-- The `.zarf-src/` vendor step is required before any build (`uds run vendor`).
+- Upstream zarf behavior is inherited from the version resolved for each flavor; registry1 can lag
+  without blocking upstream or unicorn publishes.
+- The `.zarf-src/` vendor step is required before any build (`uds run vendor`) and re-vendors
+  automatically when the cached source version does not match the resolved flavor version.
 - Some uds-common conventions (bundles, Package CR, uds-pk releases, callable-test/publish) do not
   apply; local equivalents mirror their shape where possible.
 - The values feature is alpha in zarf; the e2e values assertions in `test:all` are the tripwire for

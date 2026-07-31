@@ -65,7 +65,7 @@ jobs:
           --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
         shell: bash
 
-      - name: Build all packages, deploy, and test (${{ matrix.flavor }} / ${{ matrix.platform.arch }})
+      - name: Build all packages with flavor-specific Zarf source, deploy, and test (${{ matrix.flavor }} / ${{ matrix.platform.arch }})
         run: |
           uds run ci-test \
             --set FLAVOR=${{ matrix.flavor }} \

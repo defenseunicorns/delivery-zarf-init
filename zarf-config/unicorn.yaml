@@ -1,16 +1,15 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
-# Agent reuses the upstream image (already Chainguard-built); registry/proxy/gitea are Chainguard FIPS.
 package:
   create:
     set:
       pkg_version: unicorn
 
-      agent_image_domain: ghcr.io/
-      agent_image: zarf-dev/zarf/agent
-      # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
-      agent_image_tag: v0.81.1
+      agent_image_domain: cgr.dev/
+      agent_image: defenseunicorns.com/zarf-agent-fips
+      # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
+      agent_image_tag: v0.82.0
 
       registry_image_domain: cgr.dev/
       registry_image: defenseunicorns.com/distribution-fips

@@ -1,12 +1,14 @@
 # Zarf Init packages for Delivery
 
 Customized [Zarf init](https://docs.zarf.dev/ref/init-package/) packages, published as a matrix of
-**image flavor** × **component set** to `oci://ghcr.io/defenseunicorns/delivery-zarf-init/init`.
+**image flavor** × **component set**. Public flavors publish to
+`oci://ghcr.io/defenseunicorns/delivery-zarf-init/init`; the `unicorn` flavor publishes to
+`oci://ghcr.io/defenseunicorns/packages/private/delivery-zarf-init/init`.
 
 The component definitions are imported from the upstream
 [zarf-dev/zarf `packages/`](https://github.com/zarf-dev/zarf/tree/main/packages) tree at the pinned
-Zarf version, so the packages track upstream behavior; images are swapped per flavor and shared
-config is layered on top.
+Zarf version resolved for each flavor, so the packages track upstream behavior; images are swapped
+per flavor and shared config is layered on top.
 
 ## Flavors
 
@@ -18,7 +20,7 @@ config is layered on top.
 
 | Component | Image |
 |-----------|-------|
-| agent | `ghcr.io/zarf-dev/zarf/agent` (upstream image, already Chainguard-built) |
+| agent | `cgr.dev/defenseunicorns.com/zarf-agent-fips` |
 | registry | `cgr.dev/defenseunicorns.com/distribution-fips` |
 | registry proxy | `cgr.dev/defenseunicorns.com/socat-fips` |
 | gitea | `cgr.dev/defenseunicorns.com/gitea-fips` |
@@ -37,13 +39,15 @@ why `zarf-config/registry1-arm64.yaml` exists alongside `zarf-config/registry1.y
 
 ## Tags
 
-For Zarf version `x.x.x`, each package publishes `x.x.x-<flavor>` plus a package suffix:
+For Zarf version `x.x.x`, each package publishes `x.x.x-<flavor>` plus a package suffix. Package
+variants keep the flavor as the final suffix so registry entitlement rules can use the standard
+`^.*-<flavor>$` pattern:
 
 | | default | agent-only | gitea |
 |--|---------|-----------|-------|
-| upstream | `x.x.x-upstream` | `x.x.x-upstream-agent-only` | `x.x.x-upstream-gitea` |
-| registry1 | `x.x.x-registry1` | `x.x.x-registry1-agent-only` | `x.x.x-registry1-gitea` |
-| unicorn | `x.x.x-unicorn` | `x.x.x-unicorn-agent-only` | `x.x.x-unicorn-gitea` |
+| upstream | `x.x.x-upstream` | `x.x.x-agent-only-upstream` | `x.x.x-gitea-upstream` |
+| registry1 | `x.x.x-registry1` | `x.x.x-agent-only-registry1` | `x.x.x-gitea-registry1` |
+| unicorn | `x.x.x-unicorn` | `x.x.x-agent-only-unicorn` | `x.x.x-gitea-unicorn` |
 
 Tags are multi-arch (amd64 + arm64).
 
@@ -79,6 +83,7 @@ Useful tasks (see `uds run --list-all`):
 uds run dev                                      # rebuild + redeploy on the existing cluster
 uds run create --set FLAVOR=registry1            # build one package (PACKAGE=gitea by default)
 uds run create-all --set FLAVOR=unicorn          # build all three packages
+uds run ci-test --set FLAVOR=unicorn --set ARCH=arm64 # build/deploy/test on an arm64 local cluster
 uds run remove                                   # remove the deployed init package
 uds run test:all                                 # health checks + agent mutation + values assertions
 uds run cleanup                                  # tear down the uds-k3d cluster and artifacts
@@ -86,12 +91,24 @@ uds run pre-commit-all                           # hooks + lint suite + SPDX hea
 ```
 
 Only one init package can exist per cluster: redeploying the same package upgrades in place, but
-switching packages needs `uds run remove` first (or a fresh cluster). To compare flavors or packages
-side by side, use separate clusters: `uds run --set CLUSTER_NAME=zarf-unicorn --set FLAVOR=unicorn`
-(note cluster creation switches the current kubeconfig context, so start clusters one at a time).
+switching packages needs `uds run remove` first (or a fresh cluster). The default `CLUSTER_NAME` is
+`zarf`, and `uds run` / `uds run ci-test` replace that cluster each run. Override `CLUSTER_NAME` only
+when comparing flavors or packages side by side, e.g.
+`uds run --set CLUSTER_NAME=zarf-unicorn --set FLAVOR=unicorn` (note cluster creation switches the
+current kubeconfig context, so start clusters one at a time).
+
+On arm64 local clusters, such as a vz-backed Lima VM on Apple Silicon, set `ARCH=arm64`; Zarf will
+reject an amd64 package when the target cluster only has arm64 nodes. GitHub CI runs both `amd64` and
+`arm64` explicitly.
 
 Building the `registry1` flavor requires Iron Bank credentials (`uds zarf tools registry login registry1.dso.mil`),
 and `unicorn` requires Chainguard access as noted above.
+
+Each flavor can track a different upstream Zarf source version. `ZARF_VERSION_UPSTREAM` tracks the
+upstream Zarf agent image, `ZARF_VERSION_REGISTRY1` tracks the Iron Bank Zarf agent image, and
+`ZARF_VERSION_UNICORN` tracks the Chainguard FIPS Zarf agent image. Set `ZARF_VERSION` only when
+intentionally overriding the flavor-specific version for a local run. If `.zarf-src` already exists
+for a different version, `uds run vendor` re-vendors it automatically.
 
 The registry can be backed by S3-compatible object storage; see
 [docs/s3-backed-registry.md](./docs/s3-backed-registry.md).
