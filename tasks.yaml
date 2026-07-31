@@ -21,10 +21,26 @@ variables:
     # override to run side-by-side clusters, e.g. --set CLUSTER_NAME=zarf-unicorn
     default: zarf
   - name: ZARF_VERSION
+    # Optional override; leave empty to use the flavor-specific ZARF_VERSION_* variable.
+    default: ""
+  - name: ZARF_VERSION_UPSTREAM
+    # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
+    default: v0.81.1
+  - name: ZARF_VERSION_REGISTRY1
     # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
     default: v0.81.1
+  - name: ZARF_VERSION_UNICORN
+    # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
+    default: v0.82.0
   - name: REPO
+    # Deprecated override for all flavors. Prefer PUBLIC_REPO and PRIVATE_REPO.
+    default: ""
+  - name: PUBLIC_REPO
     default: ghcr.io/defenseunicorns/delivery-zarf-init
+  - name: PRIVATE_REPO
+    default: ghcr.io/defenseunicorns/packages/private/delivery-zarf-init
+  - name: TARGET_REPO
+    default: ""
 
 tasks:
   - name: default
@@ -54,17 +70,79 @@ tasks:
       - task: deploy-workload
       - task: test:all
 
-  - name: vendor
-    description: Vendor the upstream Zarf package definitions matching ZARF_VERSION (skips if already vendored)
+  - name: resolve-zarf-version
+    description: Resolve the Zarf source version for FLAVOR
     actions:
       - cmd: |
-          if [ -d .zarf-src ]; then
-            echo ".zarf-src already vendored; 'rm -rf .zarf-src' to re-vendor"
+          if [ -n "$ZARF_VERSION" ]; then
+            printf '%s\n' "$ZARF_VERSION"
             exit 0
+          fi
+
+          case "$FLAVOR" in
+            upstream)
+              printf '%s\n' "$ZARF_VERSION_UPSTREAM"
+              ;;
+            registry1)
+              printf '%s\n' "$ZARF_VERSION_REGISTRY1"
+              ;;
+            unicorn)
+              printf '%s\n' "$ZARF_VERSION_UNICORN"
+              ;;
+            *)
+              echo "unsupported FLAVOR: $FLAVOR" >&2
+              exit 1
+              ;;
+          esac
+        setVariables:
+          - name: ZARF_VERSION
+
+  - name: resolve-target-repo
+    description: Resolve the publish repository for FLAVOR
+    actions:
+      - cmd: |
+          if [ -n "$TARGET_REPO" ]; then
+            printf '%s\n' "$TARGET_REPO"
+            exit 0
+          fi
+          if [ -n "$REPO" ]; then
+            printf '%s\n' "$REPO"
+            exit 0
+          fi
+
+          if [ "$FLAVOR" = "unicorn" ]; then
+            printf '%s\n' "$PRIVATE_REPO"
+            exit 0
+          fi
+          printf '%s\n' "$PUBLIC_REPO"
+        setVariables:
+          - name: TARGET_REPO
+
+  - name: vendor
+    description: Vendor the upstream Zarf package definitions matching the resolved flavor version
+    actions:
+      - task: resolve-zarf-version
+      - cmd: |
+          if [ -d .zarf-src ]; then
+            vendored_version=""
+            if [ -f .zarf-src/.zarf-version ]; then
+              vendored_version=$(sed -n '1p' .zarf-src/.zarf-version)
+            else
+              vendored_version=$(git -C .zarf-src describe --tags --exact-match 2>/dev/null || true)
+            fi
+
+            if [ "$vendored_version" = "$ZARF_VERSION" ]; then
+              echo ".zarf-src already vendored for ${ZARF_VERSION}"
+              exit 0
+            fi
+
+            echo ".zarf-src vendored for ${vendored_version:-unknown}; re-vendoring for ${ZARF_VERSION}"
+            rm -rf .zarf-src
           fi
           git clone --depth 1 --branch "${ZARF_VERSION}" --filter=blob:none --sparse \
             https://github.com/zarf-dev/zarf.git .zarf-src
           git -C .zarf-src sparse-checkout set packages/zarf-agent packages/zarf-registry packages/gitea
+          printf '%s\n' "$ZARF_VERSION" > .zarf-src/.zarf-version
 
   - name: create
     description: Build one package for FLAVOR/ARCH (config resolved from zarf-config/)
@@ -73,6 +151,7 @@ tasks:
         description: The package (component set) to build
         default: ${PACKAGE}
     actions:
+      - task: resolve-zarf-version
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
@@ -109,6 +188,7 @@ tasks:
     description: Deploy the PACKAGE init package with the test values override applied
     actions:
       # zarf's built-in health checks gate each chart install, so no extra wait is needed here
+      - task: resolve-zarf-version
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
@@ -138,6 +218,7 @@ tasks:
   - name: deploy-s3
     description: Deploy the PACKAGE init package with the registry backed by uds-k3d MinIO (see tests/zarf-values-s3.yaml)
     actions:
+      - task: resolve-zarf-version
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
@@ -152,18 +233,21 @@ tasks:
       - cmd: uds zarf package remove init --confirm
 
   - name: publish
-    description: Build and publish the PACKAGE for FLAVOR (both architectures) to REPO
+    description: Build and publish the PACKAGE for FLAVOR (both architectures) to the resolved target repository
     inputs:
       package:
         description: The package (component set) to publish
         default: ${PACKAGE}
     actions:
+      - task: resolve-zarf-version
+      - task: resolve-target-repo
+      - task: vendor
       - cmd: |
           package="${{ .inputs.package }}"
           suffix=""
           [ "$package" = "default" ] || suffix="-$package"
           pkg_version="${ZARF_VERSION}${suffix}"
-          tag="${ZARF_VERSION}-${FLAVOR}${suffix}"
+          tag="${ZARF_VERSION}${suffix}-${FLAVOR}"
 
           for arch in amd64 arm64; do
             config="zarf-config/${FLAVOR}-${arch}.yaml"
@@ -171,7 +255,7 @@ tasks:
 
             ZARF_CONFIG="$config" uds zarf package create "packages/$package" \
               --flavor "${FLAVOR}" --set PKG_VERSION="$pkg_version" -a "$arch" --confirm
-            uds zarf package publish "zarf-init-${arch}-${pkg_version}-${FLAVOR}.tar.zst" "oci://${REPO}" --tag "$tag"
+            uds zarf package publish "zarf-init-${arch}-${pkg_version}-${FLAVOR}.tar.zst" "oci://${TARGET_REPO}" --tag "$tag"
           done
 
   - name: pre-commit-all
