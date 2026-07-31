@@ -41,6 +41,8 @@ variables:
     default: ghcr.io/defenseunicorns/packages/private/delivery-zarf-init
   - name: TARGET_REPO
     default: ""
+  - name: PUBLISH_RETRIES
+    default: "3"
 
 tasks:
   - name: default
@@ -255,7 +257,8 @@ tasks:
 
             ZARF_CONFIG="$config" uds zarf package create "packages/$package" \
               --flavor "${FLAVOR}" --set PKG_VERSION="$pkg_version" -a "$arch" --confirm
-            uds zarf package publish "zarf-init-${arch}-${pkg_version}-${FLAVOR}.tar.zst" "oci://${TARGET_REPO}" --tag "$tag"
+            uds zarf package publish "zarf-init-${arch}-${pkg_version}-${FLAVOR}.tar.zst" "oci://${TARGET_REPO}" \
+              --tag "$tag" --retries "$PUBLISH_RETRIES"
           done
 
   - name: pre-commit-all
