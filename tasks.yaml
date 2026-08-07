@@ -28,7 +28,7 @@ variables:
     default: v0.81.1
   - name: ZARF_VERSION_REGISTRY1
     # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
-    default: v0.81.1
+    default: v0.82.0
   - name: ZARF_VERSION_UNICORN
     # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
     default: v0.82.0
