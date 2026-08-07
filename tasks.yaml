@@ -25,7 +25,7 @@ variables:
     default: ""
   - name: ZARF_VERSION_UPSTREAM
     # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
-    default: v0.81.1
+    default: v0.83.0
   - name: ZARF_VERSION_REGISTRY1
     # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
     default: v0.82.0
