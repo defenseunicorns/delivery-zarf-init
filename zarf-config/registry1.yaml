@@ -9,7 +9,7 @@ package:
       agent_image_domain: registry1.dso.mil/
       agent_image: ironbank/opensource/zarf-dev/zarf/zarf-agent
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
-      agent_image_tag: v0.81.1
+      agent_image_tag: v0.82.0
 
       registry_image_domain: registry1.dso.mil/
       registry_image: ironbank/opensource/docker/registry-v3
@@ -22,4 +22,4 @@ package:
       proxy_image_tag: 1.8.0.3
 
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea versioning=docker
-      gitea_image: registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.27.0-amd64
+      gitea_image: registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.27.1-amd64
