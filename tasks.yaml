@@ -31,7 +31,7 @@ variables:
     default: v0.82.0
   - name: ZARF_VERSION_UNICORN
     # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
-    default: v0.82.0
+    default: v0.83.0
   - name: REPO
     # Deprecated override for all flavors. Prefer PUBLIC_REPO and PRIVATE_REPO.
     default: ""
