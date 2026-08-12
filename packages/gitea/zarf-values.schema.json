@@ -4,7 +4,7 @@
     "gitea": {
       "properties": {
         "affinity": {
-          "type": "string"
+          "type": "object"
         },
         "checkDeprecation": {
           "type": "boolean"
@@ -36,12 +36,6 @@
           "type": "object"
         },
         "extraContainerVolumeMounts": {
-          "type": "array"
-        },
-        "extraContainers": {
-          "type": "array"
-        },
-        "extraDeploy": {
           "type": "array"
         },
         "extraInitVolumeMounts": {
@@ -250,7 +244,7 @@
                 "service": {
                   "properties": {
                     "DISABLE_REGISTRATION": {
-                      "type": "string"
+                      "type": "boolean"
                     }
                   },
                   "type": "object"
@@ -426,9 +420,6 @@
             "imagePullSecrets": {
               "type": "array"
             },
-            "imageRegistry": {
-              "type": "string"
-            },
             "storageClass": {
               "type": "string"
             }
@@ -509,14 +500,11 @@
         "initContainersScriptsVolumeMountPath": {
           "type": "string"
         },
-        "initPreScript": {
-          "type": "string"
-        },
         "namespace": {
           "type": "string"
         },
         "nodeSelector": {
-          "type": "string"
+          "type": "object"
         },
         "openshift": {
           "properties": {
@@ -549,7 +537,7 @@
               "type": "string"
             },
             "create": {
-              "type": "string"
+              "type": "boolean"
             },
             "enabled": {
               "type": "boolean"
@@ -579,9 +567,6 @@
         "podDisruptionBudget": {
           "properties": {},
           "type": "object"
-        },
-        "postExtraInitContainers": {
-          "type": "array"
         },
         "postgresql": {
           "properties": {
@@ -625,25 +610,8 @@
               },
               "type": "object"
             },
-            "image": {
-              "properties": {
-                "repository": {
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
             "metrics": {
-              "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
+              "properties": {},
               "type": "object"
             },
             "primary": {
@@ -685,16 +653,7 @@
               "type": "object"
             },
             "volumePermissions": {
-              "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
+              "properties": {},
               "type": "object"
             }
           },
@@ -725,16 +684,7 @@
               "type": "object"
             },
             "metrics": {
-              "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
+              "properties": {},
               "type": "object"
             },
             "persistence": {
@@ -756,14 +706,6 @@
                 "adminPassword": {
                   "type": "string"
                 },
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
                 "srCheckPassword": {
                   "type": "string"
                 }
@@ -772,14 +714,6 @@
             },
             "postgresql": {
               "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
                 "password": {
                   "type": "string"
                 },
@@ -806,23 +740,11 @@
               "type": "object"
             },
             "volumePermissions": {
-              "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
+              "properties": {},
               "type": "object"
             }
           },
           "type": "object"
-        },
-        "preExtraInitContainers": {
-          "type": "array"
         },
         "priorityClassName": {
           "type": "string"
@@ -836,7 +758,7 @@
           "type": "object"
         },
         "replicaCount": {
-          "type": "string"
+          "type": "number"
         },
         "resources": {
           "properties": {
@@ -911,10 +833,6 @@
         },
         "schedulerName": {
           "type": "string"
-        },
-        "securityContext": {
-          "properties": {},
-          "type": "object"
         },
         "service": {
           "properties": {
@@ -1081,23 +999,12 @@
           "properties": {
             "enabled": {
               "type": "boolean"
-            },
-            "image": {
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "tag": {
-                  "type": "string"
-                }
-              },
-              "type": "object"
             }
           },
           "type": "object"
         },
         "tolerations": {
-          "type": "string"
+          "type": "array"
         },
         "topologySpreadConstraints": {
           "type": "array"
@@ -1123,25 +1030,8 @@
               },
               "type": "object"
             },
-            "image": {
-              "properties": {
-                "repository": {
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
             "kubectl": {
-              "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
+              "properties": {},
               "type": "object"
             },
             "master": {
@@ -1166,16 +1056,7 @@
               "type": "object"
             },
             "metrics": {
-              "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
+              "properties": {},
               "type": "object"
             },
             "primary": {
@@ -1217,29 +1098,11 @@
               "type": "object"
             },
             "sentinel": {
-              "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
+              "properties": {},
               "type": "object"
             },
             "volumePermissions": {
-              "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
+              "properties": {},
               "type": "object"
             }
           },
@@ -1261,25 +1124,8 @@
             "enabled": {
               "type": "boolean"
             },
-            "image": {
-              "properties": {
-                "repository": {
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
             "metrics": {
-              "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
+              "properties": {},
               "type": "object"
             },
             "persistence": {
@@ -1309,14 +1155,6 @@
               },
               "type": "object"
             },
-            "sysctlImage": {
-              "properties": {
-                "repository": {
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
             "usePassword": {
               "type": "boolean"
             },
@@ -1324,16 +1162,7 @@
               "type": "boolean"
             },
             "volumePermissions": {
-              "properties": {
-                "image": {
-                  "properties": {
-                    "repository": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
+              "properties": {},
               "type": "object"
             }
           },
@@ -1574,20 +1403,6 @@
                 }
               },
               "type": "object"
-            }
-          },
-          "type": "object"
-        },
-        "securityContext": {
-          "properties": {
-            "fsGroup": {
-              "type": "string"
-            },
-            "runAsGroup": {
-              "type": "string"
-            },
-            "runAsUser": {
-              "type": "string"
             }
           },
           "type": "object"

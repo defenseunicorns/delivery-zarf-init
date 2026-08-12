@@ -45,6 +45,7 @@ components:
               - .zarf-registry.proxy.injector
               - .zarf-registry.secrets
               - .zarf-registry.mtls
+              - .zarf-registry.securityContext
               - .zarf-registry.fullnameOverride
               - .zarf-registry.ipv6Only
     healthChecks:
@@ -67,9 +68,33 @@ components:
             targetPath: .
             excludePaths:
               - .gitea.image
-              - .gitea.gitea.admin
+              - .gitea.global.imageRegistry
               - .gitea.podSecurityContext
               - .gitea.containerSecurityContext
+              - .gitea.securityContext
+              - .gitea.extraContainers
+              - .gitea.extraDeploy
+              - .gitea.initPreScript
+              - .gitea.postExtraInitContainers
+              - .gitea.preExtraInitContainers
+              - .gitea.gitea.admin
+              - .gitea.postgresql.image
+              - .gitea.postgresql.metrics.image
+              - .gitea.postgresql.volumePermissions.image
+              - .gitea.postgresql-ha.metrics.image
+              - .gitea.postgresql-ha.pgpool.image
+              - .gitea.postgresql-ha.postgresql.image
+              - .gitea.postgresql-ha.volumePermissions.image
+              - .gitea.test.image
+              - .gitea.valkey.image
+              - .gitea.valkey.kubectl.image
+              - .gitea.valkey.metrics.image
+              - .gitea.valkey.sentinel.image
+              - .gitea.valkey.volumePermissions.image
+              - .gitea.valkey-cluster.image
+              - .gitea.valkey-cluster.metrics.image
+              - .gitea.valkey-cluster.sysctlImage
+              - .gitea.valkey-cluster.volumePermissions.image
     healthChecks:
       - name: zarf-gitea
         namespace: zarf
