@@ -237,20 +237,6 @@
           },
           "type": "object"
         },
-        "securityContext": {
-          "properties": {
-            "fsGroup": {
-              "type": "string"
-            },
-            "runAsGroup": {
-              "type": "string"
-            },
-            "runAsUser": {
-              "type": "string"
-            }
-          },
-          "type": "object"
-        },
         "service": {
           "properties": {
             "name": {
