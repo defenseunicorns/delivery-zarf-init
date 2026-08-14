@@ -8,9 +8,12 @@ on:
   # Allows publish.yaml to reuse this workflow so packages are tested before publishing
   workflow_call:
     outputs:
-      flavors:
-        description: JSON array of tested flavors
-        value: ${{ jobs.prepare.outputs.flavors }}
+      release_flavors:
+        description: JSON array of flavors whose release version changed
+        value: ${{ jobs.prepare.outputs.release_flavors }}
+      run_publish:
+        description: Whether any flavor needs publishing
+        value: ${{ jobs.prepare.outputs.run_publish }}
 
 permissions:
   contents: read
@@ -28,152 +31,65 @@ jobs:
       contents: read
       pull-requests: write
     outputs:
-      flavors: ${{ steps.select.outputs.flavors }}
-      run_tests: ${{ steps.select.outputs.run_tests }}
+      flavors: ${{ steps.plan.outputs.flavors }}
+      release_flavors: ${{ steps.plan.outputs.release_flavors }}
+      run_publish: ${{ steps.plan.outputs.run_publish }}
+      run_tests: ${{ steps.plan.outputs.run_tests }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      - name: Check Zarf agent readiness
-        if: ${{ github.event_name == 'pull_request' }}
-        shell: bash
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          waiting=()
-          label="waiting on zarf-agent"
-
-          for flavor in upstream registry1 unicorn; do
-            if ! git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- "zarf-config/${flavor}"'*.yaml'; then
-              old_source=$(git show "$BASE_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.zarf_source_version // ""')
-              new_source=$(git show "$HEAD_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.zarf_source_version // ""')
-              old_agent=$(git show "$BASE_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.agent_image_tag')
-              new_agent=$(git show "$HEAD_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.agent_image_tag')
-
-              # Establishing source-version tracking is ready when it matches the existing agent.
-              if [ -z "$old_source" ] && [ "$new_source" = "$new_agent" ]; then
-                continue
-              fi
-
-              ready=true
-              if [ "$old_source" = "$new_source" ] || [ "$old_agent" = "$new_agent" ] || [ "$new_source" != "$new_agent" ]; then
-                ready=false
-              fi
-
-              if [ "$flavor" = "registry1" ]; then
-                new_arm_agent=$(git show "$HEAD_SHA:zarf-config/registry1-arm64.yaml" | yq -r '.package.create.set.agent_image_tag')
-                if [ "$new_arm_agent" != "${new_source}-arm64" ]; then
-                  ready=false
-                fi
-              fi
-
-              if [ "$ready" != "true" ]; then
-                waiting+=("$flavor")
-              fi
-            fi
-          done
-
-          current_labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
-          if [ "${#waiting[@]}" -eq 0 ]; then
-            if grep -Fxq "$label" <<< "$current_labels"; then
-              gh pr edit "$PR_NUMBER" --remove-label "$label"
-            fi
-            exit 0
-          fi
-
-          if ! grep -Fxq "$label" <<< "$current_labels"; then
-            gh pr edit "$PR_NUMBER" --add-label "$label"
-          fi
-
-          printf 'Waiting for zarf-agent updates: %s\n' "${waiting[*]}" >&2
-          exit 1
-
-      - name: Detect flavor-specific changes
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-        id: changes
-        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
+      - name: Install UDS CLI
+        uses: defenseunicorns/setup-uds@ab842abcad1f7a3305c2538e3dd1950d0daacfa5 # v1.0.1
         with:
-          base: ${{ github.ref }}
-          filters: |
-            upstream:
-              - zarf-config/upstream*.yaml
-            registry1:
-              - zarf-config/registry1*.yaml
-            unicorn:
-              - zarf-config/unicorn*.yaml
-            shared:
-              - packages/**
-              - src/**
-              - tasks.yaml
-              - tasks/**
-              - tests/**
-              - .github/workflows/test.yaml
-              - .github/workflows/publish.yaml
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.35.1
 
-      - name: Select and validate flavors
-        id: select
+      - name: Plan tests and releases
+        id: plan
         shell: bash
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          CHANGED_FILTERS: ${{ steps.changes.outputs.changes }}
           EVENT_NAME: ${{ github.event_name }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          SHARED_CHANGED: ${{ steps.changes.outputs.shared }}
         run: |
-          all_flavors='["upstream","registry1","unicorn"]'
-          if [ "$EVENT_NAME" != "pull_request" ] && [ "$EVENT_NAME" != "push" ]; then
-            echo "flavors=$all_flavors" >> "$GITHUB_OUTPUT"
-            echo "run_tests=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          release_version() {
-            git show "$1:releaser.yaml" 2>/dev/null \
-              | FLAVOR="$2" yq -r '.flavors[] | select(.name == env(FLAVOR)) | .version // ""' 2>/dev/null \
-              || true
-          }
-          selected() {
-            jq -e --arg flavor "$1" 'index($flavor)' <<< "$flavors" >/dev/null
-          }
+          uds run publish:plan --no-progress \
+            --set BASE_SHA="$BASE_SHA" --set HEAD_SHA="$HEAD_SHA" --set EVENT_NAME="$EVENT_NAME"
+          uds run test:plan --no-progress \
+            --set BASE_SHA="$BASE_SHA" --set HEAD_SHA="$HEAD_SHA" --set EVENT_NAME="$EVENT_NAME"
 
-          flavors=${CHANGED_FILTERS:-[]}
-          if [ "$SHARED_CHANGED" = "true" ]; then
-            flavors="$all_flavors"
-          fi
+          echo "flavors=$(jq -c '.flavors' /tmp/delivery-zarf-init-test-plan.json)" >> "$GITHUB_OUTPUT"
+          echo "run_tests=$(jq -r '.required' /tmp/delivery-zarf-init-test-plan.json)" >> "$GITHUB_OUTPUT"
+          echo "release_flavors=$(jq -c '.flavors' /tmp/delivery-zarf-init-release-plan.json)" >> "$GITHUB_OUTPUT"
+          echo "run_publish=$(jq -r '.required' /tmp/delivery-zarf-init-release-plan.json)" >> "$GITHUB_OUTPUT"
 
-          missing_versions=()
-          for flavor in upstream registry1 unicorn; do
-            old_version=$(release_version "$BASE_SHA" "$flavor")
-            new_version=$(release_version "$HEAD_SHA" "$flavor")
+      - name: Sync Zarf agent readiness label
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          label="waiting on zarf-agent"
+          waiting=$(jq -c '.waitingForAgent' /tmp/delivery-zarf-init-release-plan.json)
+          current_labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
 
-            if [ "$old_version" != "$new_version" ] && ! selected "$flavor"; then
-              flavors=$(jq -c --arg flavor "$flavor" '. + [$flavor]' <<< "$flavors")
+          if [ "$waiting" = "[]" ]; then
+            if grep -Fxq "$label" <<< "$current_labels"; then
+              gh pr edit "$PR_NUMBER" --remove-label "$label"
             fi
-
-            if [ "$EVENT_NAME" = "pull_request" ] && selected "$flavor" \
-              && { [ -z "$new_version" ] || [ "$old_version" = "$new_version" ]; }; then
-              missing_versions+=("$flavor")
-            fi
-          done
-
-          if [ "${#missing_versions[@]}" -gt 0 ]; then
-            printf 'Package version must advance for: %s\n' "${missing_versions[*]}" >&2
-            exit 1
+          elif ! grep -Fxq "$label" <<< "$current_labels"; then
+            gh pr edit "$PR_NUMBER" --add-label "$label"
           fi
 
-          if [ "$flavors" = "[]" ]; then
-            flavors="$all_flavors"
-            if [ "$EVENT_NAME" = "pull_request" ]; then
-              run_tests=false
-            fi
-          fi
-
-          echo "flavors=$flavors" >> "$GITHUB_OUTPUT"
-          echo "run_tests=${run_tests:-true}" >> "$GITHUB_OUTPUT"
+      - name: Validate release readiness
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          missing=$(jq -r '.missingVersions | join(" ")' /tmp/delivery-zarf-init-release-plan.json)
+          waiting=$(jq -r '.waitingForAgent | join(" ")' /tmp/delivery-zarf-init-release-plan.json)
+          [ -z "$missing" ] || { echo "Package version must advance for: $missing" >&2; exit 1; }
+          [ -z "$waiting" ] || { echo "Waiting for zarf-agent updates: $waiting" >&2; exit 1; }
 
   test:
     needs: prepare

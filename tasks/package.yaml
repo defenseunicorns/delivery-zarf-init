@@ -3,6 +3,8 @@
 
 # yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
 
+# Zarf init package construction tasks.
+
 tasks:
   - name: resolve-zarf-version
     description: Resolve the Zarf source version for FLAVOR
@@ -27,22 +29,6 @@ tasks:
           printf '%s\n' "$version"
         setVariables:
           - name: ZARF_VERSION
-
-  - name: resolve-target-repo
-    description: Resolve the publish repository for FLAVOR
-    actions:
-      - cmd: |
-          if [ -n "$TARGET_REPO" ]; then
-            printf '%s\n' "$TARGET_REPO"
-          elif [ -n "$REPO" ]; then
-            printf '%s\n' "$REPO"
-          elif [ "$FLAVOR" = "unicorn" ]; then
-            printf '%s\n' "$PRIVATE_REPO"
-          else
-            printf '%s\n' "$PUBLIC_REPO"
-          fi
-        setVariables:
-          - name: TARGET_REPO
 
   - name: resolve-package-version
     description: Resolve the UDS package version for FLAVOR
@@ -131,33 +117,3 @@ tasks:
       - task: create
         with:
           package: gitea
-
-  - name: publish
-    description: Build and publish the PACKAGE for FLAVOR (both architectures) to the resolved target repository
-    inputs:
-      package:
-        description: The package (component set) to publish
-        default: ${PACKAGE}
-    actions:
-      - task: resolve-package-version
-      - task: resolve-target-repo
-      - task: vendor
-      - task: create
-        with:
-          package: ${{ .inputs.package }}
-          architecture: amd64
-      - task: create
-        with:
-          package: ${{ .inputs.package }}
-          architecture: arm64
-      - cmd: |
-          package="${{ .inputs.package }}"
-          suffix=""
-          [ "$package" = "default" ] || suffix="-$package"
-          pkg_version="${PACKAGE_VERSION}${suffix}"
-          tag="${PACKAGE_VERSION}${suffix}-${FLAVOR}"
-
-          for arch in amd64 arm64; do
-            uds zarf package publish "zarf-init-${arch}-${pkg_version}-${FLAVOR}.tar.zst" "oci://${TARGET_REPO}" \
-              --tag "$tag" --retries "$PUBLISH_RETRIES"
-          done

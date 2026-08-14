@@ -5,7 +5,7 @@
 
 includes:
   - package: ./tasks/package.yaml
-  - cluster: ./tasks/cluster.yaml
+  - publish: ./tasks/publish.yaml
   - test: ./tasks/test.yaml
   - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.27.2/tasks/lint.yaml
   - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.27.2/tasks/actions.yaml
@@ -46,9 +46,9 @@ tasks:
     actions:
       - task: package:vendor
       - task: package:create
-      - task: cluster:setup
-      - task: cluster:deploy
-      - task: cluster:deploy-workload
+      - task: test:cluster
+      - task: test:package
+      - task: test:workload
       - task: test:all
 
   - name: dev
@@ -56,16 +56,16 @@ tasks:
     actions:
       - task: package:vendor
       - task: package:create
-      - task: cluster:deploy
+      - task: test:package
 
   - name: ci-test
     description: CI flow - build every package, then deploy and test the PACKAGE on a fresh uds-k3d cluster
     actions:
       - task: package:vendor
       - task: package:create-all
-      - task: cluster:setup
-      - task: cluster:deploy
-      - task: cluster:deploy-workload
+      - task: test:cluster
+      - task: test:package
+      - task: test:workload
       - task: test:all
 
   - name: pre-commit-all

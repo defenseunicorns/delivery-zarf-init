@@ -39,6 +39,7 @@ jobs:
       id-token: write
 
   publish:
+    if: ${{ needs.test.outputs.run_publish == 'true' }}
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -49,7 +50,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flavor: ${{ fromJSON(needs.test.outputs.flavors) }}
+        flavor: ${{ fromJSON(needs.test.outputs.release_flavors) }}
         package:
           - default
           - agent-only
@@ -75,7 +76,7 @@ jobs:
 
       - name: Build and publish (${{ matrix.flavor }} / ${{ matrix.package }})
         run: |
-          uds run package:publish \
+          uds run publish:package \
             --set FLAVOR=${{ matrix.flavor }} \
             --set PACKAGE=${{ matrix.package }} \
             --no-progress
