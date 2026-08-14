@@ -50,10 +50,15 @@ jobs:
 
           for flavor in upstream registry1 unicorn; do
             if ! git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- "zarf-config/${flavor}"'*.yaml'; then
-              old_source=$(git show "$BASE_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.zarf_source_version')
-              new_source=$(git show "$HEAD_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.zarf_source_version')
+              old_source=$(git show "$BASE_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.zarf_source_version // ""')
+              new_source=$(git show "$HEAD_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.zarf_source_version // ""')
               old_agent=$(git show "$BASE_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.agent_image_tag')
               new_agent=$(git show "$HEAD_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.agent_image_tag')
+
+              # Establishing source-version tracking is ready when it matches the existing agent.
+              if [ -z "$old_source" ] && [ "$new_source" = "$new_agent" ]; then
+                continue
+              fi
 
               ready=true
               if [ "$old_source" = "$new_source" ] || [ "$old_agent" = "$new_agent" ] || [ "$new_source" != "$new_agent" ]; then
