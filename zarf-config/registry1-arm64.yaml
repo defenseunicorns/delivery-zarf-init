@@ -20,7 +20,7 @@ package:
       proxy_image_domain: registry1.dso.mil/
       proxy_image: ironbank/opensource/alpine/socat/socat
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/alpine/socat/socat versioning=docker
-      proxy_image_tag: 1.8.0.3
+      proxy_image_tag: 1.8.0.4
 
       # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea versioning=docker
       gitea_image: registry1.dso.mil/ironbank/opensource/go-gitea/gitea:v1.27.1-arm64
