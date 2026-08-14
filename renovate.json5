@@ -27,6 +27,30 @@
   prConcurrentLimit: 0,
   packageRules: [
     {
+      description: 'Format upstream zarf-agent update titles.',
+      matchPackageNames: [
+        'ghcr.io/zarf-dev/zarf/agent',
+      ],
+      commitMessageTopic: 'upstream zarf-agent',
+      commitMessageExtra: 'to {{newValue}}',
+    },
+    {
+      description: 'Format Registry1 zarf-agent update titles.',
+      matchPackageNames: [
+        'registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent',
+      ],
+      commitMessageTopic: 'registry1 zarf-agent',
+      commitMessageExtra: 'to {{newValue}}',
+    },
+    {
+      description: 'Format Unicorn zarf-agent update titles.',
+      matchPackageNames: [
+        'cgr.dev/defenseunicorns.com/zarf-agent-fips',
+      ],
+      commitMessageTopic: 'unicorn zarf-agent',
+      commitMessageExtra: 'to {{newValue}}',
+    },
+    {
       description: 'gitea images must stay on the minor supported by the gitea chart version pinned in src/init/common/zarf.yaml (chart 12.7.0 -> gitea 1.27.x). Bump the chart pin and this cap together.',
       matchPackageNames: [
         'ghcr.io/go-gitea/gitea',

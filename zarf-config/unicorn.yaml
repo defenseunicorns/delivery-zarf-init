@@ -6,6 +6,9 @@ package:
     set:
       pkg_version: unicorn
 
+      # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
+      zarf_source_version: v0.83.0
+
       agent_image_domain: cgr.dev/
       agent_image: defenseunicorns.com/zarf-agent-fips
       # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker

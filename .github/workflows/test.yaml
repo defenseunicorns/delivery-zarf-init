@@ -5,21 +5,13 @@ name: Test
 
 on:
   pull_request:
-    paths:
-      - packages/**
-      - src/**
-      - zarf-config/**
-      - tasks.yaml
-      - tasks/**
-      - tests/**
-      - .github/workflows/test.yaml
-      - .github/workflows/publish.yaml
   # Allows publish.yaml to reuse this workflow so packages are tested before publishing
   workflow_call:
 
 permissions:
   contents: read
   packages: read
+  pull-requests: read
   id-token: write
 
 concurrency:
@@ -27,7 +19,126 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  renovate-readiness:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        if: ${{ startsWith(github.head_ref, 'renovate/') }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Check for zarf-agent updates
+        if: ${{ startsWith(github.head_ref, 'renovate/') }}
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          waiting=()
+          label="waiting on zarf-agent"
+
+          for flavor in upstream registry1 unicorn; do
+            if ! git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- "zarf-config/${flavor}"'*.yaml'; then
+              old_source=$(git show "$BASE_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.zarf_source_version')
+              new_source=$(git show "$HEAD_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.zarf_source_version')
+              old_agent=$(git show "$BASE_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.agent_image_tag')
+              new_agent=$(git show "$HEAD_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.agent_image_tag')
+
+              if [ "$old_source" = "$new_source" ] || [ "$old_agent" = "$new_agent" ] || [ "$new_source" != "$new_agent" ]; then
+                waiting+=("$flavor")
+              fi
+            fi
+          done
+
+          current_labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
+          if grep -Fxq "$label" <<< "$current_labels"; then
+            gh pr edit "$PR_NUMBER" --remove-label "$label"
+          fi
+
+          if [ "${#waiting[@]}" -eq 0 ]; then
+            exit 0
+          fi
+
+          gh pr edit "$PR_NUMBER" --add-label "$label"
+
+          printf 'Waiting for zarf-agent updates: %s\n' "${waiting[*]}" >&2
+          exit 1
+
+  select-flavors:
+    needs: renovate-readiness
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      flavors: ${{ steps.select.outputs.flavors }}
+      run_tests: ${{ steps.select.outputs.run_tests }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Detect flavor-specific changes
+        if: ${{ github.event_name == 'pull_request' }}
+        id: changes
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
+        with:
+          filters: |
+            upstream:
+              - zarf-config/upstream*.yaml
+            registry1:
+              - zarf-config/registry1*.yaml
+            unicorn:
+              - zarf-config/unicorn*.yaml
+            shared:
+              - packages/**
+              - src/**
+              - tasks.yaml
+              - tasks/**
+              - tests/**
+              - .github/workflows/test.yaml
+              - .github/workflows/publish.yaml
+
+      - name: Select flavors
+        id: select
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SHARED_CHANGED: ${{ steps.changes.outputs.shared }}
+          UPSTREAM_CHANGED: ${{ steps.changes.outputs.upstream }}
+          REGISTRY1_CHANGED: ${{ steps.changes.outputs.registry1 }}
+          UNICORN_CHANGED: ${{ steps.changes.outputs.unicorn }}
+        run: |
+          all_flavors='["upstream","registry1","unicorn"]'
+          if [ "$EVENT_NAME" != "pull_request" ] || [ "$SHARED_CHANGED" = "true" ]; then
+            echo "flavors=$all_flavors" >> "$GITHUB_OUTPUT"
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          flavors='[]'
+          for flavor in upstream registry1 unicorn; do
+            changed_var=$(printf '%s_CHANGED' "$flavor" | tr '[:lower:]' '[:upper:]')
+            if [ "${!changed_var}" = "true" ]; then
+              flavors=$(jq -c --arg flavor "$flavor" '. + [$flavor]' <<< "$flavors")
+            fi
+          done
+
+          if [ "$flavors" = "[]" ]; then
+            echo "flavors=$all_flavors" >> "$GITHUB_OUTPUT"
+            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "flavors=$flavors" >> "$GITHUB_OUTPUT"
+          echo "run_tests=true" >> "$GITHUB_OUTPUT"
+
   test:
+    needs: select-flavors
+    if: ${{ needs.select-flavors.outputs.run_tests == 'true' }}
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 45
     permissions:
@@ -37,10 +148,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flavor:
-          - upstream
-          - registry1
-          - unicorn
+        flavor: ${{ fromJSON(needs.select-flavors.outputs.flavors) }}
         platform:
           - arch: amd64
             runner: ubuntu-24.04
@@ -74,7 +182,29 @@ jobs:
 
   verify-test:
     runs-on: ubuntu-latest
-    needs: test
+    if: ${{ always() }}
+    needs:
+      - renovate-readiness
+      - select-flavors
+      - test
     steps:
-      - name: Success
-        run: echo "All tests passed successfully!"
+      - name: Verify required jobs
+        env:
+          READINESS_RESULT: ${{ needs.renovate-readiness.result }}
+          RUN_TESTS: ${{ needs.select-flavors.outputs.run_tests }}
+          SELECT_RESULT: ${{ needs.select-flavors.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          if [ "$READINESS_RESULT" != "success" ]; then
+            echo "Renovate readiness failed: $READINESS_RESULT" >&2
+            exit 1
+          fi
+          if [ "$SELECT_RESULT" != "success" ]; then
+            echo "Flavor selection failed: $SELECT_RESULT" >&2
+            exit 1
+          fi
+          if [ "$RUN_TESTS" = "true" ] && [ "$TEST_RESULT" != "success" ]; then
+            echo "Package tests failed: $TEST_RESULT" >&2
+            exit 1
+          fi
+          echo "Required tests passed"

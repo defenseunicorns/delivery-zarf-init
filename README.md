@@ -104,11 +104,13 @@ reject an amd64 package when the target cluster only has arm64 nodes. GitHub CI 
 Building the `registry1` flavor requires Iron Bank credentials (`uds zarf tools registry login registry1.dso.mil`),
 and `unicorn` requires Chainguard access as noted above.
 
-Each flavor can track a different upstream Zarf source version. `ZARF_VERSION_UPSTREAM` tracks the
-upstream Zarf agent image, `ZARF_VERSION_REGISTRY1` tracks the Iron Bank Zarf agent image, and
-`ZARF_VERSION_UNICORN` tracks the Chainguard FIPS Zarf agent image. Set `ZARF_VERSION` only when
-intentionally overriding the flavor-specific version for a local run. If `.zarf-src` already exists
-for a different version, `uds run vendor` re-vendors it automatically.
+Each flavor config pins its own `zarf_source_version` alongside the corresponding agent image tag;
+Renovate updates both from the same image release. Set `ZARF_VERSION` only when intentionally
+overriding the flavor-specific source version for a local run. If `.zarf-src` already exists for a
+different version, `uds run vendor` re-vendors it automatically.
+
+Renovate PRs that change flavor images without advancing that flavor's Zarf agent are labeled and
+blocked before package tests run.
 
 The registry can be backed by S3-compatible object storage; see
 [docs/s3-backed-registry.md](./docs/s3-backed-registry.md).

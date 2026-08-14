@@ -21,17 +21,8 @@ variables:
     # override to run side-by-side clusters, e.g. --set CLUSTER_NAME=zarf-unicorn
     default: zarf
   - name: ZARF_VERSION
-    # Optional override; leave empty to use the flavor-specific ZARF_VERSION_* variable.
+    # Overrides zarf_source_version from the flavor config.
     default: ""
-  - name: ZARF_VERSION_UPSTREAM
-    # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
-    default: v0.83.0
-  - name: ZARF_VERSION_REGISTRY1
-    # renovate: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
-    default: v0.82.0
-  - name: ZARF_VERSION_UNICORN
-    # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
-    default: v0.83.0
   - name: REPO
     # Deprecated override for all flavors. Prefer PUBLIC_REPO and PRIVATE_REPO.
     default: ""
@@ -81,21 +72,18 @@ tasks:
             exit 0
           fi
 
-          case "$FLAVOR" in
-            upstream)
-              printf '%s\n' "$ZARF_VERSION_UPSTREAM"
-              ;;
-            registry1)
-              printf '%s\n' "$ZARF_VERSION_REGISTRY1"
-              ;;
-            unicorn)
-              printf '%s\n' "$ZARF_VERSION_UNICORN"
-              ;;
-            *)
-              echo "unsupported FLAVOR: $FLAVOR" >&2
-              exit 1
-              ;;
-          esac
+          config="zarf-config/${FLAVOR}.yaml"
+          if [ ! -f "$config" ]; then
+            echo "unsupported FLAVOR: $FLAVOR (missing $config)" >&2
+            exit 1
+          fi
+
+          version=$(yq -r '.package.create.set.zarf_source_version // ""' "$config")
+          if [ -z "$version" ]; then
+            echo "zarf_source_version is not set in $config" >&2
+            exit 1
+          fi
+          printf '%s\n' "$version"
         setVariables:
           - name: ZARF_VERSION
 

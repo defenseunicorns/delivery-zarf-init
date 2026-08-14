@@ -30,8 +30,8 @@ behavior.
   `ghcr.io/defenseunicorns/packages/private/delivery-zarf-init`.
 - Each flavor resolves its own Zarf source version: upstream tracks the upstream Zarf agent image,
   registry1 tracks the Iron Bank Zarf agent image, and unicorn tracks the Chainguard FIPS Zarf agent
-  image. `ZARF_VERSION` remains an explicit local override, but routine builds use the
-  flavor-specific `ZARF_VERSION_*` variables.
+  image. Renovate updates `zarf_source_version` and the agent image tag together in each flavor
+  config. `ZARF_VERSION` remains an explicit local override.
 - Gitea runs on a newer chart than upstream zarf's pin (overridden in common) because Chainguard
   only ships gitea >=1.26; a renovate packageRule keeps the gitea images on the chart-supported
   minor across all flavors.
