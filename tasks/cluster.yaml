@@ -1,0 +1,68 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
+
+tasks:
+  - name: setup
+    description: Create a fresh uds-k3d test cluster (not zarf-initialized; cluster shape and k3s version are owned by uds-k3d)
+    actions:
+      - cmd: |
+          k3d cluster delete "${CLUSTER_NAME}" >/dev/null 2>&1 || true
+          # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds-k3d versioning=docker
+          uds zarf package deploy oci://ghcr.io/defenseunicorns/packages/uds-k3d:0.20.2 \
+            --set CLUSTER_NAME="${CLUSTER_NAME}" --confirm
+
+  - name: deploy
+    description: Deploy the PACKAGE init package with the test values override applied
+    inputs:
+      values:
+        description: Values arguments passed to the package deployment
+        default: --values tests/zarf-values-override.yaml
+    actions:
+      # zarf's built-in health checks gate each chart install, so no extra wait is needed here
+      - task: package:resolve-package-version
+      - cmd: |
+          pkg_arch="${ARCH}"
+          [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
+          suffix=""
+          [ "${PACKAGE}" = "default" ] || suffix="-${PACKAGE}"
+          uds zarf package deploy "zarf-init-${pkg_arch}-${PACKAGE_VERSION}${suffix}-${FLAVOR}.tar.zst" \
+            ${{ .inputs.values }} --confirm
+
+  - name: deploy-workload
+    description: Deploy the DOS games package (exercises the registry and agent mutation)
+    actions:
+      - cmd: |
+          pkg_arch="${ARCH}"
+          [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
+          uds zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.2.0 \
+            --confirm -a "$pkg_arch"
+
+  - name: setup-uds
+    description: Create a uds-k3d cluster (with MinIO) using the test overrides in tests/uds-config.yaml
+    actions:
+      - cmd: |
+          # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev versioning=docker
+          UDS_CONFIG=tests/uds-config.yaml uds deploy \
+            oci://ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev:0.58.1 \
+            -p uds-k3d-dev --confirm
+
+  - name: deploy-s3
+    description: Deploy the PACKAGE init package with the registry backed by uds-k3d MinIO (see tests/zarf-values-s3.yaml)
+    actions:
+      - task: deploy
+        with:
+          values: --values tests/zarf-values-override.yaml --values tests/zarf-values-s3.yaml
+
+  - name: remove
+    description: Remove the deployed init package (only one init package can exist per cluster; run this before deploying a different package)
+    actions:
+      - cmd: uds zarf package remove init --confirm
+
+  - name: cleanup
+    description: Tear down the uds-k3d test cluster and build artifacts
+    actions:
+      - cmd: |
+          k3d cluster delete "${CLUSTER_NAME}" || true
+          rm -f zarf-init-*.tar.zst

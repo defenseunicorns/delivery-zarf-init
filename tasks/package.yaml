@@ -1,0 +1,163 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
+
+tasks:
+  - name: resolve-zarf-version
+    description: Resolve the Zarf source version for FLAVOR
+    actions:
+      - cmd: |
+          if [ -n "$ZARF_VERSION" ]; then
+            printf '%s\n' "$ZARF_VERSION"
+            exit 0
+          fi
+
+          config="zarf-config/${FLAVOR}.yaml"
+          if [ ! -f "$config" ]; then
+            echo "unsupported FLAVOR: $FLAVOR (missing $config)" >&2
+            exit 1
+          fi
+
+          version=$(yq -r '.package.create.set.zarf_source_version // ""' "$config")
+          if [ -z "$version" ]; then
+            echo "zarf_source_version is not set in $config" >&2
+            exit 1
+          fi
+          printf '%s\n' "$version"
+        setVariables:
+          - name: ZARF_VERSION
+
+  - name: resolve-target-repo
+    description: Resolve the publish repository for FLAVOR
+    actions:
+      - cmd: |
+          if [ -n "$TARGET_REPO" ]; then
+            printf '%s\n' "$TARGET_REPO"
+          elif [ -n "$REPO" ]; then
+            printf '%s\n' "$REPO"
+          elif [ "$FLAVOR" = "unicorn" ]; then
+            printf '%s\n' "$PRIVATE_REPO"
+          else
+            printf '%s\n' "$PUBLIC_REPO"
+          fi
+        setVariables:
+          - name: TARGET_REPO
+
+  - name: resolve-package-version
+    description: Resolve the UDS package version for FLAVOR
+    actions:
+      - task: resolve-zarf-version
+      - cmd: |
+          version="$PACKAGE_VERSION"
+          if [ -z "$version" ]; then
+            version=$(FLAVOR="$FLAVOR" yq -r \
+              '.flavors[] | select(.name == env(FLAVOR)) | .version // ""' releaser.yaml)
+          fi
+          source_version=${version%-uds.*}
+          revision=${version##*-uds.}
+
+          case "$revision" in
+            ""|*[!0-9]*|"$version")
+              echo "invalid package version for $FLAVOR: $version" >&2
+              exit 1
+              ;;
+          esac
+          if [ "$source_version" != "$ZARF_VERSION" ]; then
+            echo "package version $version must match Zarf source $ZARF_VERSION for $FLAVOR" >&2
+            exit 1
+          fi
+
+          printf '%s\n' "$version"
+        setVariables:
+          - name: PACKAGE_VERSION
+
+  - name: vendor
+    description: Vendor the upstream Zarf package definitions matching the resolved flavor version
+    actions:
+      - task: resolve-zarf-version
+      - cmd: |
+          if [ -d .zarf-src ]; then
+            vendored_version=""
+            if [ -f .zarf-src/.zarf-version ]; then
+              vendored_version=$(sed -n '1p' .zarf-src/.zarf-version)
+            else
+              vendored_version=$(git -C .zarf-src describe --tags --exact-match 2>/dev/null || true)
+            fi
+
+            if [ "$vendored_version" = "$ZARF_VERSION" ]; then
+              echo ".zarf-src already vendored for ${ZARF_VERSION}"
+              exit 0
+            fi
+
+            echo ".zarf-src vendored for ${vendored_version:-unknown}; re-vendoring for ${ZARF_VERSION}"
+            rm -rf .zarf-src
+          fi
+          git clone --depth 1 --branch "${ZARF_VERSION}" --filter=blob:none --sparse \
+            https://github.com/zarf-dev/zarf.git .zarf-src
+          git -C .zarf-src sparse-checkout set packages/zarf-agent packages/zarf-registry packages/gitea
+          printf '%s\n' "$ZARF_VERSION" > .zarf-src/.zarf-version
+
+  - name: create
+    description: Build one package for FLAVOR/architecture (config resolved from zarf-config/)
+    inputs:
+      package:
+        description: The package (component set) to build
+        default: ${PACKAGE}
+      architecture:
+        description: The target architecture; defaults to ARCH, then the host architecture
+        default: ${ARCH}
+    actions:
+      - task: resolve-package-version
+      - cmd: |
+          pkg_arch="${{ .inputs.architecture }}"
+          [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
+          suffix=""
+          [ "${{ .inputs.package }}" = "default" ] || suffix="-${{ .inputs.package }}"
+          config="zarf-config/${FLAVOR}-$pkg_arch.yaml"
+          [ -f "$config" ] || config="zarf-config/${FLAVOR}.yaml"
+          ZARF_CONFIG="$config" uds zarf package create "packages/${{ .inputs.package }}" \
+            --flavor "${FLAVOR}" --set PKG_VERSION="${PACKAGE_VERSION}${suffix}" -a "$pkg_arch" --confirm
+
+  - name: create-all
+    description: Build every package for FLAVOR/ARCH
+    actions:
+      - task: create
+        with:
+          package: default
+      - task: create
+        with:
+          package: agent-only
+      - task: create
+        with:
+          package: gitea
+
+  - name: publish
+    description: Build and publish the PACKAGE for FLAVOR (both architectures) to the resolved target repository
+    inputs:
+      package:
+        description: The package (component set) to publish
+        default: ${PACKAGE}
+    actions:
+      - task: resolve-package-version
+      - task: resolve-target-repo
+      - task: vendor
+      - task: create
+        with:
+          package: ${{ .inputs.package }}
+          architecture: amd64
+      - task: create
+        with:
+          package: ${{ .inputs.package }}
+          architecture: arm64
+      - cmd: |
+          package="${{ .inputs.package }}"
+          suffix=""
+          [ "$package" = "default" ] || suffix="-$package"
+          pkg_version="${PACKAGE_VERSION}${suffix}"
+          tag="${PACKAGE_VERSION}${suffix}-${FLAVOR}"
+
+          for arch in amd64 arm64; do
+            uds zarf package publish "zarf-init-${arch}-${pkg_version}-${FLAVOR}.tar.zst" "oci://${TARGET_REPO}" \
+              --tag "$tag" --retries "$PUBLISH_RETRIES"
+          done
