@@ -7,6 +7,10 @@ on:
   pull_request:
   # Allows publish.yaml to reuse this workflow so packages are tested before publishing
   workflow_call:
+    outputs:
+      flavors:
+        description: JSON array of tested flavors
+        value: ${{ jobs.select-flavors.outputs.flavors }}
 
 permissions:
   contents: read
@@ -83,10 +87,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Detect flavor-specific changes
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
         id: changes
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
         with:
+          base: ${{ github.ref }}
           filters: |
             upstream:
               - zarf-config/upstream*.yaml
@@ -107,33 +112,32 @@ jobs:
         id: select
         shell: bash
         env:
+          CHANGED_FILTERS: ${{ steps.changes.outputs.changes }}
           EVENT_NAME: ${{ github.event_name }}
           SHARED_CHANGED: ${{ steps.changes.outputs.shared }}
-          UPSTREAM_CHANGED: ${{ steps.changes.outputs.upstream }}
-          REGISTRY1_CHANGED: ${{ steps.changes.outputs.registry1 }}
-          UNICORN_CHANGED: ${{ steps.changes.outputs.unicorn }}
         run: |
           all_flavors='["upstream","registry1","unicorn"]'
-          if [ "$EVENT_NAME" != "pull_request" ] || [ "$SHARED_CHANGED" = "true" ]; then
+          if [ "$EVENT_NAME" != "pull_request" ] && [ "$EVENT_NAME" != "push" ]; then
+            echo "flavors=$all_flavors" >> "$GITHUB_OUTPUT"
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$SHARED_CHANGED" = "true" ]; then
             echo "flavors=$all_flavors" >> "$GITHUB_OUTPUT"
             echo "run_tests=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          flavors='[]'
-          for flavor in upstream registry1 unicorn; do
-            changed_var=$(printf '%s_CHANGED' "$flavor" | tr '[:lower:]' '[:upper:]')
-            if [ "${!changed_var}" = "true" ]; then
-              flavors=$(jq -c --arg flavor "$flavor" '. + [$flavor]' <<< "$flavors")
-            fi
-          done
-
-          if [ "$flavors" = "[]" ]; then
+          if [ "$CHANGED_FILTERS" = "[]" ] || [ -z "$CHANGED_FILTERS" ]; then
             echo "flavors=$all_flavors" >> "$GITHUB_OUTPUT"
-            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            if [ "$EVENT_NAME" = "pull_request" ]; then
+              echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
-          echo "flavors=$flavors" >> "$GITHUB_OUTPUT"
+          echo "flavors=$CHANGED_FILTERS" >> "$GITHUB_OUTPUT"
           echo "run_tests=true" >> "$GITHUB_OUTPUT"
 
   test:
