@@ -31,7 +31,8 @@ behavior.
 - Each flavor resolves its own Zarf source version: upstream tracks the upstream Zarf agent image,
   registry1 tracks the Iron Bank Zarf agent image, and unicorn tracks the Chainguard FIPS Zarf agent
   image. Renovate updates `zarf_source_version` and the agent image tag together in each flavor
-  config. `ZARF_VERSION` remains an explicit local override.
+  config. Package revisions are tracked in `releaser.yaml`; local overrides require matching
+  `ZARF_VERSION` and `PACKAGE_VERSION` values.
 - Gitea runs on a newer chart than upstream zarf's pin (overridden in common) because Chainguard
   only ships gitea >=1.26; a renovate packageRule keeps the gitea images on the chart-supported
   minor across all flavors.
@@ -45,7 +46,7 @@ behavior.
 
 - Upstream zarf behavior is inherited from the version resolved for each flavor; registry1 can lag
   without blocking upstream or unicorn publishes.
-- The `.zarf-src/` vendor step is required before any build (`uds run vendor`) and re-vendors
+- The `.zarf-src/` vendor step is required before any build (`uds run package:vendor`) and re-vendors
   automatically when the cached source version does not match the resolved flavor version.
 - Some uds-common conventions (bundles, Package CR, uds-pk releases, callable-test/publish) do not
   apply; local equivalents mirror their shape where possible.

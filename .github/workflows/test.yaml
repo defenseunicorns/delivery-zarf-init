@@ -10,12 +10,11 @@ on:
     outputs:
       flavors:
         description: JSON array of tested flavors
-        value: ${{ jobs.select-flavors.outputs.flavors }}
+        value: ${{ jobs.prepare.outputs.flavors }}
 
 permissions:
   contents: read
   packages: read
-  pull-requests: read
   id-token: write
 
 concurrency:
@@ -23,20 +22,22 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  renovate-readiness:
+  prepare:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
+    outputs:
+      flavors: ${{ steps.select.outputs.flavors }}
+      run_tests: ${{ steps.select.outputs.run_tests }}
     steps:
       - name: Checkout repository
-        if: ${{ startsWith(github.head_ref, 'renovate/') }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      - name: Check for zarf-agent updates
-        if: ${{ startsWith(github.head_ref, 'renovate/') }}
+      - name: Check Zarf agent readiness
+        if: ${{ github.event_name == 'pull_request' }}
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -54,37 +55,38 @@ jobs:
               old_agent=$(git show "$BASE_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.agent_image_tag')
               new_agent=$(git show "$HEAD_SHA:zarf-config/${flavor}.yaml" | yq -r '.package.create.set.agent_image_tag')
 
+              ready=true
               if [ "$old_source" = "$new_source" ] || [ "$old_agent" = "$new_agent" ] || [ "$new_source" != "$new_agent" ]; then
+                ready=false
+              fi
+
+              if [ "$flavor" = "registry1" ]; then
+                new_arm_agent=$(git show "$HEAD_SHA:zarf-config/registry1-arm64.yaml" | yq -r '.package.create.set.agent_image_tag')
+                if [ "$new_arm_agent" != "${new_source}-arm64" ]; then
+                  ready=false
+                fi
+              fi
+
+              if [ "$ready" != "true" ]; then
                 waiting+=("$flavor")
               fi
             fi
           done
 
           current_labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
-          if grep -Fxq "$label" <<< "$current_labels"; then
-            gh pr edit "$PR_NUMBER" --remove-label "$label"
-          fi
-
           if [ "${#waiting[@]}" -eq 0 ]; then
+            if grep -Fxq "$label" <<< "$current_labels"; then
+              gh pr edit "$PR_NUMBER" --remove-label "$label"
+            fi
             exit 0
           fi
 
-          gh pr edit "$PR_NUMBER" --add-label "$label"
+          if ! grep -Fxq "$label" <<< "$current_labels"; then
+            gh pr edit "$PR_NUMBER" --add-label "$label"
+          fi
 
           printf 'Waiting for zarf-agent updates: %s\n' "${waiting[*]}" >&2
           exit 1
-
-  select-flavors:
-    needs: renovate-readiness
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      flavors: ${{ steps.select.outputs.flavors }}
-      run_tests: ${{ steps.select.outputs.run_tests }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Detect flavor-specific changes
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
@@ -108,12 +110,14 @@ jobs:
               - .github/workflows/test.yaml
               - .github/workflows/publish.yaml
 
-      - name: Select flavors
+      - name: Select and validate flavors
         id: select
         shell: bash
         env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           CHANGED_FILTERS: ${{ steps.changes.outputs.changes }}
           EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           SHARED_CHANGED: ${{ steps.changes.outputs.shared }}
         run: |
           all_flavors='["upstream","registry1","unicorn"]'
@@ -122,27 +126,53 @@ jobs:
             echo "run_tests=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          release_version() {
+            git show "$1:releaser.yaml" 2>/dev/null \
+              | FLAVOR="$2" yq -r '.flavors[] | select(.name == env(FLAVOR)) | .version // ""' 2>/dev/null \
+              || true
+          }
+          selected() {
+            jq -e --arg flavor "$1" 'index($flavor)' <<< "$flavors" >/dev/null
+          }
+
+          flavors=${CHANGED_FILTERS:-[]}
           if [ "$SHARED_CHANGED" = "true" ]; then
-            echo "flavors=$all_flavors" >> "$GITHUB_OUTPUT"
-            echo "run_tests=true" >> "$GITHUB_OUTPUT"
-            exit 0
+            flavors="$all_flavors"
           fi
 
-          if [ "$CHANGED_FILTERS" = "[]" ] || [ -z "$CHANGED_FILTERS" ]; then
-            echo "flavors=$all_flavors" >> "$GITHUB_OUTPUT"
-            if [ "$EVENT_NAME" = "pull_request" ]; then
-              echo "run_tests=false" >> "$GITHUB_OUTPUT"
-            else
-              echo "run_tests=true" >> "$GITHUB_OUTPUT"
+          missing_versions=()
+          for flavor in upstream registry1 unicorn; do
+            old_version=$(release_version "$BASE_SHA" "$flavor")
+            new_version=$(release_version "$HEAD_SHA" "$flavor")
+
+            if [ "$old_version" != "$new_version" ] && ! selected "$flavor"; then
+              flavors=$(jq -c --arg flavor "$flavor" '. + [$flavor]' <<< "$flavors")
             fi
-            exit 0
+
+            if [ "$EVENT_NAME" = "pull_request" ] && selected "$flavor" \
+              && { [ -z "$new_version" ] || [ "$old_version" = "$new_version" ]; }; then
+              missing_versions+=("$flavor")
+            fi
+          done
+
+          if [ "${#missing_versions[@]}" -gt 0 ]; then
+            printf 'Package version must advance for: %s\n' "${missing_versions[*]}" >&2
+            exit 1
           fi
-          echo "flavors=$CHANGED_FILTERS" >> "$GITHUB_OUTPUT"
-          echo "run_tests=true" >> "$GITHUB_OUTPUT"
+
+          if [ "$flavors" = "[]" ]; then
+            flavors="$all_flavors"
+            if [ "$EVENT_NAME" = "pull_request" ]; then
+              run_tests=false
+            fi
+          fi
+
+          echo "flavors=$flavors" >> "$GITHUB_OUTPUT"
+          echo "run_tests=${run_tests:-true}" >> "$GITHUB_OUTPUT"
 
   test:
-    needs: select-flavors
-    if: ${{ needs.select-flavors.outputs.run_tests == 'true' }}
+    needs: prepare
+    if: ${{ needs.prepare.outputs.run_tests == 'true' }}
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 45
     permissions:
@@ -152,7 +182,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flavor: ${{ fromJSON(needs.select-flavors.outputs.flavors) }}
+        flavor: ${{ fromJSON(needs.prepare.outputs.flavors) }}
         platform:
           - arch: amd64
             runner: ubuntu-24.04
@@ -188,23 +218,17 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ always() }}
     needs:
-      - renovate-readiness
-      - select-flavors
+      - prepare
       - test
     steps:
       - name: Verify required jobs
         env:
-          READINESS_RESULT: ${{ needs.renovate-readiness.result }}
-          RUN_TESTS: ${{ needs.select-flavors.outputs.run_tests }}
-          SELECT_RESULT: ${{ needs.select-flavors.result }}
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          RUN_TESTS: ${{ needs.prepare.outputs.run_tests }}
           TEST_RESULT: ${{ needs.test.result }}
         run: |
-          if [ "$READINESS_RESULT" != "success" ]; then
-            echo "Renovate readiness failed: $READINESS_RESULT" >&2
-            exit 1
-          fi
-          if [ "$SELECT_RESULT" != "success" ]; then
-            echo "Flavor selection failed: $SELECT_RESULT" >&2
+          if [ "$PREPARE_RESULT" != "success" ]; then
+            echo "Test preparation failed: $PREPARE_RESULT" >&2
             exit 1
           fi
           if [ "$RUN_TESTS" = "true" ] && [ "$TEST_RESULT" != "success" ]; then

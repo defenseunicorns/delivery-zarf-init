@@ -16,6 +16,7 @@ on:
       - tests/**
       - .github/workflows/test.yaml
       - .github/workflows/publish.yaml
+      - releaser.yaml
   workflow_dispatch:
 
 permissions:
@@ -74,7 +75,7 @@ jobs:
 
       - name: Build and publish (${{ matrix.flavor }} / ${{ matrix.package }})
         run: |
-          uds run publish \
+          uds run package:publish \
             --set FLAVOR=${{ matrix.flavor }} \
             --set PACKAGE=${{ matrix.package }} \
             --no-progress

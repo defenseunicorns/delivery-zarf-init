@@ -13,10 +13,10 @@ IRSA, or any S3-compatible store backed by stable out-of-cluster storage.
 ## Local dev flow (uds-k3d MinIO)
 
 ```bash
-uds run setup-uds-cluster   # uds-k3d cluster; tests/uds-config.yaml provisions the bucket + user
-uds run create
-uds run deploy-s3           # deploys with tests/zarf-values-s3.yaml
-uds run deploy-workload && uds run test:all
+uds run cluster:setup-uds        # uds-k3d cluster; tests/uds-config.yaml provisions the bucket + user
+uds run package:create
+uds run cluster:deploy-s3        # deploys with tests/zarf-values-s3.yaml
+uds run cluster:deploy-workload && uds run test:all
 ```
 
 Bucket and user are provisioned via deploy-time overrides on the `uds-k3d-dev` package
