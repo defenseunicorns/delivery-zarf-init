@@ -2,8 +2,8 @@
 
 ## Supported Versions
 
-Package versions track the upstream [Zarf](https://github.com/zarf-dev/zarf) release they are built
-from; only packages built from the currently pinned Zarf version are supported.
+Each flavor tracks the [Zarf](https://github.com/zarf-dev/zarf) release available from its agent
+image source. Only packages built from the version currently pinned for that flavor are supported.
 
 ## Reporting a Vulnerability
 

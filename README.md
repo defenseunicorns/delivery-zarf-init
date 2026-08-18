@@ -55,7 +55,9 @@ Tags are multi-arch (amd64 + arm64).
 ## Deploy
 
 ```bash
-zarf package deploy oci://ghcr.io/defenseunicorns/delivery-zarf-init/init:v0.83.0-uds.0-unicorn --confirm
+zarf package deploy \
+  oci://ghcr.io/defenseunicorns/packages/private/delivery-zarf-init/init:<zarf-version>-uds.<revision>-unicorn \
+  --confirm
 ```
 
 ## Repo layout

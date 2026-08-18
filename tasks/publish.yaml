@@ -32,7 +32,7 @@ tasks:
             for config in "zarf-config/${tracked_flavor}.yaml" "zarf-config/${tracked_flavor}-arm64.yaml"; do
               if git cat-file -e "$tracked_sha:$config" 2>/dev/null; then
                 git show "$tracked_sha:$config" | yq -o=json -I=0 \
-                  '.package.create.set | with_entries(select(.key == "zarf_source_version" or (.key | test("_image_tag$"))))'
+                  '.package.create.set | with_entries(select(.key == "zarf_source_version" or .key == "gitea_image" or (.key | test("_image_tag$"))))'
               fi
             done
           }
