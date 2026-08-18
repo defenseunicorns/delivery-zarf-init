@@ -110,11 +110,13 @@ and `unicorn` requires Chainguard access as noted above.
 
 Each flavor config pins its own `zarf_source_version` alongside the corresponding agent image tag;
 `releaser.yaml` tracks the independently releasable `-uds.N` package version for each flavor.
-Renovate updates all three from the same image release and resets the package revision. If
+Renovate updates the matching flavor's source version, agent pins, and package version together. If
 `.zarf-src` already exists for a different source version, `uds run package:vendor` re-vendors it
 automatically. For local source overrides, set matching `ZARF_VERSION` and `PACKAGE_VERSION` values.
-PRs that change package artifacts must advance the package version for every affected flavor;
-test, workflow, documentation, and cluster-task-only changes do not require a release bump.
+PR title scopes declare release intent: `upstream`, `registry1`, and `unicorn` require that flavor's
+version to advance in `releaser.yaml`, while `shared` requires all three. Renovate uses the equivalent
+`deps-upstream`, `deps-registry1`, and `deps-unicorn` scopes. Other scopes require no release and must
+not change a package version. On merge, only flavors whose versions changed are published.
 
 Renovate PRs that change flavor images without advancing that flavor's Zarf agent are labeled and
 blocked before package tests run.
