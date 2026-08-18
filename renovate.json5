@@ -27,26 +27,35 @@
   prConcurrentLimit: 0,
   packageRules: [
     {
-      description: 'Format upstream zarf-agent update titles.',
+      description: 'Update the upstream flavor from its zarf-agent release.',
       matchPackageNames: [
         'ghcr.io/zarf-dev/zarf/agent',
       ],
+      groupName: 'Upstream zarf-agent',
+      groupSlug: 'upstream-zarf-agent',
+      groupSingleUpdates: true,
       commitMessageTopic: 'upstream zarf-agent',
       commitMessageExtra: 'to {{newValue}}',
     },
     {
-      description: 'Format Registry1 zarf-agent update titles.',
+      description: 'Update the Registry1 flavor from its zarf-agent release.',
       matchPackageNames: [
         'registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent',
       ],
+      groupName: 'Registry1 zarf-agent',
+      groupSlug: 'registry1-zarf-agent',
+      groupSingleUpdates: true,
       commitMessageTopic: 'registry1 zarf-agent',
       commitMessageExtra: 'to {{newValue}}',
     },
     {
-      description: 'Format Unicorn zarf-agent update titles.',
+      description: 'Update the Unicorn flavor from its zarf-agent release.',
       matchPackageNames: [
         'cgr.dev/defenseunicorns.com/zarf-agent-fips',
       ],
+      groupName: 'Unicorn zarf-agent',
+      groupSlug: 'unicorn-zarf-agent',
+      groupSingleUpdates: true,
       commitMessageTopic: 'unicorn zarf-agent',
       commitMessageExtra: 'to {{newValue}}',
     },
@@ -60,64 +69,15 @@
       allowedVersions: '/^v?1\\.27\\./',
     },
     {
-      description: 'Update upstream runtime images together, except for major versions.',
+      description: 'Aggregate dependencies that do not drive a flavor release.',
       matchPackageNames: [
-        'ghcr.io/zarf-dev/zarf/agent',
-        'library/registry',
-        'alpine/socat',
-        'ghcr.io/go-gitea/gitea',
+        '!ghcr.io/zarf-dev/zarf/agent',
+        '!registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent',
+        '!cgr.dev/defenseunicorns.com/zarf-agent-fips',
       ],
-      matchUpdateTypes: [
-        'minor',
-        'patch',
-        'digest',
-      ],
-      groupName: 'Upstream image updates',
-    },
-    {
-      description: 'Update Unicorn runtime images together, except for major versions.',
-      matchPackageNames: [
-        'cgr.dev/defenseunicorns.com/zarf-agent-fips',
-        'cgr.dev/defenseunicorns.com/distribution-fips',
-        'cgr.dev/defenseunicorns.com/socat-fips',
-        'cgr.dev/defenseunicorns.com/gitea-fips',
-      ],
-      matchUpdateTypes: [
-        'minor',
-        'patch',
-        'digest',
-      ],
-      groupName: 'Unicorn image updates',
-    },
-    {
-      description: 'Keep Iron Bank updates isolated so slower Registry1 publication does not block upstream or Unicorn flavor updates.',
-      matchPackageNames: [
-        'registry1.dso.mil/ironbank/**',
-      ],
-      matchUpdateTypes: [
-        'minor',
-        'patch',
-        'digest',
-      ],
-      groupName: 'Registry1 image updates',
-    },
-    {
-      description: 'Aggregate GitHub Actions and pre-commit tooling into one CI dependency PR.',
-      matchManagers: [
-        'github-actions',
-        'pre-commit',
-      ],
-      groupName: 'CI dependencies',
-    },
-    {
-      description: 'Aggregate task-runner and cluster-test dependencies into the CI dependency PR.',
-      matchPackageNames: [
-        'defenseunicorns/uds-cli',
-        'defenseunicorns/uds-common',
-        'ghcr.io/defenseunicorns/packages/uds-k3d',
-        'ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev',
-      ],
-      groupName: 'CI dependencies',
+      groupName: 'Other dependencies',
+      groupSlug: 'other-dependencies',
+      groupSingleUpdates: true,
     },
   ],
   vulnerabilityAlerts: {
