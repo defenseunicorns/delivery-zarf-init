@@ -75,12 +75,9 @@
       allowedVersions: '/^v?1\\.27\\./',
     },
     {
-      description: 'Treat the shared Gitea chart as a release dependency for every flavor.',
+      description: 'Treat shared Helm charts as release dependencies for every flavor.',
       matchDatasources: [
         'helm',
-      ],
-      matchPackageNames: [
-        'gitea',
       ],
       groupName: 'Shared package dependencies',
       groupSlug: 'shared-package-dependencies',
@@ -89,8 +86,10 @@
     },
     {
       description: 'Aggregate dependencies that are not shipped in a flavor package.',
+      matchDatasources: [
+        '!helm',
+      ],
       matchPackageNames: [
-        '!gitea',
         '!ghcr.io/zarf-dev/zarf/agent',
         '!library/registry',
         '!alpine/socat',
