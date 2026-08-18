@@ -5,6 +5,7 @@ name: Test
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   # Allows publish.yaml to reuse this workflow so packages are tested before publishing
   workflow_call:
     outputs:
