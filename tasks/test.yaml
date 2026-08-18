@@ -14,6 +14,9 @@ variables:
     default: /tmp/delivery-zarf-init-release-plan.json
   - name: TEST_PLAN_FILE
     default: /tmp/delivery-zarf-init-test-plan.json
+  - name: K3D_CORE_SLIM_DEV_VERSION
+    # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev versioning=docker
+    default: 1.10.0
 
 tasks:
   - name: plan
@@ -87,6 +90,7 @@ tasks:
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
+          # renovate: datasource=docker depName=ghcr.io/zarf-dev/packages/dos-games versioning=docker
           uds zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.2.0 \
             --confirm -a "$pkg_arch"
 
@@ -94,9 +98,8 @@ tasks:
     description: Create a uds-k3d cluster (with MinIO) using the test overrides in tests/uds-config.yaml
     actions:
       - cmd: |
-          # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev versioning=docker
           UDS_CONFIG=tests/uds-config.yaml uds deploy \
-            oci://ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev:0.58.1 \
+            "oci://ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev:${K3D_CORE_SLIM_DEV_VERSION}" \
             -p uds-k3d-dev --confirm
 
   - name: s3
