@@ -16,6 +16,7 @@ on:
       - tests/**
       - .github/workflows/test.yaml
       - .github/workflows/publish.yaml
+      - releaser.yaml
   workflow_dispatch:
 
 permissions:
@@ -38,6 +39,7 @@ jobs:
       id-token: write
 
   publish:
+    if: ${{ needs.test.outputs.run_publish == 'true' }}
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -48,10 +50,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flavor:
-          - upstream
-          - registry1
-          - unicorn
+        flavor: ${{ fromJSON(needs.test.outputs.release_flavors) }}
         package:
           - default
           - agent-only
@@ -77,7 +76,7 @@ jobs:
 
       - name: Build and publish (${{ matrix.flavor }} / ${{ matrix.package }})
         run: |
-          uds run publish \
+          uds run publish:package \
             --set FLAVOR=${{ matrix.flavor }} \
             --set PACKAGE=${{ matrix.package }} \
             --no-progress

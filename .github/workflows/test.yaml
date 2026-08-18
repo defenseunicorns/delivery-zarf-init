@@ -5,17 +5,15 @@ name: Test
 
 on:
   pull_request:
-    paths:
-      - packages/**
-      - src/**
-      - zarf-config/**
-      - tasks.yaml
-      - tasks/**
-      - tests/**
-      - .github/workflows/test.yaml
-      - .github/workflows/publish.yaml
   # Allows publish.yaml to reuse this workflow so packages are tested before publishing
   workflow_call:
+    outputs:
+      release_flavors:
+        description: JSON array of flavors whose release version changed
+        value: ${{ jobs.prepare.outputs.release_flavors }}
+      run_publish:
+        description: Whether any flavor needs publishing
+        value: ${{ jobs.prepare.outputs.run_publish }}
 
 permissions:
   contents: read
@@ -27,7 +25,75 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      flavors: ${{ steps.plan.outputs.flavors }}
+      release_flavors: ${{ steps.plan.outputs.release_flavors }}
+      run_publish: ${{ steps.plan.outputs.run_publish }}
+      run_tests: ${{ steps.plan.outputs.run_tests }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install UDS CLI
+        uses: defenseunicorns/setup-uds@ab842abcad1f7a3305c2538e3dd1950d0daacfa5 # v1.0.1
+        with:
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.35.1
+
+      - name: Plan tests and releases
+        id: plan
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          uds run publish:plan --no-progress \
+            --set BASE_SHA="$BASE_SHA" --set HEAD_SHA="$HEAD_SHA" --set EVENT_NAME="$EVENT_NAME"
+          uds run test:plan --no-progress \
+            --set BASE_SHA="$BASE_SHA" --set HEAD_SHA="$HEAD_SHA" --set EVENT_NAME="$EVENT_NAME"
+
+          echo "flavors=$(jq -c '.flavors' /tmp/delivery-zarf-init-test-plan.json)" >> "$GITHUB_OUTPUT"
+          echo "run_tests=$(jq -r '.required' /tmp/delivery-zarf-init-test-plan.json)" >> "$GITHUB_OUTPUT"
+          echo "release_flavors=$(jq -c '.flavors' /tmp/delivery-zarf-init-release-plan.json)" >> "$GITHUB_OUTPUT"
+          echo "run_publish=$(jq -r '.required' /tmp/delivery-zarf-init-release-plan.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Sync Zarf agent readiness label
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          label="waiting on zarf-agent"
+          waiting=$(jq -c '.waitingForAgent' /tmp/delivery-zarf-init-release-plan.json)
+          current_labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
+
+          if [ "$waiting" = "[]" ]; then
+            if grep -Fxq "$label" <<< "$current_labels"; then
+              gh pr edit "$PR_NUMBER" --remove-label "$label"
+            fi
+          elif ! grep -Fxq "$label" <<< "$current_labels"; then
+            gh pr edit "$PR_NUMBER" --add-label "$label"
+          fi
+
+      - name: Validate release readiness
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          missing=$(jq -r '.missingVersions | join(" ")' /tmp/delivery-zarf-init-release-plan.json)
+          waiting=$(jq -r '.waitingForAgent | join(" ")' /tmp/delivery-zarf-init-release-plan.json)
+          [ -z "$missing" ] || { echo "Package version must advance for: $missing" >&2; exit 1; }
+          [ -z "$waiting" ] || { echo "Waiting for zarf-agent updates: $waiting" >&2; exit 1; }
+
   test:
+    needs: prepare
+    if: ${{ needs.prepare.outputs.run_tests == 'true' }}
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 45
     permissions:
@@ -37,10 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flavor:
-          - upstream
-          - registry1
-          - unicorn
+        flavor: ${{ fromJSON(needs.prepare.outputs.flavors) }}
         platform:
           - arch: amd64
             runner: ubuntu-24.04
@@ -74,7 +137,23 @@ jobs:
 
   verify-test:
     runs-on: ubuntu-latest
-    needs: test
+    if: ${{ always() }}
+    needs:
+      - prepare
+      - test
     steps:
-      - name: Success
-        run: echo "All tests passed successfully!"
+      - name: Verify required jobs
+        env:
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          RUN_TESTS: ${{ needs.prepare.outputs.run_tests }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          if [ "$PREPARE_RESULT" != "success" ]; then
+            echo "Test preparation failed: $PREPARE_RESULT" >&2
+            exit 1
+          fi
+          if [ "$RUN_TESTS" = "true" ] && [ "$TEST_RESULT" != "success" ]; then
+            echo "Package tests failed: $TEST_RESULT" >&2
+            exit 1
+          fi
+          echo "Required tests passed"
