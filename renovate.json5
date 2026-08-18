@@ -75,8 +75,22 @@
       allowedVersions: '/^v?1\\.27\\./',
     },
     {
+      description: 'Treat the shared Gitea chart as a release dependency for every flavor.',
+      matchDatasources: [
+        'helm',
+      ],
+      matchPackageNames: [
+        'gitea',
+      ],
+      groupName: 'Shared package dependencies',
+      groupSlug: 'shared-package-dependencies',
+      groupSingleUpdates: true,
+      semanticCommitScope: 'deps-shared',
+    },
+    {
       description: 'Aggregate dependencies that are not shipped in a flavor package.',
       matchPackageNames: [
+        '!gitea',
         '!ghcr.io/zarf-dev/zarf/agent',
         '!library/registry',
         '!alpine/socat',
@@ -97,7 +111,6 @@
   ],
   vulnerabilityAlerts: {
     enabled: true,
-    groupName: 'Security Updates',
     schedule: [],
     dependencyDashboardApproval: false,
     minimumReleaseAge: null,
