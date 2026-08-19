@@ -29,7 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
     outputs:
       flavors: ${{ steps.plan.outputs.flavors }}
       release_flavors: ${{ steps.plan.outputs.release_flavors }}
@@ -64,32 +63,6 @@ jobs:
           echo "run_tests=$(jq -r '.required' /tmp/delivery-zarf-init-test-plan.json)" >> "$GITHUB_OUTPUT"
           echo "release_flavors=$(jq -c '.flavors' /tmp/delivery-zarf-init-release-plan.json)" >> "$GITHUB_OUTPUT"
           echo "run_publish=$(jq -r '.required' /tmp/delivery-zarf-init-release-plan.json)" >> "$GITHUB_OUTPUT"
-
-      - name: Sync Zarf agent readiness label
-        if: ${{ github.event_name == 'pull_request' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          label="waiting on zarf-agent"
-          waiting=$(jq -c '.waitingForAgent' /tmp/delivery-zarf-init-release-plan.json)
-          current_labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
-
-          if [ "$waiting" = "[]" ]; then
-            if grep -Fxq "$label" <<< "$current_labels"; then
-              gh pr edit "$PR_NUMBER" --remove-label "$label"
-            fi
-          elif ! grep -Fxq "$label" <<< "$current_labels"; then
-            gh pr edit "$PR_NUMBER" --add-label "$label"
-          fi
-
-      - name: Validate release readiness
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          missing=$(jq -r '.missingVersions | join(" ")' /tmp/delivery-zarf-init-release-plan.json)
-          waiting=$(jq -r '.waitingForAgent | join(" ")' /tmp/delivery-zarf-init-release-plan.json)
-          [ -z "$missing" ] || { echo "Package version must advance for: $missing" >&2; exit 1; }
-          [ -z "$waiting" ] || { echo "Waiting for zarf-agent updates: $waiting" >&2; exit 1; }
 
   test:
     needs: prepare

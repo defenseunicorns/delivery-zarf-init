@@ -61,7 +61,7 @@ components:
     charts:
       - name: gitea
         # newer than upstream zarf's chart pin; gitea >=1.26 requires it
-        # renovate: datasource=docker depName=registry-1.docker.io/giteacharts/gitea versioning=docker
+        # renovate: datasource=helm depName=gitea registryUrl=https://dl.gitea.com/charts
         version: 12.7.0
         values:
           - sourcePath: .gitea

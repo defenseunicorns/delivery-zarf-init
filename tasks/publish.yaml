@@ -10,6 +10,8 @@ variables:
     default: HEAD
   - name: EVENT_NAME
     default: local
+  - name: PR_TITLE
+    default: ""
   - name: RELEASE_PLAN_FILE
     default: /tmp/delivery-zarf-init-release-plan.json
 
@@ -32,41 +34,60 @@ tasks:
             for config in "zarf-config/${tracked_flavor}.yaml" "zarf-config/${tracked_flavor}-arm64.yaml"; do
               if git cat-file -e "$tracked_sha:$config" 2>/dev/null; then
                 git show "$tracked_sha:$config" | yq -o=json -I=0 \
-                  '.package.create.set | with_entries(select(.key == "zarf_source_version" or (.key | test("_image_tag$"))))'
+                  '.package.create.set | with_entries(select(.key == "zarf_source_version" or .key == "gitea_image" or (.key | test("_image_tag$"))))'
               fi
             done
           }
 
           all_flavors='["upstream","registry1","unicorn"]'
+          expected_flavors='[]'
           release_flavors='[]'
           missing_versions='[]'
+          unexpected_versions='[]'
           waiting='[]'
 
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             release_flavors=$all_flavors
           else
-            release_shared=false
-            if ! git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- packages src tasks/package.yaml; then
-              release_shared=true
+            if [ "$EVENT_NAME" = "pull_request" ]; then
+              release_scope=$(printf '%s\n' "$PR_TITLE" | sed -nE 's/^[[:alnum:]-]+\(([^)]+)\)!?:.*/\1/p')
+              case "$release_scope" in
+                upstream|deps-upstream)
+                  expected_flavors='["upstream"]'
+                  ;;
+                registry1|deps-registry1)
+                  expected_flavors='["registry1"]'
+                  ;;
+                unicorn|deps-unicorn)
+                  expected_flavors='["unicorn"]'
+                  ;;
+                shared|deps-shared)
+                  expected_flavors=$all_flavors
+                  ;;
+              esac
             fi
 
             for flavor in upstream registry1 unicorn; do
               old_version=$(release_version "$BASE_SHA" "$flavor")
               new_version=$(release_version "$HEAD_SHA" "$flavor")
-              config_changed=false
-              if ! git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- "zarf-config/${flavor}"'*.yaml'; then
-                config_changed=true
-              fi
 
               if [ -n "$new_version" ] && [ "$old_version" != "$new_version" ]; then
                 release_flavors=$(append "$release_flavors" "$flavor")
               fi
 
-              if [ "$EVENT_NAME" = "pull_request" ] \
-                && { [ -z "$new_version" ] \
-                  || { [ "$old_version" = "$new_version" ] \
-                    && { [ "$release_shared" = "true" ] || [ "$config_changed" = "true" ]; }; }; }; then
-                missing_versions=$(append "$missing_versions" "$flavor")
+              if [ "$EVENT_NAME" = "pull_request" ]; then
+                expected=$(printf '%s\n' "$expected_flavors" | jq -r --arg flavor "$flavor" 'index($flavor) != null')
+                changed=false
+                if [ -n "$new_version" ] && [ "$old_version" != "$new_version" ]; then
+                  changed=true
+                fi
+                if [ -z "$new_version" ]; then
+                  missing_versions=$(append "$missing_versions" "$flavor")
+                elif [ "$expected" = "true" ] && [ "$changed" != "true" ]; then
+                  missing_versions=$(append "$missing_versions" "$flavor")
+                elif [ "$expected" != "true" ] && [ "$changed" = "true" ]; then
+                  unexpected_versions=$(append "$unexpected_versions" "$flavor")
+                fi
               fi
 
               if [ "$EVENT_NAME" != "pull_request" ]; then
@@ -110,12 +131,16 @@ tasks:
 
           jq -n \
             --argjson flavors "$release_flavors" \
+            --argjson expectedFlavors "$expected_flavors" \
             --argjson missingVersions "$missing_versions" \
+            --argjson unexpectedVersions "$unexpected_versions" \
             --argjson waitingForAgent "$waiting" \
             '{
               flavors: $flavors,
               required: ($flavors | length > 0),
+              expectedFlavors: $expectedFlavors,
               missingVersions: $missingVersions,
+              unexpectedVersions: $unexpectedVersions,
               waitingForAgent: $waitingForAgent
             }' > "$RELEASE_PLAN_FILE"
 
