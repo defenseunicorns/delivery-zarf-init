@@ -16,7 +16,7 @@ variables:
     default: /tmp/delivery-zarf-init-test-plan.json
   - name: K3D_CORE_SLIM_DEV_VERSION
     # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev versioning=docker
-    default: 1.10.0
+    default: 1.11.0
 
 tasks:
   - name: plan
@@ -91,7 +91,7 @@ tasks:
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
           # renovate: datasource=docker depName=ghcr.io/zarf-dev/packages/dos-games versioning=docker
-          uds zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.2.0 \
+          uds zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.3.0 \
             --confirm -a "$pkg_arch"
 
   - name: uds-cluster
