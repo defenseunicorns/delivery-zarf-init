@@ -4,7 +4,7 @@
 flavors:
   - name: upstream
     # renovate-uds: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
-    version: v0.83.0-uds.0
+    version: v0.84.0-uds.0
   - name: registry1
     # renovate-uds: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
     version: v0.83.0-uds.0
