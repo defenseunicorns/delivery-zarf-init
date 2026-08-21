@@ -10,4 +10,4 @@ flavors:
     version: v0.83.0-uds.0
   - name: unicorn
     # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
-    version: v0.83.0-uds.0
+    version: v0.84.0-uds.0
