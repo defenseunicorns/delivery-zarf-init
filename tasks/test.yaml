@@ -16,7 +16,7 @@ variables:
     default: /tmp/delivery-zarf-init-test-plan.json
   - name: K3D_CORE_SLIM_DEV_VERSION
     # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev versioning=docker
-    default: 1.11.0
+    default: 1.11.1
 
 tasks:
   - name: plan
