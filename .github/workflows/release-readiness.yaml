@@ -37,7 +37,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          uds run publish:plan --no-progress \
+          uds run publish-tasks:plan --no-progress \
             --set BASE_SHA="$BASE_SHA" --set HEAD_SHA="$HEAD_SHA" --set EVENT_NAME=pull_request \
             --set PR_TITLE="$PR_TITLE"
 

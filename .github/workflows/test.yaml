@@ -54,7 +54,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          uds run publish:plan --no-progress \
+          uds run publish-tasks:plan --no-progress \
             --set BASE_SHA="$BASE_SHA" --set HEAD_SHA="$HEAD_SHA" --set EVENT_NAME="$EVENT_NAME"
           uds run test:plan --no-progress \
             --set BASE_SHA="$BASE_SHA" --set HEAD_SHA="$HEAD_SHA" --set EVENT_NAME="$EVENT_NAME"

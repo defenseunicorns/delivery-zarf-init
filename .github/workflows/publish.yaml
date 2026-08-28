@@ -76,7 +76,7 @@ jobs:
 
       - name: Build and publish (${{ matrix.flavor }} / ${{ matrix.package }})
         run: |
-          uds run publish:package \
+          uds run publish \
             --set FLAVOR=${{ matrix.flavor }} \
             --set PACKAGE=${{ matrix.package }} \
             --no-progress

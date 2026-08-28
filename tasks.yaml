@@ -5,7 +5,7 @@
 
 includes:
   - package: ./tasks/package.yaml
-  - publish: ./tasks/publish.yaml
+  - publish-tasks: ./tasks/publish.yaml
   - test: ./tasks/test.yaml
   - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.28.1/tasks/lint.yaml
   - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.28.1/tasks/actions.yaml
@@ -67,6 +67,28 @@ tasks:
       - task: test:package
       - task: test:workload
       - task: test:all
+
+  - name: publish
+    description: Build and publish the PACKAGE for FLAVOR (both architectures) to the resolved target repository
+    inputs:
+      package:
+        description: The package (component set) to publish
+        default: ${PACKAGE}
+    actions:
+      - task: package:resolve-package-version
+      - task: publish-tasks:resolve-target-repo
+      - task: package:vendor
+      - task: package:create
+        with:
+          package: ${{ .inputs.package }}
+          architecture: amd64
+      - task: package:create
+        with:
+          package: ${{ .inputs.package }}
+          architecture: arm64
+      - task: publish-tasks:package
+        with:
+          package: ${{ .inputs.package }}
 
   - name: pre-commit-all
     description: Run pre-commit hooks, the uds-common lint suite, and fix SPDX license headers
