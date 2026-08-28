@@ -7,12 +7,12 @@ package:
       pkg_version: upstream
 
       # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
-      zarf_source_version: v0.83.0
+      zarf_source_version: v0.84.0
 
       agent_image_domain: ghcr.io/
       agent_image: zarf-dev/zarf/agent
       # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
-      agent_image_tag: v0.83.0
+      agent_image_tag: v0.84.0
 
       registry_image_domain: ""
       registry_image: library/registry
@@ -26,4 +26,4 @@ package:
 
       # tag format prevents IB anchoring; renovate cap enforces lockstep
       # renovate: datasource=docker depName=ghcr.io/go-gitea/gitea versioning=docker
-      gitea_image: ghcr.io/go-gitea/gitea:1.27.1-rootless
+      gitea_image: ghcr.io/go-gitea/gitea:1.27.2-rootless
