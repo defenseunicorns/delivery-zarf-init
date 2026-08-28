@@ -33,6 +33,9 @@
           },
           "type": "object"
         },
+        "mutationExclusions": {
+          "type": "array"
+        },
         "nodeSelector": {
           "type": "object"
         },
@@ -97,6 +100,9 @@
         },
         "tolerations": {
           "type": "array"
+        },
+        "webhookAnnotations": {
+          "type": "object"
         }
       },
       "type": "object"
@@ -106,10 +112,10 @@
         "affinity": {
           "properties": {
             "custom": {
-              "type": "string"
+              "type": "object"
             },
             "enabled": {
-              "type": "string"
+              "type": "boolean"
             }
           },
           "type": "object"
@@ -117,19 +123,19 @@
         "autoscaling": {
           "properties": {
             "enabled": {
-              "type": "string"
+              "type": "boolean"
             },
             "mapReplicasToNodes": {
-              "type": "string"
+              "type": "boolean"
             },
             "maxReplicas": {
-              "type": "string"
+              "type": "number"
             },
             "minReplicas": {
-              "type": "string"
+              "type": "number"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "string"
+              "type": "number"
             }
           },
           "type": "object"
@@ -259,11 +265,8 @@
         },
         "serviceAccount": {
           "properties": {
-            "annotations": {
-              "type": "string"
-            },
             "create": {
-              "type": "string"
+              "type": "boolean"
             },
             "name": {
               "type": "string"

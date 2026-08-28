@@ -213,14 +213,6 @@
                   },
                   "type": "object"
                 },
-                "security": {
-                  "properties": {
-                    "INSTALL_LOCK": {
-                      "type": "boolean"
-                    }
-                  },
-                  "type": "object"
-                },
                 "server": {
                   "properties": {
                     "DISABLE_SSH": {
@@ -325,9 +317,6 @@
                     }
                   },
                   "type": "object"
-                },
-                "token": {
-                  "type": "string"
                 }
               },
               "type": "object"
@@ -417,17 +406,11 @@
             "hostAliases": {
               "type": "array"
             },
-            "imagePullSecrets": {
-              "type": "array"
-            },
             "storageClass": {
               "type": "string"
             }
           },
           "type": "object"
-        },
-        "imagePullSecrets": {
-          "type": "array"
         },
         "ingress": {
           "properties": {
@@ -582,9 +565,6 @@
                         "database": {
                           "type": "string"
                         },
-                        "password": {
-                          "type": "string"
-                        },
                         "username": {
                           "type": "string"
                         }
@@ -671,9 +651,6 @@
                     "database": {
                       "type": "string"
                     },
-                    "password": {
-                      "type": "string"
-                    },
                     "username": {
                       "type": "string"
                     }
@@ -702,28 +679,11 @@
               "type": "object"
             },
             "pgpool": {
-              "properties": {
-                "adminPassword": {
-                  "type": "string"
-                },
-                "srCheckPassword": {
-                  "type": "string"
-                }
-              },
+              "properties": {},
               "type": "object"
             },
             "postgresql": {
-              "properties": {
-                "password": {
-                  "type": "string"
-                },
-                "postgresPassword": {
-                  "type": "string"
-                },
-                "repmgrPassword": {
-                  "type": "string"
-                }
-              },
+              "properties": {},
               "type": "object"
             },
             "service": {
@@ -936,41 +896,17 @@
         },
         "serviceAccount": {
           "properties": {
-            "annotations": {
-              "properties": {},
-              "type": "object"
-            },
             "automountServiceAccountToken": {
               "type": "boolean"
             },
             "create": {
               "type": "boolean"
             },
-            "imagePullSecrets": {
-              "type": "array"
-            },
             "labels": {
               "properties": {},
               "type": "object"
             },
             "name": {
-              "type": "string"
-            }
-          },
-          "type": "object"
-        },
-        "signing": {
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            },
-            "existingSecret": {
-              "type": "string"
-            },
-            "gpgHome": {
-              "type": "string"
-            },
-            "privateKey": {
               "type": "string"
             }
           },
@@ -1020,11 +956,7 @@
             "global": {
               "properties": {
                 "valkey": {
-                  "properties": {
-                    "password": {
-                      "type": "string"
-                    }
-                  },
+                  "properties": {},
                   "type": "object"
                 }
               },
@@ -1155,12 +1087,6 @@
               },
               "type": "object"
             },
-            "usePassword": {
-              "type": "boolean"
-            },
-            "usePasswordFiles": {
-              "type": "boolean"
-            },
             "volumePermissions": {
               "properties": {},
               "type": "object"
@@ -1202,6 +1128,9 @@
             }
           },
           "type": "object"
+        },
+        "mutationExclusions": {
+          "type": "array"
         },
         "nodeSelector": {
           "type": "object"
@@ -1267,6 +1196,9 @@
         },
         "tolerations": {
           "type": "array"
+        },
+        "webhookAnnotations": {
+          "type": "object"
         }
       },
       "type": "object"
@@ -1276,10 +1208,10 @@
         "affinity": {
           "properties": {
             "custom": {
-              "type": "string"
+              "type": "object"
             },
             "enabled": {
-              "type": "string"
+              "type": "boolean"
             }
           },
           "type": "object"
@@ -1287,19 +1219,19 @@
         "autoscaling": {
           "properties": {
             "enabled": {
-              "type": "string"
+              "type": "boolean"
             },
             "mapReplicasToNodes": {
-              "type": "string"
+              "type": "boolean"
             },
             "maxReplicas": {
-              "type": "string"
+              "type": "number"
             },
             "minReplicas": {
-              "type": "string"
+              "type": "number"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "string"
+              "type": "number"
             }
           },
           "type": "object"
@@ -1429,11 +1361,8 @@
         },
         "serviceAccount": {
           "properties": {
-            "annotations": {
-              "type": "string"
-            },
             "create": {
-              "type": "string"
+              "type": "boolean"
             },
             "name": {
               "type": "string"

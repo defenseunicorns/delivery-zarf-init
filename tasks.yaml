@@ -7,6 +7,7 @@ includes:
   - package: ./tasks/package.yaml
   - publish-tasks: ./tasks/publish.yaml
   - test: ./tasks/test.yaml
+  - values: ./tasks/values.yaml
   - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.28.1/tasks/lint.yaml
   - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.28.1/tasks/actions.yaml
 
@@ -89,6 +90,18 @@ tasks:
       - task: publish-tasks:package
         with:
           package: ${{ .inputs.package }}
+
+  - name: generate-zarf-values-schemas
+    description: Regenerate schemas for packages that expose Zarf values
+    actions:
+      - task: package:vendor
+      - task: values:generate
+
+  - name: test-zarf-values
+    description: Validate Zarf values schemas, mappings, and exclusions
+    actions:
+      - task: package:vendor
+      - task: values:test
 
   - name: pre-commit-all
     description: Run pre-commit hooks, the uds-common lint suite, and fix SPDX license headers

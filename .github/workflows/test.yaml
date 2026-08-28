@@ -25,6 +25,23 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  values:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install UDS CLI
+        uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+        with:
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.36.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Validate Zarf values
+        run: uds run test-zarf-values --no-progress
+
   prepare:
     runs-on: ubuntu-latest
     permissions:
@@ -114,12 +131,14 @@ jobs:
     needs:
       - prepare
       - test
+      - values
     steps:
       - name: Verify required jobs
         env:
           PREPARE_RESULT: ${{ needs.prepare.result }}
           RUN_TESTS: ${{ needs.prepare.outputs.run_tests }}
           TEST_RESULT: ${{ needs.test.result }}
+          VALUES_RESULT: ${{ needs.values.result }}
         run: |
           if [ "$PREPARE_RESULT" != "success" ]; then
             echo "Test preparation failed: $PREPARE_RESULT" >&2
@@ -127,6 +146,10 @@ jobs:
           fi
           if [ "$RUN_TESTS" = "true" ] && [ "$TEST_RESULT" != "success" ]; then
             echo "Package tests failed: $TEST_RESULT" >&2
+            exit 1
+          fi
+          if [ "$VALUES_RESULT" != "success" ]; then
+            echo "Zarf values validation failed: $VALUES_RESULT" >&2
             exit 1
           fi
           echo "Required tests passed"

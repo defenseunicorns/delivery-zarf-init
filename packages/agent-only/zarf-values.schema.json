@@ -33,6 +33,9 @@
           },
           "type": "object"
         },
+        "mutationExclusions": {
+          "type": "array"
+        },
         "nodeSelector": {
           "type": "object"
         },
@@ -97,6 +100,9 @@
         },
         "tolerations": {
           "type": "array"
+        },
+        "webhookAnnotations": {
+          "type": "object"
         }
       },
       "type": "object"

@@ -1,0 +1,31 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+gitea:
+  affinity: {}
+  deployment:
+    labels:
+      zarf-values-test: ALLOWED_ZARF_VALUE_gitea
+  image:
+    repository: SHOULD_NOT_APPEAR_gitea
+  global:
+    imagePullSecrets:
+      - name: SHOULD_NOT_APPEAR_gitea
+  serviceAccount:
+    annotations:
+      zarf-values-test: SHOULD_NOT_APPEAR_gitea
+  gitea:
+    config:
+      service:
+        DISABLE_REGISTRATION: true
+    metrics:
+      token: SHOULD_NOT_APPEAR_gitea
+  postgresql:
+    global:
+      postgresql:
+        auth:
+          password: SHOULD_NOT_APPEAR_gitea
+  replicaCount: 1
+  tolerations:
+    - key: zarf-values-test
+      operator: Exists
