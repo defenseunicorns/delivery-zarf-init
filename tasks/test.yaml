@@ -75,7 +75,6 @@ tasks:
         default: --values tests/zarf-values-override.yaml
     actions:
       # zarf's built-in health checks gate each chart install, so no extra wait is needed here
-      - task: package:resolve-package-version
       - cmd: |
           pkg_arch="${ARCH}"
           [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"

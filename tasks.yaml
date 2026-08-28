@@ -68,6 +68,28 @@ tasks:
       - task: test:workload
       - task: test:all
 
+  - name: publish-package
+    description: Build and publish the PACKAGE for FLAVOR (both architectures) to the resolved target repository
+    inputs:
+      package:
+        description: The package (component set) to publish
+        default: ${PACKAGE}
+    actions:
+      - task: package:resolve-package-version
+      - task: publish:resolve-target-repo
+      - task: package:vendor
+      - task: package:create
+        with:
+          package: ${{ .inputs.package }}
+          architecture: amd64
+      - task: package:create
+        with:
+          package: ${{ .inputs.package }}
+          architecture: arm64
+      - task: publish:package
+        with:
+          package: ${{ .inputs.package }}
+
   - name: pre-commit-all
     description: Run pre-commit hooks, the uds-common lint suite, and fix SPDX license headers
     actions:

@@ -161,23 +161,12 @@ tasks:
           - name: TARGET_REPO
 
   - name: package
-    description: Build and publish the PACKAGE for FLAVOR (both architectures) to the resolved target repository
+    description: Publish the previously built PACKAGE artifacts for FLAVOR to the resolved target repository
     inputs:
       package:
         description: The package (component set) to publish
         default: ${PACKAGE}
     actions:
-      - task: package:resolve-package-version
-      - task: resolve-target-repo
-      - task: package:vendor
-      - task: package:create
-        with:
-          package: ${{ .inputs.package }}
-          architecture: amd64
-      - task: package:create
-        with:
-          package: ${{ .inputs.package }}
-          architecture: arm64
       - cmd: |
           package="${{ .inputs.package }}"
           suffix=""

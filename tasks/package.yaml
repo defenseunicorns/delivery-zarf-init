@@ -105,6 +105,20 @@ tasks:
           ZARF_CONFIG="$config" uds zarf package create "packages/${{ .inputs.package }}" \
             --flavor "${FLAVOR}" --set PKG_VERSION="${PACKAGE_VERSION}${suffix}" -a "$pkg_arch" --confirm
 
+          artifact="zarf-init-${pkg_arch}-${PACKAGE_VERSION}${suffix}-${FLAVOR}.tar.zst"
+          if [ ! -f "$artifact" ]; then
+            echo "expected created artifact: $artifact" >&2
+            exit 1
+          fi
+
+          actual_flavor=$(uds zarf package inspect definition "$artifact" --no-color --log-level error \
+            | yq -r '.build.flavor // ""')
+          if [ "$actual_flavor" != "$FLAVOR" ]; then
+            echo "artifact $artifact has flavor '${actual_flavor:-unset}', expected '$FLAVOR'" >&2
+            exit 1
+          fi
+          echo "verified artifact flavor: $artifact ($actual_flavor)"
+
   - name: create-all
     description: Build every package for FLAVOR/ARCH
     actions:
