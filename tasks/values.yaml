@@ -43,13 +43,13 @@ tasks:
     description: Regenerate schemas for packages that expose Zarf values
     actions:
       - description: Generate schemas
-        cmd: uv run --with pyyaml python scripts/normalize-values-schema.py
+        cmd: uv run python scripts/normalize-values-schema.py
 
   - name: check-generated
     description: Fail when committed Zarf values schemas are stale
     actions:
       - description: Compare generated schemas with committed schemas
-        cmd: uv run --with pyyaml python scripts/normalize-values-schema.py --check
+        cmd: uv run python scripts/normalize-values-schema.py --check
 
   - name: render
     description: Verify allowed values pass through and excluded values do not

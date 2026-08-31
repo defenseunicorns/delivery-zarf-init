@@ -9,8 +9,6 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 # Types for templated values absent from chart defaults.
 TYPE_OVERRIDES = {
     "gitea": {
@@ -52,9 +50,17 @@ def normalize(schema: dict[str, Any], defaults: Any) -> None:
             normalize(items, defaults[0])
 
 
+def parse_yaml(document: str) -> Any:
+    output = subprocess.check_output(
+        ["uds", "zarf", "tools", "yq", "-o=json", "."],
+        input=document,
+        text=True,
+    )
+    return json.loads(output)
+
+
 def load_yaml(path: Path) -> Any:
-    with path.open(encoding="utf-8") as stream:
-        return yaml.safe_load(stream)
+    return parse_yaml(path.read_text(encoding="utf-8"))
 
 
 def yaml_scalar(value: Any) -> str:
@@ -117,7 +123,7 @@ def chart_defaults(root: Path) -> dict[str, Any]:
         "zarf-registry": load_yaml(
             root / ".zarf-src/packages/zarf-registry/chart/values.yaml"
         ),
-        "gitea": yaml.safe_load(gitea_values),
+        "gitea": parse_yaml(gitea_values),
     }
 
 
