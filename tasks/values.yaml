@@ -13,8 +13,9 @@ tasks:
           create_arguments=()
           while IFS=$'\t' read -r key value; do
             [ "${key}" = "pkg_version" ] && continue
-            create_arguments+=(--set "${key^^}=${value}")
-          done < <(yq -r '.package.create.set | to_entries[] | [.key, .value] | @tsv' zarf-config/upstream.yaml)
+            uppercase_key=$(printf '%s' "${key}" | tr '[:lower:]' '[:upper:]')
+            create_arguments+=(--set "${uppercase_key}=${value}")
+          done < <(uds zarf tools yq -r '.package.create.set | to_entries[] | [.key, .value] | @tsv' zarf-config/upstream.yaml)
           create_arguments+=(--set PKG_VERSION=dev)
           for values_file in packages/*/zarf-values.yaml; do
             package_dir="${values_file%/zarf-values.yaml}"
@@ -41,84 +42,14 @@ tasks:
   - name: generate
     description: Regenerate schemas for packages that expose Zarf values
     actions:
-      - description: Generate schemas atomically
-        cmd: |
-          set -euo pipefail
-          create_arguments=()
-          while IFS=$'\t' read -r key value; do
-            [ "${key}" = "pkg_version" ] && continue
-            create_arguments+=(--set "${key^^}=${value}")
-          done < <(yq -r '.package.create.set | to_entries[] | [.key, .value] | @tsv' zarf-config/upstream.yaml)
-          create_arguments+=(--set PKG_VERSION=dev)
-          temporary_dir=$(mktemp -d)
-          trap 'rm -rf "${temporary_dir}"' EXIT
-          gitea_values="${temporary_dir}/gitea-values.yaml"
-          gitea_url=$(yq -r '.components[] | select(.name == "git-server").charts[] | select(.name == "gitea").url' .zarf-src/packages/gitea/zarf.yaml)
-          gitea_version=$(yq -r '.components[] | select(.name == "git-server").charts[] | select(.name == "gitea").version' src/init/common/zarf.yaml)
-          uds zarf tools helm show values "${gitea_url}" \
-            --version "${gitea_version}" > "${gitea_values}"
-          for values_file in packages/*/zarf-values.yaml; do
-            package_dir="${values_file%/zarf-values.yaml}"
-            schema_file="${package_dir}/zarf-values.schema.json"
-            temporary_schema="${temporary_dir}/$(basename "${package_dir}").json"
-            echo "Generating ${schema_file}"
-            uds zarf dev generate-schema "${package_dir}" \
-              --flavor upstream \
-              "${create_arguments[@]}" \
-              --delete-not-found > "${temporary_schema}"
-            uv run --with pyyaml python scripts/normalize-values-schema.py \
-              "${temporary_schema}" \
-              --agent-values .zarf-src/packages/zarf-agent/chart/values.yaml \
-              --registry-values .zarf-src/packages/zarf-registry/chart/values.yaml \
-              --gitea-values "${gitea_values}"
-            mv "${temporary_schema}" "${schema_file}"
-          done
-        shell:
-          linux: bash
-          darwin: bash
+      - description: Generate schemas
+        cmd: uv run --with pyyaml python scripts/normalize-values-schema.py
 
   - name: check-generated
     description: Fail when committed Zarf values schemas are stale
     actions:
       - description: Compare generated schemas with committed schemas
-        cmd: |
-          set -euo pipefail
-          create_arguments=()
-          while IFS=$'\t' read -r key value; do
-            [ "${key}" = "pkg_version" ] && continue
-            create_arguments+=(--set "${key^^}=${value}")
-          done < <(yq -r '.package.create.set | to_entries[] | [.key, .value] | @tsv' zarf-config/upstream.yaml)
-          create_arguments+=(--set PKG_VERSION=dev)
-          temporary_dir=$(mktemp -d)
-          trap 'rm -rf "${temporary_dir}"' EXIT
-          gitea_values="${temporary_dir}/gitea-values.yaml"
-          gitea_url=$(yq -r '.components[] | select(.name == "git-server").charts[] | select(.name == "gitea").url' .zarf-src/packages/gitea/zarf.yaml)
-          gitea_version=$(yq -r '.components[] | select(.name == "git-server").charts[] | select(.name == "gitea").version' src/init/common/zarf.yaml)
-          uds zarf tools helm show values "${gitea_url}" \
-            --version "${gitea_version}" > "${gitea_values}"
-          for values_file in packages/*/zarf-values.yaml; do
-            package_dir="${values_file%/zarf-values.yaml}"
-            package_name="${package_dir#packages/}"
-            generated_schema="${temporary_dir}/${package_name}.json"
-            echo "Checking ${package_dir}/zarf-values.schema.json"
-            uds zarf dev generate-schema "${package_dir}" \
-              --flavor upstream \
-              "${create_arguments[@]}" \
-              --delete-not-found > "${generated_schema}"
-            uv run --with pyyaml python scripts/normalize-values-schema.py \
-              "${generated_schema}" \
-              --agent-values .zarf-src/packages/zarf-agent/chart/values.yaml \
-              --registry-values .zarf-src/packages/zarf-registry/chart/values.yaml \
-              --gitea-values "${gitea_values}"
-            if ! cmp -s "${generated_schema}" "${package_dir}/zarf-values.schema.json"; then
-              echo "ERROR: ${package_dir}/zarf-values.schema.json is stale"
-              echo "Run: uds run generate-zarf-values-schemas"
-              exit 1
-            fi
-          done
-        shell:
-          linux: bash
-          darwin: bash
+        cmd: uv run --with pyyaml python scripts/normalize-values-schema.py --check
 
   - name: render
     description: Verify allowed values pass through and excluded values do not
@@ -129,8 +60,9 @@ tasks:
           create_arguments=()
           while IFS=$'\t' read -r key value; do
             [ "${key}" = "pkg_version" ] && continue
-            create_arguments+=(--create-set "${key^^}=${value}")
-          done < <(yq -r '.package.create.set | to_entries[] | [.key, .value] | @tsv' zarf-config/upstream.yaml)
+            uppercase_key=$(printf '%s' "${key}" | tr '[:lower:]' '[:upper:]')
+            create_arguments+=(--create-set "${uppercase_key}=${value}")
+          done < <(uds zarf tools yq -r '.package.create.set | to_entries[] | [.key, .value] | @tsv' zarf-config/upstream.yaml)
           create_arguments+=(--create-set PKG_VERSION=dev)
           temporary_dir=$(mktemp -d)
           trap 'rm -rf "${temporary_dir}"' EXIT
