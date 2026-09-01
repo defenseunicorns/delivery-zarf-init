@@ -98,7 +98,7 @@ tasks:
       - task: values:generate
 
   - name: test-zarf-values
-    description: Validate Zarf values schemas, mappings, and exclusions
+    description: Validate Zarf values schemas and passthrough
     actions:
       - task: package:vendor
       - task: values:test

@@ -1,7 +1,10 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
-"""Generate Zarf values schemas and restore native Helm value types."""
+"""Generate Zarf values schemas with temporary native-type fixes.
+
+Remove when Zarf infers native types or the charts provide JSON schemas.
+"""
 
 import argparse
 import json
@@ -48,10 +51,6 @@ def normalize(schema: dict[str, Any], defaults: Any) -> None:
         for key, child_schema in properties.items():
             if key in defaults:
                 normalize(child_schema, defaults[key])
-    elif isinstance(defaults, list) and defaults:
-        items = schema.get("items")
-        if isinstance(items, dict):
-            normalize(items, defaults[0])
 
 
 def parse_yaml(document: str) -> Any:

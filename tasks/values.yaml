@@ -5,26 +5,10 @@
 
 tasks:
   - name: lint
-    description: Lint values-bearing packages and validate their defaults
+    description: Lint the values schema against the superset package
     actions:
-      - description: Lint values-bearing packages
-        cmd: |
-          set -euo pipefail
-          create_arguments=()
-          while IFS=$'\t' read -r key value; do
-            [ "${key}" = "pkg_version" ] && continue
-            uppercase_key=$(printf '%s' "${key}" | tr '[:lower:]' '[:upper:]')
-            create_arguments+=(--set "${uppercase_key}=${value}")
-          done < <(uds zarf tools yq -r '.package.create.set | to_entries[] | [.key, .value] | @tsv' zarf-config/upstream.yaml)
-          create_arguments+=(--set PKG_VERSION=dev)
-          for values_file in packages/*/zarf-values.yaml; do
-            package_dir="${values_file%/zarf-values.yaml}"
-            echo "Linting ${package_dir}"
-            uds zarf dev lint "${package_dir}" --flavor upstream "${create_arguments[@]}"
-          done
-        shell:
-          linux: bash
-          darwin: bash
+      - description: Lint the values schema
+        cmd: ZARF_CONFIG=zarf-config/upstream.yaml uds zarf dev lint packages/gitea --flavor upstream
 
   - name: generate
     description: Regenerate schemas for packages that expose Zarf values
@@ -38,52 +22,43 @@ tasks:
       - description: Compare generated schemas with committed schemas
         cmd: python3 scripts/normalize-values-schema.py --check
 
-  - name: render
-    description: Verify allowed values pass through and excluded values do not
+  - name: test-values-passthrough
+    description: Verify allowed values render and a security-sensitive exclusion does not
     actions:
       - description: Inspect rendered package manifests
         cmd: |
           set -euo pipefail
-          create_arguments=()
-          while IFS=$'\t' read -r key value; do
-            [ "${key}" = "pkg_version" ] && continue
-            uppercase_key=$(printf '%s' "${key}" | tr '[:lower:]' '[:upper:]')
-            create_arguments+=(--create-set "${uppercase_key}=${value}")
-          done < <(uds zarf tools yq -r '.package.create.set | to_entries[] | [.key, .value] | @tsv' zarf-config/upstream.yaml)
-          create_arguments+=(--create-set PKG_VERSION=dev)
-          temporary_dir=$(mktemp -d)
-          trap 'rm -rf "${temporary_dir}"' EXIT
-          for override_file in tests/zarf-values/*.yaml; do
-            package_name=$(basename "${override_file}" .yaml)
-            package_dir="packages/${package_name}"
-            rendered_file="${temporary_dir}/${package_name}.yaml"
-            allowed_marker="ALLOWED_ZARF_VALUE_${package_name}"
-            blocked_marker="SHOULD_NOT_APPEAR_${package_name}"
+          rendered=$(mktemp)
+          trap 'rm -f "${rendered}"' EXIT
 
-            echo "Rendering ${package_dir}"
-            uds zarf dev inspect manifests "${package_dir}" \
-              --flavor upstream \
-              "${create_arguments[@]}" \
-              --values "${package_dir}/zarf-values.yaml" \
-              --values "${override_file}" \
-              --no-color > "${rendered_file}"
+          ZARF_CONFIG=zarf-config/upstream.yaml uds zarf dev inspect manifests packages/gitea \
+            --flavor upstream \
+            --values tests/zarf-values-override.yaml \
+            --set-values gitea.serviceAccount.annotations.values-test-excluded=blocked \
+            --no-color \
+            --log-level error > "${rendered}"
 
-            if ! grep -q "${allowed_marker}" "${rendered_file}"; then
-              echo "ERROR: allowed Zarf value was not rendered for ${package_name}"
-              exit 1
-            fi
-            if grep -q "${blocked_marker}" "${rendered_file}"; then
-              echo "ERROR: excluded Zarf value was rendered for ${package_name}"
-              exit 1
-            fi
-          done
+          uds zarf tools yq ea -e \
+            '[select(.kind == "Deployment" and .metadata.name == "agent-hook") | .spec.replicas] | any_c(. == 1)' \
+            "${rendered}" > /dev/null
+          uds zarf tools yq ea -e \
+            '[select(.kind == "Deployment" and .metadata.name == "zarf-docker-registry") | .spec.template.metadata.labels."values-test"] | any_c(. == "registry")' \
+            "${rendered}" > /dev/null
+          uds zarf tools yq ea -e \
+            '[select(.kind == "Deployment" and .metadata.name == "zarf-gitea") | .spec.template.metadata.labels."values-test"] | any_c(. == "gitea")' \
+            "${rendered}" > /dev/null
+
+          if grep -q 'values-test-excluded' "${rendered}"; then
+            echo "excluded service account annotation was rendered" >&2
+            exit 1
+          fi
         shell:
           linux: bash
           darwin: bash
 
   - name: test
-    description: Run all Zarf values validation
+    description: Validate Zarf values schemas and passthrough
     actions:
       - task: lint
       - task: check-generated
-      - task: render
+      - task: test-values-passthrough

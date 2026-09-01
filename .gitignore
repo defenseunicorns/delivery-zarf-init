@@ -24,7 +24,3 @@ zarf-sbom/
 *.part*
 test-*.txt
 __debug_bin
-__pycache__/
-*.py[cod]
-.venv/
-.ruff_cache/
