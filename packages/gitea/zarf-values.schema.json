@@ -26,7 +26,7 @@
               "type": "object"
             },
             "terminationGracePeriodSeconds": {
-              "type": "number"
+              "type": "integer"
             }
           },
           "type": "object"
@@ -225,10 +225,10 @@
                       "type": "string"
                     },
                     "SSH_LISTEN_PORT": {
-                      "type": "number"
+                      "type": "integer"
                     },
                     "SSH_PORT": {
-                      "type": "number"
+                      "type": "integer"
                     }
                   },
                   "type": "object"
@@ -252,9 +252,7 @@
               },
               "type": "object"
             },
-            "extraEnvSourceFile": {
-              "type": "string"
-            },
+            "extraEnvSourceFile": {},
             "ldap": {
               "type": "array"
             },
@@ -264,16 +262,16 @@
                   "type": "boolean"
                 },
                 "failureThreshold": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "initialDelaySeconds": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "periodSeconds": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "successThreshold": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "tcpSocket": {
                   "properties": {
@@ -284,7 +282,7 @@
                   "type": "object"
                 },
                 "timeoutSeconds": {
-                  "type": "number"
+                  "type": "integer"
                 }
               },
               "type": "object"
@@ -334,16 +332,16 @@
                   "type": "boolean"
                 },
                 "failureThreshold": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "initialDelaySeconds": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "periodSeconds": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "successThreshold": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "tcpSocket": {
                   "properties": {
@@ -354,7 +352,7 @@
                   "type": "object"
                 },
                 "timeoutSeconds": {
-                  "type": "number"
+                  "type": "integer"
                 }
               },
               "type": "object"
@@ -373,16 +371,16 @@
                   "type": "boolean"
                 },
                 "failureThreshold": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "initialDelaySeconds": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "periodSeconds": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "successThreshold": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "tcpSocket": {
                   "properties": {
@@ -393,7 +391,7 @@
                   "type": "object"
                 },
                 "timeoutSeconds": {
-                  "type": "number"
+                  "type": "integer"
                 }
               },
               "type": "object"
@@ -491,12 +489,8 @@
         },
         "openshift": {
           "properties": {
-            "enabled": {
-              "type": "string"
-            },
-            "hostUsers": {
-              "type": "string"
-            }
+            "enabled": {},
+            "hostUsers": {}
           },
           "type": "object"
         },
@@ -535,12 +529,8 @@
             "size": {
               "type": "string"
             },
-            "storageClass": {
-              "type": "string"
-            },
-            "subPath": {
-              "type": "string"
-            },
+            "storageClass": {},
+            "subPath": {},
             "volumeName": {
               "type": "string"
             }
@@ -576,7 +566,7 @@
                         "ports": {
                           "properties": {
                             "postgresql": {
-                              "type": "number"
+                              "type": "integer"
                             }
                           },
                           "type": "object"
@@ -691,7 +681,7 @@
                 "ports": {
                   "properties": {
                     "postgresql": {
-                      "type": "number"
+                      "type": "integer"
                     }
                   },
                   "type": "object"
@@ -718,7 +708,7 @@
           "type": "object"
         },
         "replicaCount": {
-          "type": "number"
+          "type": "integer"
         },
         "resources": {
           "properties": {
@@ -764,24 +754,12 @@
             },
             "tls": {
               "properties": {
-                "caCertificate": {
-                  "type": "string"
-                },
-                "certificate": {
-                  "type": "string"
-                },
-                "destinationCACertificate": {
-                  "type": "string"
-                },
-                "insecureEdgeTerminationPolicy": {
-                  "type": "string"
-                },
-                "key": {
-                  "type": "string"
-                },
-                "termination": {
-                  "type": "string"
-                }
+                "caCertificate": {},
+                "certificate": {},
+                "destinationCACertificate": {},
+                "insecureEdgeTerminationPolicy": {},
+                "key": {},
+                "termination": {}
               },
               "type": "object"
             },
@@ -805,36 +783,22 @@
                 "clusterIP": {
                   "type": "string"
                 },
-                "externalIPs": {
-                  "type": "string"
-                },
-                "externalTrafficPolicy": {
-                  "type": "string"
-                },
-                "ipFamilies": {
-                  "type": "string"
-                },
-                "ipFamilyPolicy": {
-                  "type": "string"
-                },
+                "externalIPs": {},
+                "externalTrafficPolicy": {},
+                "ipFamilies": {},
+                "ipFamilyPolicy": {},
                 "labels": {
                   "properties": {},
                   "type": "object"
                 },
-                "loadBalancerClass": {
-                  "type": "string"
-                },
-                "loadBalancerIP": {
-                  "type": "string"
-                },
+                "loadBalancerClass": {},
+                "loadBalancerIP": {},
                 "loadBalancerSourceRanges": {
                   "type": "array"
                 },
-                "nodePort": {
-                  "type": "string"
-                },
+                "nodePort": {},
                 "port": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "type": {
                   "type": "string"
@@ -851,39 +815,23 @@
                 "clusterIP": {
                   "type": "string"
                 },
-                "externalIPs": {
-                  "type": "string"
-                },
-                "externalTrafficPolicy": {
-                  "type": "string"
-                },
-                "hostPort": {
-                  "type": "string"
-                },
-                "ipFamilies": {
-                  "type": "string"
-                },
-                "ipFamilyPolicy": {
-                  "type": "string"
-                },
+                "externalIPs": {},
+                "externalTrafficPolicy": {},
+                "hostPort": {},
+                "ipFamilies": {},
+                "ipFamilyPolicy": {},
                 "labels": {
                   "properties": {},
                   "type": "object"
                 },
-                "loadBalancerClass": {
-                  "type": "string"
-                },
-                "loadBalancerIP": {
-                  "type": "string"
-                },
+                "loadBalancerClass": {},
+                "loadBalancerIP": {},
                 "loadBalancerSourceRanges": {
                   "type": "array"
                 },
-                "nodePort": {
-                  "type": "string"
-                },
+                "nodePort": {},
                 "port": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "type": {
                   "type": "string"
@@ -920,7 +868,7 @@
                   "type": "string"
                 },
                 "maxUnavailable": {
-                  "type": "number"
+                  "type": "integer"
                 }
               },
               "type": "object"
@@ -969,14 +917,14 @@
             "master": {
               "properties": {
                 "count": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "service": {
                   "properties": {
                     "ports": {
                       "properties": {
                         "valkey": {
-                          "type": "number"
+                          "type": "integer"
                         }
                       },
                       "type": "object"
@@ -1045,10 +993,10 @@
             "cluster": {
               "properties": {
                 "nodes": {
-                  "type": "number"
+                  "type": "integer"
                 },
                 "replicas": {
-                  "type": "number"
+                  "type": "integer"
                 }
               },
               "type": "object"
@@ -1079,7 +1027,7 @@
                 "ports": {
                   "properties": {
                     "valkey": {
-                      "type": "number"
+                      "type": "integer"
                     }
                   },
                   "type": "object"
@@ -1124,7 +1072,7 @@
               "type": "string"
             },
             "replicaCount": {
-              "type": "number"
+              "type": "integer"
             }
           },
           "type": "object"
@@ -1225,13 +1173,13 @@
               "type": "boolean"
             },
             "maxReplicas": {
-              "type": "number"
+              "type": "integer"
             },
             "minReplicas": {
-              "type": "number"
+              "type": "integer"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "number"
+              "type": "integer"
             }
           },
           "type": "object"
@@ -1279,7 +1227,7 @@
         "podDisruptionBudget": {
           "properties": {
             "minAvailable": {
-              "type": "number"
+              "type": "integer"
             }
           },
           "type": "object"
@@ -1301,7 +1249,7 @@
               "type": "boolean"
             },
             "injectorHostPort": {
-              "type": "number"
+              "type": "integer"
             },
             "tolerations": {
               "type": "array"
@@ -1310,7 +1258,7 @@
           "type": "object"
         },
         "replicaCount": {
-          "type": "number"
+          "type": "integer"
         },
         "resources": {
           "properties": {
@@ -1344,15 +1292,11 @@
             "name": {
               "type": "string"
             },
-            "nodePort": {
-              "type": "string"
-            },
+            "nodePort": {},
             "port": {
-              "type": "number"
+              "type": "integer"
             },
-            "registryPort": {
-              "type": "string"
-            },
+            "registryPort": {},
             "type": {
               "type": "string"
             }

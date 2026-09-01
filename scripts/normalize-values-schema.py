@@ -27,7 +27,9 @@ def json_type(value: Any) -> str | None:
         return "object"
     if isinstance(value, list):
         return "array"
-    if isinstance(value, (int, float)):
+    if isinstance(value, int):
+        return "integer"
+    if isinstance(value, float):
         return "number"
     if isinstance(value, str):
         return "string"
@@ -36,7 +38,9 @@ def json_type(value: Any) -> str | None:
 
 def normalize(schema: dict[str, Any], defaults: Any) -> None:
     expected_type = json_type(defaults)
-    if expected_type is not None and "type" in schema:
+    if expected_type is None:
+        schema.pop("type", None)
+    elif "type" in schema:
         schema["type"] = expected_type
 
     if isinstance(defaults, dict):

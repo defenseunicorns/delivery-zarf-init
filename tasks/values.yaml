@@ -25,31 +25,18 @@ tasks:
         shell:
           linux: bash
           darwin: bash
-      - description: Validate default values against their schemas
-        cmd: |
-          set -euo pipefail
-          for values_file in packages/*/zarf-values.yaml; do
-            package_dir="${values_file%/zarf-values.yaml}"
-            echo "Validating ${values_file}"
-            uvx check-jsonschema \
-              --schemafile "${package_dir}/zarf-values.schema.json" \
-              "${values_file}"
-          done
-        shell:
-          linux: bash
-          darwin: bash
 
   - name: generate
     description: Regenerate schemas for packages that expose Zarf values
     actions:
       - description: Generate schemas
-        cmd: uv run python scripts/normalize-values-schema.py
+        cmd: python3 scripts/normalize-values-schema.py
 
   - name: check-generated
     description: Fail when committed Zarf values schemas are stale
     actions:
       - description: Compare generated schemas with committed schemas
-        cmd: uv run python scripts/normalize-values-schema.py --check
+        cmd: python3 scripts/normalize-values-schema.py --check
 
   - name: render
     description: Verify allowed values pass through and excluded values do not

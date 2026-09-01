@@ -28,7 +28,7 @@
               "type": "string"
             },
             "replicaCount": {
-              "type": "number"
+              "type": "integer"
             }
           },
           "type": "object"
