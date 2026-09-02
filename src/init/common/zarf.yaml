@@ -46,6 +46,7 @@ components:
               - .zarf-registry.secrets
               - .zarf-registry.mtls
               - .zarf-registry.securityContext
+              - .zarf-registry.serviceAccount.annotations
               - .zarf-registry.fullnameOverride
               - .zarf-registry.ipv6Only
     healthChecks:
@@ -69,6 +70,8 @@ components:
             excludePaths:
               - .gitea.image
               - .gitea.global.imageRegistry
+              - .gitea.global.imagePullSecrets
+              - .gitea.imagePullSecrets
               - .gitea.podSecurityContext
               - .gitea.containerSecurityContext
               - .gitea.securityContext
@@ -78,15 +81,28 @@ components:
               - .gitea.postExtraInitContainers
               - .gitea.preExtraInitContainers
               - .gitea.gitea.admin
+              - .gitea.gitea.config.security
+              - .gitea.gitea.metrics.token
+              - .gitea.signing
               - .gitea.postgresql.image
+              - .gitea.postgresql.global.postgresql.auth.password
               - .gitea.postgresql.metrics.image
               - .gitea.postgresql.volumePermissions.image
               - .gitea.postgresql-ha.metrics.image
               - .gitea.postgresql-ha.pgpool.image
+              - .gitea.postgresql-ha.pgpool.adminPassword
+              - .gitea.postgresql-ha.pgpool.srCheckPassword
               - .gitea.postgresql-ha.postgresql.image
+              - .gitea.postgresql-ha.postgresql.password
+              - .gitea.postgresql-ha.postgresql.postgresPassword
+              - .gitea.postgresql-ha.postgresql.repmgrPassword
+              - .gitea.postgresql-ha.global.postgresql.password
               - .gitea.postgresql-ha.volumePermissions.image
               - .gitea.test.image
+              - .gitea.serviceAccount.annotations
+              - .gitea.serviceAccount.imagePullSecrets
               - .gitea.valkey.image
+              - .gitea.valkey.global.valkey.password
               - .gitea.valkey.kubectl.image
               - .gitea.valkey.metrics.image
               - .gitea.valkey.sentinel.image
@@ -95,6 +111,8 @@ components:
               - .gitea.valkey-cluster.metrics.image
               - .gitea.valkey-cluster.sysctlImage
               - .gitea.valkey-cluster.volumePermissions.image
+              - .gitea.valkey-cluster.usePassword
+              - .gitea.valkey-cluster.usePasswordFiles
     healthChecks:
       - name: zarf-gitea
         namespace: zarf

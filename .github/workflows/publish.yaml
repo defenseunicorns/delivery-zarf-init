@@ -17,8 +17,6 @@ on:
       - .github/workflows/test.yaml
       - .github/workflows/publish.yaml
       - releaser.yaml
-  workflow_dispatch:
-
 permissions:
   contents: read
   packages: write

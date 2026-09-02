@@ -24,10 +24,9 @@ Versioning tracks the upstream Zarf release rather than release-please.
 
 ## Zarf values schemas
 
-`packages/*/zarf-values.schema.json` are generated (`uds zarf dev generate-schema packages/<name> -u`
-with the flavor template sets). The generator types templated fields as strings; re-apply structured
-types (extraEnvVars array, persistence.enabled boolean, affinity/nodeSelector objects, tolerations
-arrays) after regenerating.
+Run `uds run generate-zarf-values-schemas` after changing exposed values. The generator restores
+native chart types that the pinned Zarf CLI cannot infer from templated values. `uds run
+test-zarf-values` lints the schema, checks drift, and verifies rendered passthrough.
 
 ## Documentation
 

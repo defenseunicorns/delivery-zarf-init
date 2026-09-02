@@ -28,10 +28,13 @@
               "type": "string"
             },
             "replicaCount": {
-              "type": "number"
+              "type": "integer"
             }
           },
           "type": "object"
+        },
+        "mutationExclusions": {
+          "type": "array"
         },
         "nodeSelector": {
           "type": "object"
@@ -97,6 +100,9 @@
         },
         "tolerations": {
           "type": "array"
+        },
+        "webhookAnnotations": {
+          "type": "object"
         }
       },
       "type": "object"
@@ -106,10 +112,10 @@
         "affinity": {
           "properties": {
             "custom": {
-              "type": "string"
+              "type": "object"
             },
             "enabled": {
-              "type": "string"
+              "type": "boolean"
             }
           },
           "type": "object"
@@ -117,19 +123,19 @@
         "autoscaling": {
           "properties": {
             "enabled": {
-              "type": "string"
+              "type": "boolean"
             },
             "mapReplicasToNodes": {
-              "type": "string"
+              "type": "boolean"
             },
             "maxReplicas": {
-              "type": "string"
+              "type": "integer"
             },
             "minReplicas": {
-              "type": "string"
+              "type": "integer"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "string"
+              "type": "integer"
             }
           },
           "type": "object"
@@ -177,7 +183,7 @@
         "podDisruptionBudget": {
           "properties": {
             "minAvailable": {
-              "type": "number"
+              "type": "integer"
             }
           },
           "type": "object"
@@ -199,7 +205,7 @@
               "type": "boolean"
             },
             "injectorHostPort": {
-              "type": "number"
+              "type": "integer"
             },
             "tolerations": {
               "type": "array"
@@ -208,7 +214,7 @@
           "type": "object"
         },
         "replicaCount": {
-          "type": "number"
+          "type": "integer"
         },
         "resources": {
           "properties": {
@@ -242,15 +248,11 @@
             "name": {
               "type": "string"
             },
-            "nodePort": {
-              "type": "string"
-            },
+            "nodePort": {},
             "port": {
-              "type": "number"
+              "type": "integer"
             },
-            "registryPort": {
-              "type": "string"
-            },
+            "registryPort": {},
             "type": {
               "type": "string"
             }
@@ -259,11 +261,8 @@
         },
         "serviceAccount": {
           "properties": {
-            "annotations": {
-              "type": "string"
-            },
             "create": {
-              "type": "string"
+              "type": "boolean"
             },
             "name": {
               "type": "string"

@@ -1,0 +1,64 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
+
+tasks:
+  - name: lint
+    description: Lint the values schema against the superset package
+    actions:
+      - description: Lint the values schema
+        cmd: ZARF_CONFIG=zarf-config/upstream.yaml uds zarf dev lint packages/gitea --flavor upstream
+
+  - name: generate
+    description: Regenerate schemas for packages that expose Zarf values
+    actions:
+      - description: Generate schemas
+        cmd: python3 scripts/normalize-values-schema.py
+
+  - name: check-generated
+    description: Fail when committed Zarf values schemas are stale
+    actions:
+      - description: Compare generated schemas with committed schemas
+        cmd: python3 scripts/normalize-values-schema.py --check
+
+  - name: test-values-passthrough
+    description: Verify allowed values render and a security-sensitive exclusion does not
+    actions:
+      - description: Inspect rendered package manifests
+        cmd: |
+          set -euo pipefail
+          rendered=$(mktemp)
+          trap 'rm -f "${rendered}"' EXIT
+
+          ZARF_CONFIG=zarf-config/upstream.yaml uds zarf dev inspect manifests packages/gitea \
+            --flavor upstream \
+            --values tests/zarf-values-override.yaml \
+            --set-values gitea.serviceAccount.annotations.values-test-excluded=blocked \
+            --no-color \
+            --log-level error > "${rendered}"
+
+          uds zarf tools yq ea -e \
+            '[select(.kind == "Deployment" and .metadata.name == "agent-hook") | .spec.replicas] | any_c(. == 1)' \
+            "${rendered}" > /dev/null
+          uds zarf tools yq ea -e \
+            '[select(.kind == "Deployment" and .metadata.name == "zarf-docker-registry") | .spec.template.metadata.labels."values-test"] | any_c(. == "registry")' \
+            "${rendered}" > /dev/null
+          uds zarf tools yq ea -e \
+            '[select(.kind == "Deployment" and .metadata.name == "zarf-gitea") | .spec.template.metadata.labels."values-test"] | any_c(. == "gitea")' \
+            "${rendered}" > /dev/null
+
+          if grep -q 'values-test-excluded' "${rendered}"; then
+            echo "excluded service account annotation was rendered" >&2
+            exit 1
+          fi
+        shell:
+          linux: bash
+          darwin: bash
+
+  - name: test
+    description: Validate Zarf values schemas and passthrough
+    actions:
+      - task: lint
+      - task: check-generated
+      - task: test-values-passthrough
