@@ -5,12 +5,12 @@
 kind: ZarfInitConfig
 metadata:
   name: init
-  version: "###ZARF_PKG_TMPL_PKG_VERSION###"
-  description: Used to establish a new Zarf cluster (agent, registry, and gitea git-server)
+  version: dev
+  description: Used to establish a new Zarf cluster
   source: https://github.com/defenseunicorns/delivery-zarf-init
   annotations:
-    dev.uds.title: Zarf Init (gitea)
-    dev.uds.tagline: Customized Zarf init package - injector, registry, agent, and gitea git-server
+    dev.uds.title: Zarf Init
+    dev.uds.tagline: Customized Zarf init package - injector, registry, and agent
 
 values:
   files:
@@ -21,24 +21,19 @@ components:
   - name: zarf-injector
     required: true
     import:
-      path: ../../src/init
+      path: ../../components
 
   - name: zarf-seed-registry
     required: true
     import:
-      path: ../../src/init
+      path: ../../components
 
   - name: zarf-registry
     required: true
     import:
-      path: ../../src/init
+      path: ../../components
 
   - name: zarf-agent
     required: true
     import:
-      path: ../../src/init
-
-  - name: git-server
-    required: true
-    import:
-      path: ../../src/init
+      path: ../../components

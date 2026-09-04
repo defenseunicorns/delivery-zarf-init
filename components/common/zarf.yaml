@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 # yaml-language-server: $schema=https://raw.githubusercontent.com/zarf-dev/zarf/main/zarf.schema.json
-# Shared component definitions (values passthrough, healthChecks, chart pins) imported by the
-# packages/*; flavor tagging stays in src/init/zarf.yaml.
 kind: ZarfPackageConfig
 metadata:
   name: common
@@ -12,7 +10,7 @@ components:
   - name: zarf-agent
     required: true
     import:
-      path: ../../../.zarf-src/packages/zarf-agent
+      path: ../../.zarf-src/packages/zarf-agent
     charts:
       - name: zarf-agent
         values:
@@ -31,7 +29,7 @@ components:
   - name: zarf-registry
     required: true
     import:
-      path: ../../../.zarf-src/packages/zarf-registry
+      path: ../../.zarf-src/packages/zarf-registry
     charts:
       - name: docker-registry
         values:
@@ -58,12 +56,14 @@ components:
   - name: git-server
     required: true
     import:
-      path: ../../../.zarf-src/packages/gitea
+      path: ../../.zarf-src/packages/gitea
     charts:
       - name: gitea
-        # newer than upstream zarf's chart pin; gitea >=1.26 requires it
+        # Gitea 1.27 requires this newer chart.
         # renovate: datasource=helm depName=gitea registryUrl=https://dl.gitea.com/charts
         version: 12.7.0
+        valuesFiles:
+          - gitea-values.yaml
         values:
           - sourcePath: .gitea
             targetPath: .
@@ -98,7 +98,7 @@ components:
               - .gitea.postgresql-ha.postgresql.repmgrPassword
               - .gitea.postgresql-ha.global.postgresql.password
               - .gitea.postgresql-ha.volumePermissions.image
-              - .gitea.test.image
+              - .gitea.test
               - .gitea.serviceAccount.annotations
               - .gitea.serviceAccount.imagePullSecrets
               - .gitea.valkey.image

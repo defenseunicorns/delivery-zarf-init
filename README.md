@@ -1,125 +1,115 @@
 # Zarf Init packages for Delivery
 
-Customized [Zarf init](https://docs.zarf.dev/ref/init-package/) packages, published as a matrix of
-**image flavor** × **component set**. Public flavors publish to
-`oci://ghcr.io/defenseunicorns/delivery-zarf-init/init`; the `unicorn` flavor publishes to
-`oci://ghcr.io/defenseunicorns/packages/private/delivery-zarf-init/init`.
+This repository releases three customized [Zarf init](https://docs.zarf.dev/ref/init-package/)
+packages. Each package is created for the `upstream`, `registry1`, and `unicorn` image flavors and
+for amd64 and arm64.
 
-The component definitions are imported from the upstream
-[zarf-dev/zarf `packages/`](https://github.com/zarf-dev/zarf/tree/main/packages) tree at the pinned
-Zarf version resolved for each flavor, so the packages track upstream behavior; images are swapped
-per flavor and shared config is layered on top.
+The package definitions import the upstream `zarf-dev/zarf` package sources at the Zarf version
+pinned by `ZARF_SOURCE_VERSION`. Shared values passthrough, health checks, and chart overrides live
+under `components/`.
+
+## Packages
+
+| Release | Package contents | Public OCI repository |
+|---|---|---|
+| `init` | injector, registry, agent | `ghcr.io/defenseunicorns/delivery-zarf-init/init` |
+| `init-agent-only` | agent | `ghcr.io/defenseunicorns/delivery-zarf-init/init-agent-only` |
+| `init-gitea` | injector, registry, agent, Gitea | `ghcr.io/defenseunicorns/delivery-zarf-init/init-gitea` |
+
+The `unicorn` packages publish beneath
+`ghcr.io/defenseunicorns/packages/private/delivery-zarf-init/` instead.
 
 ## Flavors
 
-- `upstream` — upstream defaults (ghcr.io / Docker Hub)
-- `registry1` — Iron Bank (`registry1.dso.mil`)
-- `unicorn` — Chainguard FIPS images from the Defense Unicorns Chainguard org (`cgr.dev/defenseunicorns.com`)
+- `upstream` uses the upstream Zarf, Docker Registry, Socat, and Gitea images.
+- `registry1` uses Iron Bank images. Its arm64 images use explicit `-arm64` tags.
+- `unicorn` uses Defense Unicorns Chainguard FIPS images.
 
-### Unicorn flavor images
-
-| Component | Image |
-|-----------|-------|
-| agent | `cgr.dev/defenseunicorns.com/zarf-agent-fips` |
-| registry | `cgr.dev/defenseunicorns.com/distribution-fips` |
-| registry proxy | `cgr.dev/defenseunicorns.com/socat-fips` |
-| gitea | `cgr.dev/defenseunicorns.com/gitea-fips` |
-
-Pulling the unicorn flavor images requires Chainguard registry access
-(`chainctl auth login` or a pull token for `cgr.dev/defenseunicorns.com`).
-
-Iron Bank ships arm64 images under separate `-arm64` tags rather than multi-arch manifests, which is
-why `zarf-config/registry1-arm64.yaml` exists alongside `zarf-config/registry1.yaml`.
-
-## Packages (component set)
-
-- `default` — injector, registry, agent
-- `agent-only` — agent only (for clusters using an external registry)
-- `gitea` — injector, registry, agent, gitea
-
-## Tags
-
-For Zarf version `x.x.x` and package revision `N`, each package publishes
-`x.x.x-uds.N-<flavor>` plus a package suffix. Increment the revision for packaging changes that do
-not advance Zarf. Package variants keep the flavor as the final suffix so registry entitlement
-rules can use the standard `^.*-<flavor>$` pattern:
-
-| | default | agent-only | gitea |
-|--|---------|-----------|-------|
-| upstream | `x.x.x-uds.N-upstream` | `x.x.x-uds.N-agent-only-upstream` | `x.x.x-uds.N-gitea-upstream` |
-| registry1 | `x.x.x-uds.N-registry1` | `x.x.x-uds.N-agent-only-registry1` | `x.x.x-uds.N-gitea-registry1` |
-| unicorn | `x.x.x-uds.N-unicorn` | `x.x.x-uds.N-agent-only-unicorn` | `x.x.x-uds.N-gitea-unicorn` |
-
-Tags are multi-arch (amd64 + arm64).
+Each package has an independent entry in `releaser.yaml`. OCI tags use
+`<zarf-version>-uds.<revision>-<flavor>`, and GitHub release tags use
+`<package>-<zarf-version>-uds.<revision>-<flavor>`.
 
 ## Deploy
 
 ```bash
 zarf package deploy \
-  oci://ghcr.io/defenseunicorns/packages/private/delivery-zarf-init/init:<zarf-version>-uds.<revision>-unicorn \
+  oci://ghcr.io/defenseunicorns/delivery-zarf-init/init:v0.84.0-uds.1-upstream \
   --confirm
 ```
 
-## Repo layout
+## Repository layout
 
+```text
+packages/init/             default init package and values
+packages/init-agent-only/  agent-only package and values
+packages/init-gitea/       Gitea package and values
+components/zarf.yaml       flavor-specific component composition
+components/common/         shared component definitions and chart values
+flavors/                   flavor and architecture-specific image sources
+releaser.yaml              independent uds-pk versions for all three packages
+tasks/                     init-specific create, deploy, test, and publish helpers
+tests/                     package-level fixtures
+.zarf-src/                 generated upstream Zarf package sources (gitignored)
 ```
-src/init/common/   shared component config (values passthrough, healthChecks, chart pins), defined once
-src/init/          flavor definitions importing common
-packages/*/        published packages, one-shot imports from src/init
-zarf-config/       per-flavor image sources
-releaser.yaml      per-flavor UDS package versions
-.zarf-src/         vendored upstream zarf packages/ tree (generated by `uds run package:vendor`, gitignored)
-```
+
+This is a pre-UDS bootstrap repository. UDS bundles and the UDS `Package` CR are intentionally
+inapplicable because the packages run before UDS Core exists. See
+[`docs/justifications.md`](./docs/justifications.md).
 
 ## Development
 
-Local tasks are run with the [UDS CLI](https://github.com/defenseunicorns/uds-cli) (maru). The
-default loop — vendor upstream packages, build the `gitea` (superset) package, then deploy and test
-on a fresh uds-k3d cluster:
+The public task names follow the UDS package template:
 
 ```bash
-uds run
+uds run                                      # create and install-test init/upstream
+uds run create-dev-package                   # create without an SBOM
+uds run test-install                         # create, deploy, and verify on a fresh cluster
+uds run publish-package                      # create both arches, test amd64, then publish
+uds run test-zarf-values                     # validate schemas and passthrough
+uds run pre-commit-all                       # run repository checks
 ```
 
-Useful tasks (see `uds run --list-all`):
+Select another package or flavor with task variables:
 
 ```bash
-uds run dev                                      # rebuild + redeploy on the existing cluster
-uds run package:create --set FLAVOR=registry1    # build one package (PACKAGE=gitea by default)
-uds run package:create-all --set FLAVOR=unicorn  # build all three packages
-uds run ci-test --set FLAVOR=unicorn --set ARCH=arm64 # build/deploy/test on an arm64 local cluster
-uds run test:remove                              # remove the deployed init package
-uds run test:all                                 # health checks + agent mutation + values assertions
-uds run test:cleanup                             # tear down the uds-k3d cluster and artifacts
-uds run pre-commit-all                           # hooks + lint suite + SPDX header fix (CI runs lint:all)
+uds run test-install --set PACKAGE=init-agent-only --set FLAVOR=registry1
+uds run create-dev-package --set PACKAGE=init-gitea --set FLAVOR=unicorn --set ARCH=arm64
 ```
 
-Only one init package can exist per cluster: redeploying the same package upgrades in place, but
-switching packages needs `uds run test:remove` first (or a fresh cluster). The default `CLUSTER_NAME` is
-`zarf`, and `uds run` / `uds run ci-test` replace that cluster each run. Override `CLUSTER_NAME` only
-when comparing flavors or packages side by side, e.g.
-`uds run --set CLUSTER_NAME=zarf-unicorn --set FLAVOR=unicorn` (note cluster creation switches the
-current kubeconfig context, so start clusters one at a time).
+The package names accepted by `PACKAGE` are `init`, `init-agent-only`, and `init-gitea`.
 
-On arm64 local clusters, such as a vz-backed Lima VM on Apple Silicon, set `ARCH=arm64`; Zarf will
-reject an amd64 package when the target cluster only has arm64 nodes. GitHub CI runs both `amd64` and
-`arm64` explicitly.
+Building `registry1` requires Iron Bank registry credentials. Building `unicorn` requires access to
+`cgr.dev/defenseunicorns.com`.
 
-Building the `registry1` flavor requires Iron Bank credentials (`uds zarf tools registry login registry1.dso.mil`),
-and `unicorn` requires Chainguard access as noted above.
+The vendoring task checks out only the upstream Zarf package definitions needed by these packages.
+All flavors use the shared `ZARF_SOURCE_VERSION` pin and validation requires their agent and release
+versions to match it. Move a stale `.zarf-src` checkout aside after changing the shared pin; the task
+does not switch source versions in place.
 
-Each flavor config pins its own `zarf_source_version` alongside the corresponding agent image tag;
-`releaser.yaml` tracks the independently releasable `-uds.N` package version for each flavor.
-Renovate updates the matching flavor's source version, agent pins, and package version together. If
-`.zarf-src` already exists for a different source version, `uds run package:vendor` re-vendors it
-automatically. For local source overrides, set matching `ZARF_VERSION` and `PACKAGE_VERSION` values.
-PR title scopes declare release intent: `upstream`, `registry1`, and `unicorn` require that flavor's
-version to advance in `releaser.yaml`, while `shared` requires all three. Renovate uses the equivalent
-`deps-upstream`, `deps-registry1`, and `deps-unicorn` scopes. Other scopes require no release and must
-not change a package version. On merge, only flavors whose versions changed are published.
+Test clusters use host ports `8080`, `8443`, and `6551` so they can coexist with a cluster using
+the conventional `80`, `443`, and `6550` ports. Override the `K3D_*_PORT` task variables as needed.
 
-Renovate PRs that change flavor images without advancing that flavor's Zarf agent are labeled and
-blocked before package tests run.
+## CI and release behavior
+
+Pull requests:
+
+- create all three packages for arm64 across all three flavors on trusted pull requests;
+- install-test all three packages on amd64 across all three flavors on trusted pull requests;
+- create and install-test the public upstream flavor on fork and Dependabot pull requests; and
+- validate Zarf values schemas and passthrough.
+
+Renovate groups runtime dependencies by component. Its PRs stop before package tests until every
+flavor pin for the changed component is present at the same normalized version. Gitea chart-only
+updates also wait for the flavor images.
+
+Zarf updates also advance every package and flavor in `releaser.yaml`. Registry, Socat, and Gitea
+updates do not create a package release by themselves; they ship with the next Zarf release unless
+an affected package receives an explicit `-uds.N` revision bump.
+
+Pushes to `main` evaluate each package and flavor independently with package-scoped `uds-pk`.
+A release job creates both architectures, install-tests amd64, publishes both, and only then creates
+the package-specific GitHub release tag. The tag is the completion marker, so a failed partial
+publication is retried on the next push.
 
 The registry can be backed by S3-compatible object storage; see
-[docs/s3-backed-registry.md](./docs/s3-backed-registry.md).
+[`docs/s3-backed-registry.md`](./docs/s3-backed-registry.md).

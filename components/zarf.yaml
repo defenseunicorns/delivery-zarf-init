@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 # yaml-language-server: $schema=https://raw.githubusercontent.com/zarf-dev/zarf/main/zarf.schema.json
-# Flavor layer (uds-core pattern): packages/* import components from here without redefining flavors.
 kind: ZarfPackageConfig
 metadata:
   name: init-src
@@ -11,19 +10,19 @@ components:
   - name: zarf-injector
     required: true
     import:
-      path: ../../.zarf-src/packages/zarf-registry
+      path: ../.zarf-src/packages/zarf-registry
 
   - name: zarf-seed-registry
     required: true
     import:
-      path: ../../.zarf-src/packages/zarf-registry
+      path: ../.zarf-src/packages/zarf-registry
 
   - name: zarf-registry
     required: true
     import:
       path: common
 
-  # defined once per flavor so every --flavor matches a component
+  # Duplicate the agent so each flavor resolves.
   - name: zarf-agent
     required: true
     import:

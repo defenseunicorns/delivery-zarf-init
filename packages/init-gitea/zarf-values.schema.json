@@ -879,14 +879,6 @@
           },
           "type": "object"
         },
-        "test": {
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            }
-          },
-          "type": "object"
-        },
         "tolerations": {
           "type": "array"
         },

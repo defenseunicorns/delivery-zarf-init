@@ -1,0 +1,111 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [init, init-agent-only, init-gitea]
+        target:
+          - flavor: upstream
+            publish-repo: ghcr.io/defenseunicorns/delivery-zarf-init
+          - flavor: registry1
+            publish-repo: ghcr.io/defenseunicorns/delivery-zarf-init
+          - flavor: unicorn
+            publish-repo: ghcr.io/defenseunicorns/packages/private/delivery-zarf-init
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+        with:
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.36.0
+
+      - name: Environment setup
+        run: |
+          echo "MARU_AUTH=\"{\"raw.githubusercontent.com\": \"${{ secrets.GITHUB_TOKEN }}\"}\"" >> "$GITHUB_ENV"
+          uds run actions:setup-environment \
+            --set REGISTRY1_USERNAME="${{ secrets.IRON_BANK_ROBOT_USERNAME }}" \
+            --set REGISTRY1_PASSWORD="${{ secrets.IRON_BANK_ROBOT_PASSWORD }}" \
+            --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+            --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
+
+      - name: Check, create, test, and publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          package_path=$(PACKAGE_NAME="${{ matrix.package }}" yq -r \
+            '.packages[] | select(.name == env(PACKAGE_NAME)) | .path // ""' releaser.yaml)
+          if [ -z "$package_path" ]; then
+            echo "unknown package: ${{ matrix.package }}" >&2
+            exit 1
+          fi
+
+          if (
+            cd "$package_path"
+            uds-pk release check "${{ matrix.target.flavor }}" \
+              --package "${{ matrix.package }}" \
+              --dir "$GITHUB_WORKSPACE" \
+              --skip-publish-check \
+              --verbose
+          ); then
+            uds-pk release update-yaml "${{ matrix.target.flavor }}" \
+              --package "${{ matrix.package }}" \
+              --dir "$GITHUB_WORKSPACE"
+            uds run publish-package \
+              --set PACKAGE="${{ matrix.package }}" \
+              --set FLAVOR="${{ matrix.target.flavor }}" \
+              --set TARGET_REPO="${{ matrix.target.publish-repo }}" \
+              --no-progress
+            (
+              cd "$package_path"
+              uds-pk release github "${{ matrix.target.flavor }}" \
+                --package "${{ matrix.package }}" \
+                --dir "$GITHUB_WORKSPACE"
+            )
+          fi
+
+      - name: Debug output
+        if: ${{ always() }}
+        run: uds run actions:debug-output
+
+      - name: Save logs
+        if: ${{ always() }}
+        run: uds run actions:save-logs
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ always() }}
+        with:
+          name: debug-log-${{ matrix.package }}-${{ matrix.target.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            /tmp/zarf-*.log
+            /tmp/uds-*.log
+            /tmp/maru-*.log
+            /tmp/debug-*.log
+            /tmp/uds-containerd-logs
+            /tmp/k3d-uds-*.log
