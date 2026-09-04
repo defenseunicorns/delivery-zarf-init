@@ -21,7 +21,7 @@ flavors. They bootstrap Zarf before UDS Core exists and must remain aligned with
 - Keep values passthrough, health checks, and chart overrides in shared imports without forking
   upstream components.
 - Release each package and flavor through its own `releaser.yaml` entry and package-scoped `uds-pk`
-  check. Build both architectures and install-test amd64 before publishing.
+  check. Build both architectures and install-test registry-bearing packages before publishing.
 - Group Renovate updates by component. Zarf updates advance every release entry; Registry, Socat,
   and Gitea updates ship with the next Zarf release unless an affected package receives a
   package-only `-uds.N` revision.

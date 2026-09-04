@@ -29,8 +29,8 @@ for this matrix. Renovate coordinates component updates, the release workflow us
 ## Tests
 
 The `tests` finding expects package-local browser tests. Init tests are cluster-level tasks in
-`tasks/test.yaml`, with fixtures under `tests/`, and run through the standard `test-install` entry
-point.
+`tasks/test.yaml`, with fixtures under `tests/`. CI install-tests registry-bearing packages and
+builds `init-agent-only`, which requires an external registry to deploy.
 
 ## Vendored source
 

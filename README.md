@@ -64,7 +64,7 @@ The public task names follow the UDS package template:
 uds run                                      # create and install-test init/upstream
 uds run create-dev-package                   # create without an SBOM
 uds run test-install                         # create, deploy, and verify on a fresh cluster
-uds run publish-package                      # create both arches, test amd64, then publish
+uds run publish-package                      # create both arches, test when deployable, then publish
 uds run test-zarf-values                     # validate schemas and passthrough
 uds run pre-commit-all                       # run repository checks
 ```
@@ -72,7 +72,7 @@ uds run pre-commit-all                       # run repository checks
 Select another package or flavor with task variables:
 
 ```bash
-uds run test-install --set PACKAGE=init-agent-only --set FLAVOR=registry1
+uds run create-dev-package --set PACKAGE=init-agent-only --set FLAVOR=registry1
 uds run create-dev-package --set PACKAGE=init-gitea --set FLAVOR=unicorn --set ARCH=arm64
 ```
 
@@ -94,8 +94,8 @@ the conventional `80`, `443`, and `6550` ports. Override the `K3D_*_PORT` task v
 Pull requests:
 
 - create all three packages for arm64 across all three flavors on trusted pull requests;
-- install-test all three packages on amd64 across all three flavors on trusted pull requests;
-- create and install-test the public upstream flavor on fork and Dependabot pull requests; and
+- install-test the registry-bearing packages across all three flavors on trusted pull requests;
+- create every public upstream package and install-test its registry-bearing packages on forks and Dependabot; and
 - validate Zarf values schemas and passthrough.
 
 Renovate groups runtime dependencies by component. Its PRs stop before package tests until every
@@ -107,7 +107,7 @@ updates do not create a package release by themselves; they ship with the next Z
 an affected package receives an explicit `-uds.N` revision bump.
 
 Pushes to `main` evaluate each package and flavor independently with package-scoped `uds-pk`.
-A release job creates both architectures, install-tests amd64, publishes both, and only then creates
+A release job creates both architectures, tests registry-bearing packages, publishes both, and then creates
 the package-specific GitHub release tag. The tag is the completion marker, so a failed partial
 publication is retried on the next push.
 

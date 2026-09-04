@@ -68,7 +68,7 @@ tasks:
           options: --skip-sbom
 
   - name: test-package
-    description: Deploy and verify the selected package on a fresh cluster
+    description: Deploy and verify a registry-bearing package on a fresh cluster
     inputs:
       architecture:
         default: ${ARCH}
@@ -105,7 +105,7 @@ tasks:
       - task: test:package
 
   - name: publish-package
-    description: Create both architectures, install-test amd64, and publish the selected package
+    description: Create both architectures, test when deployable, and publish the selected package
     actions:
       - task: create-package
         with:
@@ -114,6 +114,7 @@ tasks:
         with:
           architecture: arm64
       - task: test-package
+        if: ${{ ne .variables.PACKAGE "init-agent-only" }}
         with:
           architecture: amd64
       - task: package:publish
