@@ -18,7 +18,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  values:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+        with:
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.36.0
+      - name: Validate Zarf values
+        run: uds run test-zarf-values --no-progress
+
   publish:
+    needs: values
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     permissions:

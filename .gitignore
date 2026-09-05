@@ -13,6 +13,8 @@
 .env.*
 !.env.example
 .tool-versions
+*.key
+*.crt
 
 # Generated Zarf content
 .zarf-src/
