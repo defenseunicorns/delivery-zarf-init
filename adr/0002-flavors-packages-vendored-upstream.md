@@ -4,7 +4,7 @@ Date: 2026-07-24
 
 ## Status
 
-Accepted
+Superseded by [ADR 0003](./0003-peer-init-packages.md)
 
 ## Context
 

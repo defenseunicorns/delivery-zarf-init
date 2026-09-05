@@ -6,8 +6,8 @@ name: PR Title Check
 on:
   pull_request:
     branches: [main]
-    # milestoned is added here so that a PR can be re-triggered if it is milestoned.
-    types: [milestoned, opened, edited, synchronize]
+    # Milestoning supports manual reruns.
+    types: [milestoned, opened, reopened, edited, synchronize]
 
 permissions:
   contents: read

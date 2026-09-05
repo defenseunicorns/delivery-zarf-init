@@ -1,26 +1,32 @@
+# Editors and operating systems
 .DS_Store
 .idea/
 .scratch/
-.tool-versions
-.vagrant
 .vscode/
-.zarf*
 *.bak
+*.swp
+*.swo
+*~
+
+# Local configuration
+.env
+.env.*
+!.env.example
+.tool-versions
 *.key
 *.crt
-*.dat
-*.run.zstd
-*.tar
-*.tar.gz
-*.tgz
-*.vbox
-*.zst
-*.zim
-build
-data/
-zarf
-zarf-pki
-zarf-sbom/
+
+# Generated Zarf content
+.zarf-src/
 *.part*
-test-*.txt
-__debug_bin
+*.tar.zst
+zarf-sbom/
+
+# Local build and test output
+.cache/
+build/
+coverage/
+dist/
+test-results/
+tmp/
+*.log

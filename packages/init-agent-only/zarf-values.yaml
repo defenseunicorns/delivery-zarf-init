@@ -1,5 +1,5 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
-# empty defaults: upstream chart values are the source of truth; keys map to charts in zarf.yaml
+# Chart defaults are authoritative.
 zarf-agent: {}

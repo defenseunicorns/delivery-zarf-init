@@ -1,0 +1,105 @@
+{
+  "extends": [
+    "github>defenseunicorns/uds-common//config/renovate.json5",
+    ":semanticCommits",
+    ":semanticPrefixFixDepsChoreOthers",
+    "replacements:all",
+    "workarounds:all"
+  ],
+  "automerge": true,
+  "platformAutomerge": true,
+  "ignoreTests": false,
+  "baseBranchPatterns": [
+    "main"
+  ],
+  "schedule": [
+    "after 7am and before 9am every weekday"
+  ],
+  "postUpdateOptions": [
+    "git-push"
+  ],
+  "rebaseWhen": "auto",
+  "labels": [
+    "renovate"
+  ],
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "packageRules": [
+    {
+      "description": "Update registry images across all flavors.",
+      "matchPackageNames": [
+        "library/registry",
+        "registry1.dso.mil/ironbank/opensource/docker/registry-v3",
+        "cgr.dev/defenseunicorns.com/distribution-fips"
+      ],
+      "allowedVersions": "/^v?\\d+(\\.\\d+)+(-arm64)?$/",
+      "groupName": "Registry component",
+      "groupSlug": "registry-component",
+      "groupSingleUpdates": true,
+      "semanticCommitScope": "deps-shared"
+    },
+    {
+      "description": "Update Socat images across all flavors.",
+      "matchPackageNames": [
+        "alpine/socat",
+        "registry1.dso.mil/ironbank/opensource/alpine/socat/socat",
+        "cgr.dev/defenseunicorns.com/socat-fips"
+      ],
+      "allowedVersions": "/^v?\\d+(\\.\\d+)+(-arm64)?$/",
+      "groupName": "Socat component",
+      "groupSlug": "socat-component",
+      "groupSingleUpdates": true,
+      "semanticCommitScope": "deps-shared"
+    },
+    {
+      "description": "Update Gitea chart and images across all flavors.",
+      "matchPackageNames": [
+        "gitea",
+        "ghcr.io/go-gitea/gitea",
+        "registry1.dso.mil/ironbank/opensource/go-gitea/gitea",
+        "cgr.dev/defenseunicorns.com/gitea-fips"
+      ],
+      "groupName": "Gitea component",
+      "groupSlug": "gitea-component",
+      "groupSingleUpdates": true,
+      "semanticCommitScope": "deps-shared"
+    },
+    {
+      "description": "Update the shared Zarf release across all flavors.",
+      "matchPackageNames": [
+        "ghcr.io/zarf-dev/zarf/agent",
+        "registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent",
+        "cgr.dev/defenseunicorns.com/zarf-agent-fips"
+      ],
+      "allowedVersions": "/^v\\d+\\.\\d+\\.\\d+(-arm64)?$/",
+      "groupName": "Zarf release",
+      "groupSlug": "zarf-release",
+      "groupSingleUpdates": true,
+      "semanticCommitScope": "deps-shared"
+    },
+    {
+      "description": "Keep Gitea images on the minor supported by the chart pinned in components/common/zarf.yaml.",
+      "matchPackageNames": [
+        "ghcr.io/go-gitea/gitea",
+        "registry1.dso.mil/ironbank/opensource/go-gitea/gitea",
+        "cgr.dev/defenseunicorns.com/gitea-fips"
+      ],
+      "allowedVersions": "/^v?1\\.27\\.\\d+(-(rootless|amd64|arm64))?$/"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": [],
+    "dependencyDashboardApproval": false,
+    "minimumReleaseAge": null,
+    "rangeStrategy": "update-lockfile",
+    "commitMessageSuffix": "[SECURITY]",
+    "branchTopic": "{{{datasource}}}-{{{depName}}}-vulnerability",
+    "prCreation": "immediate",
+    "labels": [
+      "security"
+    ],
+    "automerge": true
+  },
+  "osvVulnerabilityAlerts": true
+}
