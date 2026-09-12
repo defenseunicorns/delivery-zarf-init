@@ -16,7 +16,7 @@ variables:
     default: /tmp/delivery-zarf-init-test-plan.json
   - name: K3D_CORE_SLIM_DEV_VERSION
     # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev versioning=docker
-    default: 1.11.1
+    default: 1.12.0
 
 tasks:
   - name: plan
@@ -64,7 +64,7 @@ tasks:
       - cmd: |
           k3d cluster delete "${CLUSTER_NAME}" >/dev/null 2>&1 || true
           # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds-k3d versioning=docker
-          uds zarf package deploy oci://ghcr.io/defenseunicorns/packages/uds-k3d:0.20.2 \
+          uds zarf package deploy oci://ghcr.io/defenseunicorns/packages/uds-k3d:0.20.3 \
             --set CLUSTER_NAME="${CLUSTER_NAME}" --confirm
 
   - name: package
