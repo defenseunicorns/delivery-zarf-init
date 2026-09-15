@@ -98,9 +98,11 @@ Pull requests:
 - create every public upstream package and install-test its registry-bearing packages on forks and Dependabot; and
 - validate Zarf values schemas and passthrough.
 
-Renovate groups runtime dependencies by component. Its PRs stop before package tests until every
-flavor pin for the changed component is present at the same normalized version. Gitea chart-only
-updates also wait for the flavor images.
+Renovate creates two normal dependency groups: package dependencies and CI dependencies. Package
+dependencies include the charts, images, and release versions shipped in the Zarf packages; the CI
+group contains test fixtures, workflow actions, development tools, and repository automation.
+Renovate PRs stop before package tests until every flavor pin for a changed component is present at
+the same normalized version. Gitea chart-only updates also wait for the flavor images.
 
 Zarf updates also advance every package and flavor in `releaser.yaml`. Registry, Socat, and Gitea
 updates do not create a package release by themselves; they ship with the next Zarf release unless
