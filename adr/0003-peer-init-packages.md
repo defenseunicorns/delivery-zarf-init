@@ -22,14 +22,16 @@ flavors. They bootstrap Zarf before UDS Core exists and must remain aligned with
   upstream components.
 - Release each package and flavor through its own `releaser.yaml` entry and package-scoped `uds-pk`
   check. Build both architectures and install-test registry-bearing packages before publishing.
-- Group Renovate updates by component. Zarf updates advance every release entry; Registry, Socat,
-  and Gitea updates ship with the next Zarf release unless an affected package receives a
-  package-only `-uds.N` revision.
+- Group Renovate updates into package dependency and CI dependency PRs. Package dependencies cover
+  the charts, images, and release versions shipped in the Zarf packages. Zarf updates advance every
+  release entry; Registry, Socat, and Gitea updates ship with the next Zarf release unless an
+  affected package receives a package-only `-uds.N` revision.
 - Omit the UDS bundle and `Package` CR because these packages run before UDS Core.
 
 ## Consequences
 
 - Package names, directories, OCI repositories, and release entries match.
-- A delayed hardened image blocks only its component update.
+- A delayed hardened image blocks the package dependency PR until every flavor pin for the affected
+  component can move together.
 - Failed publication remains retryable until its package-specific GitHub release tag exists.
 - Repository-level validation and release wrappers must support three peer package roots.
