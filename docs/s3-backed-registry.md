@@ -5,42 +5,33 @@ storage removes the PVC as a single point of failure, lets the registry scale ho
 RWX volumes, and survives node loss with no data migration. The PVC default exists for environments
 with no object store, not as the recommended posture.
 
-The registry deployed by the `default` and `gitea` packages is configured for S3 entirely at deploy
-time through the Zarf values passthrough. Verified end-to-end against the MinIO instance shipped by
-[uds-k3d](https://github.com/defenseunicorns/uds-k3d)'s dev stack; for production use AWS S3 with
-IRSA, or any S3-compatible store backed by stable out-of-cluster storage.
+The registry deployed by the `init` and `init-gitea` packages is configured for S3 at deploy time
+through the Zarf values passthrough. Use AWS S3 with IRSA, or an S3-compatible store backed by
+stable out-of-cluster storage.
 
-## Local dev flow (uds-k3d MinIO)
+Create the selected package with the standard task, then supply an environment-specific values
+file when deploying the resulting artifact:
 
 ```bash
-uds run test:uds-cluster         # uds-k3d cluster; tests/uds-config.yaml provisions the bucket + user
-uds run package:create
-uds run test:s3                  # deploys with tests/zarf-values-s3.yaml
-uds run test:workload && uds run test:all
+uds run create-dev-package --set PACKAGE=init --set FLAVOR=upstream
+uds zarf package deploy <zarf-init-artifact> --values <s3-values-file> --confirm
 ```
 
-Bucket and user are provisioned via deploy-time overrides on the `uds-k3d-dev` package
-([tests/uds-config.yaml](../tests/uds-config.yaml)); note those overrides *replace* the default
-`uds` bucket/user arrays. The registry is pointed at the bucket via
-[tests/zarf-values-s3.yaml](../tests/zarf-values-s3.yaml).
+Do not commit static access keys. Reference a pre-existing Kubernetes Secret from
+`zarf-registry.extraEnvVars` or use workload identity where the object store supports it.
 
 ## Required settings
 
-Two settings beyond the usual `REGISTRY_STORAGE_S3_*` env vars are load-bearing:
+Two settings beyond the usual `REGISTRY_STORAGE_S3_*` environment variables are load-bearing:
 
 - **`persistence.enabled: false`** — the registry chart injects the filesystem storage driver when
-  persistence is on, and distribution panics if two storage drivers are configured.
-- **`REGISTRY_STORAGE_REDIRECT_DISABLE: "true"`** — the S3 driver redirects blob pulls to presigned
-  URLs by default; containerd on the node cannot resolve an in-cluster MinIO hostname, so the
-  registry must proxy blobs. (Not needed if the S3 endpoint is resolvable from the nodes, e.g. real
-  AWS S3.)
+  persistence is on, and distribution fails if two storage drivers are configured.
+- **`REGISTRY_STORAGE_REDIRECT_DISABLE: "true"`** — use this when cluster nodes cannot resolve the
+  S3 endpoint advertised by presigned URLs, so the registry proxies blob transfers instead.
 
-## Auth
+## Authentication
 
-- **Static keys** (MinIO, or any S3-compatible store): `REGISTRY_STORAGE_S3_ACCESSKEY` /
-  `SECRETKEY` env vars, ideally via `valueFrom.secretKeyRef` in `extraEnvVars`.
-- **IAM role / service account (IRSA, real AWS S3 only)**: set the upstream deploy variables
-  `REGISTRY_CREATE_SERVICE_ACCOUNT=true` and `REGISTRY_SERVICE_ACCOUNT_ANNOTATIONS` (the
-  `eks.amazonaws.com/role-arn` annotation) and omit the key env vars — the AWS SDK credential chain
-  picks up the web identity token. uds-k3d's MinIO has no OIDC/STS federation, so this path does not
-  apply there.
+- **Static keys:** provide `REGISTRY_STORAGE_S3_ACCESSKEY` and
+  `REGISTRY_STORAGE_S3_SECRETKEY` through `valueFrom.secretKeyRef` entries in `extraEnvVars`.
+- **IAM role/service account:** set the upstream service-account creation and annotation values,
+  then omit static key variables so the AWS SDK credential chain uses workload identity.

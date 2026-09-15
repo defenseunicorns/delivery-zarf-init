@@ -5,33 +5,29 @@
 
 tasks:
   - name: lint
-    description: Lint the values schema against the superset package
+    description: Lint Zarf values against the superset package
     actions:
-      - description: Lint the values schema
-        cmd: ZARF_CONFIG=zarf-config/upstream.yaml uds zarf dev lint packages/gitea --flavor upstream
+      - cmd: ZARF_CONFIG=flavors/upstream.yaml uds zarf dev lint packages/init-gitea --flavor upstream
 
   - name: generate
-    description: Regenerate schemas for packages that expose Zarf values
+    description: Regenerate schemas for all three init packages
     actions:
-      - description: Generate schemas
-        cmd: python3 scripts/normalize-values-schema.py
+      - cmd: python3 scripts/normalize-values-schema.py
 
   - name: check-generated
     description: Fail when committed Zarf values schemas are stale
     actions:
-      - description: Compare generated schemas with committed schemas
-        cmd: python3 scripts/normalize-values-schema.py --check
+      - cmd: python3 scripts/normalize-values-schema.py --check
 
   - name: test-values-passthrough
     description: Verify allowed values render and a security-sensitive exclusion does not
     actions:
-      - description: Inspect rendered package manifests
-        cmd: |
+      - cmd: |
           set -euo pipefail
           rendered=$(mktemp)
           trap 'rm -f "${rendered}"' EXIT
 
-          ZARF_CONFIG=zarf-config/upstream.yaml uds zarf dev inspect manifests packages/gitea \
+          ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect manifests packages/init-gitea \
             --flavor upstream \
             --values tests/zarf-values-override.yaml \
             --set-values gitea.serviceAccount.annotations.values-test-excluded=blocked \

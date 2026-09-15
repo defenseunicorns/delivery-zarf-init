@@ -6,9 +6,6 @@ package:
     set:
       pkg_version: upstream
 
-      # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
-      zarf_source_version: v0.84.0
-
       agent_image_domain: ghcr.io/
       agent_image: zarf-dev/zarf/agent
       # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
@@ -24,6 +21,6 @@ package:
       # renovate: datasource=docker depName=alpine/socat versioning=docker
       proxy_image_tag: 1.8.1.3
 
-      # tag format prevents IB anchoring; renovate cap enforces lockstep
+      # Keep Gitea on the chart-supported minor.
       # renovate: datasource=docker depName=ghcr.io/go-gitea/gitea versioning=docker
       gitea_image: ghcr.io/go-gitea/gitea:1.27.2-rootless

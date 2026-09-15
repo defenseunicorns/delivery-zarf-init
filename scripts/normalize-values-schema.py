@@ -75,14 +75,13 @@ def yaml_scalar(value: Any) -> str:
 
 
 def create_arguments(root: Path) -> list[str]:
-    config = load_yaml(root / "zarf-config/upstream.yaml")
+    config = load_yaml(root / "flavors/upstream.yaml")
     settings = config["package"]["create"]["set"]
     arguments = []
     for key, value in settings.items():
         if key == "pkg_version":
             continue
         arguments.extend(("--set", f"{key.upper()}={yaml_scalar(value)}"))
-    arguments.extend(("--set", "PKG_VERSION=dev"))
     return arguments
 
 
@@ -102,7 +101,7 @@ def command_output(command: list[str], root: Path) -> str:
 
 def chart_defaults(root: Path) -> dict[str, Any]:
     upstream_gitea = load_yaml(root / ".zarf-src/packages/gitea/zarf.yaml")
-    common = load_yaml(root / "src/init/common/zarf.yaml")
+    common = load_yaml(root / "components/common/zarf.yaml")
     gitea_url = chart_field(upstream_gitea, "git-server", "gitea", "url")
     gitea_version = chart_field(common, "git-server", "gitea", "version")
     gitea_values = command_output(
@@ -154,7 +153,7 @@ def generate_schemas(root: Path, check: bool) -> int:
     stale: list[Path] = []
     values_files = sorted((root / "packages").glob("*/zarf-values.yaml"))
     if not values_files:
-        raise SystemExit("no packages/*/zarf-values.yaml files found")
+        raise SystemExit("no zarf-values.yaml files found")
 
     for values_file in values_files:
         package_dir = values_file.parent

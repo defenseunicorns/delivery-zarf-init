@@ -4,13 +4,13 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/zarf-dev/zarf/main/zarf.schema.json
 kind: ZarfInitConfig
 metadata:
-  name: init
-  version: "###ZARF_PKG_TMPL_PKG_VERSION###"
-  description: Used to establish a new Zarf cluster
+  name: init-gitea
+  version: dev
+  description: Used to establish a new Zarf cluster with an internal registry and Git server
   source: https://github.com/defenseunicorns/delivery-zarf-init
   annotations:
-    dev.uds.title: Zarf Init
-    dev.uds.tagline: Customized Zarf init package - injector, registry, and agent
+    dev.uds.title: Zarf Init (Gitea)
+    dev.uds.tagline: Customized Zarf init package - injector, registry, agent, and Gitea
 
 values:
   files:
@@ -21,19 +21,24 @@ components:
   - name: zarf-injector
     required: true
     import:
-      path: ../../src/init
+      path: ../../components
 
   - name: zarf-seed-registry
     required: true
     import:
-      path: ../../src/init
+      path: ../../components
 
   - name: zarf-registry
     required: true
     import:
-      path: ../../src/init
+      path: ../../components
 
   - name: zarf-agent
     required: true
     import:
-      path: ../../src/init
+      path: ../../components
+
+  - name: git-server
+    required: true
+    import:
+      path: ../../components

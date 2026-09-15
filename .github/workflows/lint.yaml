@@ -6,7 +6,7 @@ name: Lint
 on:
   pull_request:
     branches: [main]
-    # milestoned is added here so that a PR can be re-triggered if it is milestoned.
+    # Milestoning supports manual reruns.
     types: [milestoned, opened, reopened, synchronize]
 
 permissions:

@@ -1,34 +1,39 @@
-# Welcome to the Delivery Zarf Init packages
+# Contributing to Delivery Zarf Init
 
-Thank you for your interest in this Defense Unicorns repository!
+This repository follows the general
+[`uds-common` contributing guidance](https://github.com/defenseunicorns/uds-common/blob/main/CONTRIBUTING.md),
+including conventional commits and repository linting.
 
-This repository broadly follows the contributing guidelines of the Unicorn Delivery Service — see the
-[uds-common CONTRIBUTING.md](https://github.com/defenseunicorns/uds-common/blob/main/CONTRIBUTING.md)
-for the general workflow (conventional commits, PR titles checked by commitlint, etc.).
+## Development workflow
 
-## Developer workflow
-
-Local development uses the [UDS CLI](https://github.com/defenseunicorns/uds-cli) task runner — see
-the [README Development section](./README.md#development) for the task reference. The typical loop:
+Use the UDS CLI task runner from the repository root:
 
 ```bash
-uds run                 # vendor, build, deploy, and test on a fresh uds-k3d cluster
-uds run dev             # rebuild + redeploy on the existing cluster while iterating
-uds run pre-commit-all  # pre-commit hooks + SPDX license header fix before pushing
+uds run test-install
+uds run test-zarf-values
+uds run pre-commit-all
 ```
 
-Note this repository is *not* a UDS package: it publishes customized [Zarf init
-packages](https://docs.zarf.dev/ref/init-package/) and does not integrate with the uds-operator, so
-some uds-common conventions (bundles, the Package CR, uds-pk releases) intentionally do not apply.
-Versioning tracks the upstream Zarf release rather than release-please.
+Select a release with `PACKAGE` and `FLAVOR`. The valid package names are `init`,
+`init-agent-only`, and `init-gitea`; the valid flavors are `upstream`, `registry1`, and `unicorn`.
 
-## Zarf values schemas
+```bash
+uds run test-install --set PACKAGE=init-gitea --set FLAVOR=upstream
+```
 
-Run `uds run generate-zarf-values-schemas` after changing exposed values. The generator restores
-native chart types that the pinned Zarf CLI cannot infer from templated values. `uds run
-test-zarf-values` lints the schema, checks drift, and verifies rendered passthrough.
+Run `uds run generate-zarf-values-schemas` after changing exposed Zarf values. The generator
+restores native chart types that the pinned Zarf CLI cannot infer from templated values.
 
-## Documentation
+## Package scope
 
-Significant design decisions are recorded as ADRs in [adr/](./adr/) using the
-[template](./adr/template.md).
+These artifacts are `ZarfInitConfig` packages deployed before UDS Core. A UDS bundle and UDS
+`Package` CR are therefore intentionally absent. Package creation, task entry points, validation,
+and package-scoped releases otherwise follow the UDS package template and `uds-pk` conventions.
+Document any additional exception in [`docs/justifications.md`](./docs/justifications.md).
+
+Renovate advances package versions with Zarf updates. For a package-only release, increment
+`-uds.N` for every flavor of each affected package in `releaser.yaml`.
+
+## Architecture decisions
+
+Record significant design decisions in [`adr/`](./adr/) using [`adr/template.md`](./adr/template.md).

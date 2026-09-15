@@ -1,13 +1,42 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
-flavors:
-  - name: upstream
-    # renovate-uds: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
-    version: v0.84.0-uds.1
-  - name: registry1
-    # renovate-uds: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
-    version: v0.83.0-uds.1
-  - name: unicorn
-    # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
-    version: v0.84.0-uds.1
+packages:
+  - name: init
+    path: packages/init
+    flavors:
+      - name: upstream
+        # renovate-uds: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
+        version: v0.84.0-uds.1
+      - name: registry1
+        # renovate-uds: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
+        version: v0.84.0-uds.1
+      - name: unicorn
+        # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
+        version: v0.84.0-uds.1
+
+  - name: init-agent-only
+    path: packages/init-agent-only
+    flavors:
+      - name: upstream
+        # renovate-uds: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
+        version: v0.84.0-uds.1
+      - name: registry1
+        # renovate-uds: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
+        version: v0.84.0-uds.1
+      - name: unicorn
+        # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
+        version: v0.84.0-uds.1
+
+  - name: init-gitea
+    path: packages/init-gitea
+    flavors:
+      - name: upstream
+        # renovate-uds: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
+        version: v0.84.0-uds.1
+      - name: registry1
+        # renovate-uds: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
+        version: v0.84.0-uds.1
+      - name: unicorn
+        # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
+        version: v0.84.0-uds.1

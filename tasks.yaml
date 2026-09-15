@@ -5,91 +5,124 @@
 
 includes:
   - package: ./tasks/package.yaml
-  - publish-tasks: ./tasks/publish.yaml
   - test: ./tasks/test.yaml
   - values: ./tasks/values.yaml
+  - create: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.28.1/tasks/create.yaml
   - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.28.1/tasks/lint.yaml
   - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.28.1/tasks/actions.yaml
 
 variables:
+  # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
+  - name: ZARF_SOURCE_VERSION
+    default: v0.84.0
   - name: FLAVOR
     default: upstream
   - name: PACKAGE
-    # gitea is the superset package (injector, registry, agent, gitea) so it gets deploy-tested
-    default: gitea
+    default: init
   - name: ARCH
-    # empty resolves to the host architecture (UDS_ARCH)
     default: ""
   - name: CLUSTER_NAME
-    # override to run side-by-side clusters, e.g. --set CLUSTER_NAME=zarf-unicorn
-    default: zarf
-  - name: ZARF_VERSION
-    # Overrides zarf_source_version from the flavor config.
-    default: ""
-  - name: PACKAGE_VERSION
-    # Overrides the flavor version from releaser.yaml; pair with ZARF_VERSION.
-    default: ""
-  - name: REPO
-    # Deprecated override for all flavors. Prefer PUBLIC_REPO and PRIVATE_REPO.
-    default: ""
-  - name: PUBLIC_REPO
-    default: ghcr.io/defenseunicorns/delivery-zarf-init
-  - name: PRIVATE_REPO
-    default: ghcr.io/defenseunicorns/packages/private/delivery-zarf-init
+    default: uds
+  - name: K3D_HTTP_PORT
+    default: "8080"
+  - name: K3D_HTTPS_PORT
+    default: "8443"
+  - name: K3D_API_PORT
+    default: "6551"
   - name: TARGET_REPO
-    default: ""
+    default: ghcr.io/defenseunicorns/delivery-zarf-init
   - name: PUBLISH_RETRIES
     default: "3"
 
 tasks:
   - name: default
-    description: Local dev loop - vendor, build the PACKAGE, deploy and test on a fresh uds-k3d cluster
+    description: Create and install-test the selected init package
     actions:
+      - task: test-install
+
+  - name: create-package
+    description: Create the selected package with the uds-common create task
+    inputs:
+      architecture:
+        default: ${ARCH}
+      options:
+        default: ""
+    actions:
+      - task: package:validate-configs
+      - task: package:resolve
       - task: package:vendor
-      - task: package:create
+        with:
+          architecture: ${{ .inputs.architecture }}
+      - task: create:package
+        with:
+          path: ${PACKAGE_PATH}
+          architecture: ${PACKAGE_ARCH}
+          config: ${ZARF_CONFIG}
+          options: --output "${PACKAGE_PATH}" ${{ .inputs.options }}
+
+  - name: create-dev-package
+    description: Create the selected package without an SBOM for local development
+    actions:
+      - task: create-package
+        with:
+          options: --skip-sbom
+
+  - name: test-package
+    description: Deploy and verify a registry-bearing package on a fresh cluster
+    inputs:
+      architecture:
+        default: ${ARCH}
+    actions:
+      - task: package:resolve
       - task: test:cluster
       - task: test:package
+        with:
+          architecture: ${{ .inputs.architecture }}
+      - task: test:health-check
+      - task: test:registry-health-check
+        if: ${{ ne .variables.PACKAGE "init-agent-only" }}
       - task: test:workload
-      - task: test:all
+        if: ${{ ne .variables.PACKAGE "init-agent-only" }}
+        with:
+          architecture: ${{ .inputs.architecture }}
+      - task: test:mutation
+        if: ${{ ne .variables.PACKAGE "init-agent-only" }}
+      - task: test:gitea-health-check
+        if: ${{ eq .variables.PACKAGE "init-gitea" }}
+      - task: test:gitea-smoke
+        if: ${{ eq .variables.PACKAGE "init-gitea" }}
+
+  - name: test-install
+    description: Create and install-test the selected package
+    actions:
+      - task: create-dev-package
+      - task: test-package
 
   - name: dev
-    description: Rebuild and redeploy the PACKAGE on the existing cluster (for iteration/dev speed)
+    description: Recreate and deploy the selected package on an existing development cluster
     actions:
-      - task: package:vendor
-      - task: package:create
+      - task: create-dev-package
       - task: test:package
 
-  - name: ci-test
-    description: CI flow - build every package, then deploy and test the PACKAGE on a fresh uds-k3d cluster
+  - name: publish-package
+    description: Create both architectures, test when deployable, and publish the selected package
     actions:
-      - task: package:vendor
-      - task: package:create-all
-      - task: test:cluster
-      - task: test:package
-      - task: test:workload
-      - task: test:all
-
-  - name: publish
-    description: Build and publish the PACKAGE for FLAVOR (both architectures) to the resolved target repository
-    inputs:
-      package:
-        description: The package (component set) to publish
-        default: ${PACKAGE}
-    actions:
-      - task: package:resolve-package-version
-      - task: publish-tasks:resolve-target-repo
-      - task: package:vendor
-      - task: package:create
+      - task: create-package
         with:
-          package: ${{ .inputs.package }}
           architecture: amd64
-      - task: package:create
+      - task: create-package
         with:
-          package: ${{ .inputs.package }}
           architecture: arm64
-      - task: publish-tasks:package
+      - task: test-package
+        if: ${{ ne .variables.PACKAGE "init-agent-only" }}
         with:
-          package: ${{ .inputs.package }}
+          architecture: amd64
+      - task: package:publish
+        with:
+          architecture: amd64
+      - task: package:publish
+        with:
+          architecture: arm64
 
   - name: generate-zarf-values-schemas
     description: Regenerate schemas for packages that expose Zarf values
@@ -100,26 +133,19 @@ tasks:
   - name: test-zarf-values
     description: Validate Zarf values schemas and passthrough
     actions:
+      - task: package:validate-configs
       - task: package:vendor
       - task: values:test
 
   - name: pre-commit-all
-    description: Run pre-commit hooks, the uds-common lint suite, and fix SPDX license headers
+    description: Run pre-commit hooks and the repository-scoped uds-common lint suite
     actions:
       - cmd: pre-commit run --all-files --show-diff-on-fail --color=always
       - task: lint:yaml
       - task: lint:shell
-      # quiet on success; the tasks linter dry-runs every task and prints each rendered script
       - cmd: |
           log=$(mktemp)
           uds run lint:tasks --no-progress >"$log" 2>&1 || { cat "$log"; exit 1; }
-      # helm linters scoped to repo-owned paths (the vendored .zarf-src charts are upstream's)
-      - task: lint:helm
-        with:
-          paths: src packages
-      - task: lint:helm-template
-        with:
-          paths: src packages
       - task: lint:license
         with:
           fix: "true"

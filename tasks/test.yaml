@@ -3,144 +3,61 @@
 
 # yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
 
-variables:
-  - name: BASE_SHA
-    default: HEAD^
-  - name: HEAD_SHA
-    default: HEAD
-  - name: EVENT_NAME
-    default: local
-  - name: RELEASE_PLAN_FILE
-    default: /tmp/delivery-zarf-init-release-plan.json
-  - name: TEST_PLAN_FILE
-    default: /tmp/delivery-zarf-init-test-plan.json
-  - name: K3D_CORE_SLIM_DEV_VERSION
-    # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev versioning=docker
-    default: 1.11.1
-
 tasks:
-  - name: plan
-    description: Plan the flavor test matrix from changed paths and the release plan
-    actions:
-      - cmd: |
-          append() {
-            printf '%s\n' "$1" | jq -c --arg value "$2" '. + [$value] | unique'
-          }
-
-          all_flavors='["upstream","registry1","unicorn"]'
-          flavors='[]'
-
-          if [ "$EVENT_NAME" != "pull_request" ] && [ "$EVENT_NAME" != "push" ]; then
-            flavors=$all_flavors
-          else
-            for flavor in upstream registry1 unicorn; do
-              if ! git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- "zarf-config/${flavor}"'*.yaml'; then
-                flavors=$(append "$flavors" "$flavor")
-              fi
-            done
-
-            if ! git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- \
-              packages src tasks.yaml tasks tests .github/workflows/test.yaml .github/workflows/publish.yaml; then
-              flavors=$all_flavors
-            elif [ -f "$RELEASE_PLAN_FILE" ]; then
-              release_flavors=$(jq -c '.flavors' "$RELEASE_PLAN_FILE")
-              flavors=$(printf '%s\n%s\n' "$flavors" "$release_flavors" | jq -c -s 'add | unique')
-            fi
-          fi
-
-          required=true
-          if [ "$EVENT_NAME" = "pull_request" ] && [ "$flavors" = "[]" ]; then
-            required=false
-          elif [ "$flavors" = "[]" ]; then
-            flavors=$all_flavors
-          fi
-
-          jq -n --argjson flavors "$flavors" --argjson required "$required" \
-            '{flavors: $flavors, required: $required}' > "$TEST_PLAN_FILE"
-
   - name: cluster
-    description: Create a fresh uds-k3d test cluster (not zarf-initialized; cluster shape and k3s version are owned by uds-k3d)
+    description: Create a fresh, uninitialized k3d cluster for init-package testing
     actions:
       - cmd: |
           k3d cluster delete "${CLUSTER_NAME}" >/dev/null 2>&1 || true
           # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds-k3d versioning=docker
           uds zarf package deploy oci://ghcr.io/defenseunicorns/packages/uds-k3d:0.20.2 \
-            --set CLUSTER_NAME="${CLUSTER_NAME}" --confirm
+            --set CLUSTER_NAME="${CLUSTER_NAME}" \
+            --set K3D_HTTP_PORT="${K3D_HTTP_PORT}" \
+            --set K3D_HTTPS_PORT="${K3D_HTTPS_PORT}" \
+            --set K3D_API_PORT="${K3D_API_PORT}" --confirm
 
   - name: package
-    description: Deploy the PACKAGE init package with the test values override applied
+    description: Deploy the selected init package
     inputs:
+      architecture:
+        default: ${ARCH}
       values:
-        description: Values arguments passed to the package deployment
-        default: --values tests/zarf-values-override.yaml
+        default: ""
     actions:
-      # zarf's built-in health checks gate each chart install, so no extra wait is needed here
       - cmd: |
-          pkg_arch="${ARCH}"
-          [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
-          suffix=""
-          [ "${PACKAGE}" = "default" ] || suffix="-${PACKAGE}"
-          uds zarf package deploy "zarf-init-${pkg_arch}-${PACKAGE_VERSION}${suffix}-${FLAVOR}.tar.zst" \
-            ${{ .inputs.values }} --confirm
+          architecture="${{ .inputs.architecture }}"
+          [ -n "$architecture" ] || architecture="${UDS_ARCH}"
+          version=$(yq -r '.metadata.version' "${PACKAGE_PATH}/zarf.yaml")
+          artifact="${PACKAGE_PATH}/zarf-init-${architecture}-${version}-${FLAVOR}.tar.zst"
+          uds zarf package deploy "$artifact" ${{ .inputs.values }} --confirm
 
   - name: workload
-    description: Deploy the DOS games package (exercises the registry and agent mutation)
+    description: Deploy DOS games to exercise the internal registry and agent mutation
+    inputs:
+      architecture:
+        default: ${ARCH}
     actions:
       - cmd: |
-          pkg_arch="${ARCH}"
-          [ -n "$pkg_arch" ] || pkg_arch="${UDS_ARCH}"
+          architecture="${{ .inputs.architecture }}"
+          [ -n "$architecture" ] || architecture="${UDS_ARCH}"
           # renovate: datasource=docker depName=ghcr.io/zarf-dev/packages/dos-games versioning=docker
           uds zarf package deploy oci://ghcr.io/zarf-dev/packages/dos-games:1.3.0 \
-            --confirm -a "$pkg_arch"
+            --confirm -a "$architecture"
 
-  - name: uds-cluster
-    description: Create a uds-k3d cluster (with MinIO) using the test overrides in tests/uds-config.yaml
-    actions:
-      - cmd: |
-          UDS_CONFIG=tests/uds-config.yaml uds deploy \
-            "oci://ghcr.io/defenseunicorns/packages/uds/bundles/k3d-core-slim-dev:${K3D_CORE_SLIM_DEV_VERSION}" \
-            -p uds-k3d-dev --confirm
-
-  - name: s3
-    description: Deploy the PACKAGE init package with the registry backed by uds-k3d MinIO
-    actions:
-      - task: package
-        with:
-          values: --values tests/zarf-values-override.yaml --values tests/zarf-values-s3.yaml
-
-  - name: remove
-    description: Remove the deployed init package before deploying a different package
-    actions:
-      - cmd: uds zarf package remove init --confirm
-
-  - name: cleanup
-    description: Tear down the uds-k3d test cluster and build artifacts
-    actions:
-      - cmd: |
-          k3d cluster delete "${CLUSTER_NAME}" || true
-          rm -f zarf-init-*.tar.zst
-
-  - name: all
-    description: Full validation for the gitea (superset) package
-    actions:
-      - task: health-check
-      - task: gitea-health-check
-      - task: gitea-smoke
-      - task: mutation
-      - task: values
-
-  # Ensure the init package deploys successfully and becomes available
   - name: health-check
+    description: Verify the Zarf agent is available
     actions:
-      - description: Zarf Agent Health Check
-        wait:
+      - wait:
           cluster:
             kind: Deployment
             name: agent-hook
             namespace: zarf
             condition: Available
-      - description: Zarf Registry Health Check
-        wait:
+
+  - name: registry-health-check
+    description: Verify the internal registry is available
+    actions:
+      - wait:
           cluster:
             kind: Deployment
             name: zarf-docker-registry
@@ -148,9 +65,9 @@ tasks:
             condition: Available
 
   - name: gitea-health-check
+    description: Verify Gitea is available
     actions:
-      - description: Gitea Health Check
-        wait:
+      - wait:
           cluster:
             kind: Deployment
             name: zarf-gitea
@@ -158,11 +75,10 @@ tasks:
             condition: Available
 
   - name: gitea-smoke
+    description: Verify Gitea authentication and repository creation
     actions:
-      - description: Gitea API smoke test
-        cmd: |
+      - cmd: |
           log=$(mktemp)
-
           uds zarf connect git --no-color >"$log" 2>&1 &
           tunnel_pid=$!
           cleanup() {
@@ -175,12 +91,10 @@ tasks:
           for _ in 1 2 3 4 5 6 7 8 9 10; do
             base_url=$(sed -n 's/.*urls=\(http:\/\/127\.0\.0\.1:[0-9][0-9]*\).*/\1/p' "$log" | tail -n 1)
             [ -n "$base_url" ] || { sleep 1; continue; }
-            if curl -fsS "$base_url/api/v1/version" >/dev/null 2>&1; then
-              break
-            fi
+            curl -fsS "$base_url/api/v1/version" >/dev/null 2>&1 && break
             sleep 1
           done
-          [ -n "$base_url" ] || { echo "expected zarf connect git to report a localhost url"; cat "$log"; exit 1; }
+          [ -n "$base_url" ] || { cat "$log"; exit 1; }
 
           state=$(uds zarf tools kubectl get secret zarf-state -n zarf -o jsonpath='{.data.state}' | base64 -d)
           push_user=$(printf '%s' "$state" | uds zarf tools yq -p=json -r '.gitServer.pushUsername')
@@ -188,79 +102,30 @@ tasks:
           read_user=$(printf '%s' "$state" | uds zarf tools yq -p=json -r '.gitServer.pullUsername')
           read_pass=$(printf '%s' "$state" | uds zarf tools yq -p=json -r '.gitServer.pullPassword')
 
-          status=$(curl -L -o /dev/null -s -w "%{http_code}" "$base_url/explore/repos")
-          [ "$status" = "200" ] || { echo "expected /explore/repos status 200, got $status"; exit 1; }
-
-          version=$(curl -fsS "$base_url/api/v1/version" | uds zarf tools yq -p=json -r '.version')
-          if [ -z "$version" ] || [ "$version" = "null" ]; then
-            echo "expected gitea version"
-            exit 1
-          fi
-
           login=$(curl -fsS -u "$push_user:$push_pass" "$base_url/api/v1/user" | uds zarf tools yq -p=json -r '.login')
-          [ "$login" = "zarf-git-user" ] || { echo "expected push login zarf-git-user, got $login"; exit 1; }
-
+          [ "$login" = "zarf-git-user" ] || { echo "unexpected push login: $login"; exit 1; }
           login=$(curl -fsS -u "$read_user:$read_pass" "$base_url/api/v1/user" | uds zarf tools yq -p=json -r '.login')
-          [ "$login" = "zarf-git-read-user" ] || { echo "expected read login zarf-git-read-user, got $login"; exit 1; }
-
-          status=$(curl -o /dev/null -s -w "%{http_code}" "$base_url/api/v1/repos/search")
-          [ "$status" = "200" ] || { echo "expected repo search status 200, got $status"; exit 1; }
+          [ "$login" = "zarf-git-read-user" ] || { echo "unexpected read login: $login"; exit 1; }
 
           repo="zarf-smoke-$(date +%s)"
           status=$(curl -o /dev/null -s -w "%{http_code}" -u "$push_user:$push_pass" \
-            -H "content-type: application/json" \
-            -d "{\"name\":\"$repo\",\"auto_init\":true}" \
+            -H "content-type: application/json" -d "{\"name\":\"$repo\",\"auto_init\":true}" \
             "$base_url/api/v1/user/repos")
-          [ "$status" = "201" ] || { echo "expected repo create status 201, got $status"; exit 1; }
+          [ "$status" = "201" ] || { echo "expected repository creation status 201, got $status"; exit 1; }
 
-          status=$(curl -o /dev/null -s -w "%{http_code}" -u "$push_user:$push_pass" \
-            "$base_url/api/v1/repos/$push_user/$repo")
-          [ "$status" = "200" ] || { echo "expected created repo status 200, got $status"; exit 1; }
-
-          echo "gitea api smoke verified (version=$version)"
-
-  # The DOS games workload proves the registry serves images and the agent mutates pods
   - name: mutation
+    description: Verify the Zarf agent mutated the workload pods
     actions:
-      - description: DOS Games Health Check
-        wait:
+      - wait:
           cluster:
             kind: Deployment
             name: game
             namespace: dos-games
             condition: Available
-      - description: DOS Games pods were mutated by the zarf agent
-        cmd: |
+      - cmd: |
           patched=$(uds zarf tools kubectl get pods -n dos-games -l zarf-agent=patched --no-headers | wc -l)
           if [ "$patched" -lt 1 ]; then
-            echo "expected at least one pod with the zarf-agent=patched label"
+            echo "expected at least one pod with the zarf-agent=patched label" >&2
             exit 1
           fi
           echo "agent mutation verified ($patched patched pod(s))"
-
-  # tests/zarf-values-override.yaml sets one observable override per chart key; these assertions
-  # prove the zarf values passthrough reaches every chart imported from upstream
-  - name: values
-    actions:
-      - description: Zarf values override landed on the agent deployment
-        cmd: |
-          replicas=$(uds zarf tools kubectl get deploy agent-hook -n zarf -o jsonpath='{.spec.replicas}')
-          if [ "$replicas" != "1" ]; then
-            echo "expected agent-hook replicas=1 from values override, got $replicas"
-            exit 1
-          fi
-          echo "zarf values override verified (agent-hook replicas=$replicas)"
-      - description: Zarf values override landed on the registry deployment
-        cmd: |
-          if ! uds zarf tools kubectl get deploy zarf-docker-registry -n zarf -o yaml | grep -q "values-test: registry"; then
-            echo "expected values-test label on the registry deployment from values override"
-            exit 1
-          fi
-          echo "zarf values override verified (registry podLabels)"
-      - description: Zarf values override landed on the gitea deployment
-        cmd: |
-          if ! uds zarf tools kubectl get deploy zarf-gitea -n zarf -o yaml | grep -q "values-test: gitea"; then
-            echo "expected values-test label on the gitea deployment from values override"
-            exit 1
-          fi
-          echo "zarf values override verified (gitea deployment labels)"

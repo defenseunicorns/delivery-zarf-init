@@ -5,33 +5,56 @@ name: Test
 
 on:
   pull_request:
-  # Allows publish.yaml to reuse this workflow so packages are tested before publishing
-  workflow_call:
-    outputs:
-      release_flavors:
-        description: JSON array of flavors whose release version changed
-        value: ${{ jobs.prepare.outputs.release_flavors }}
-      run_publish:
-        description: Whether any flavor needs publishing
-        value: ${{ jobs.prepare.outputs.run_publish }}
+    branches: [main]
+    types: [milestoned, opened, reopened, synchronize]
 
 permissions:
   contents: read
   packages: read
+  pull-requests: read
   id-token: write
 
 concurrency:
-  group: test-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      flavors: ${{ steps.flavors.outputs.flavors }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+        if: startsWith(github.head_ref, 'renovate/')
+        with:
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.36.0
+
+      - name: Check Renovate readiness
+        if: startsWith(github.head_ref, 'renovate/')
+        run: scripts/check-renovate-readiness.sh "${{ github.event.pull_request.base.sha }}"
+
+      - name: Select test flavors
+        id: flavors
+        env:
+          TRUSTED_PR: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
+        run: |
+          if [ "$TRUSTED_PR" = "true" ]; then
+            echo 'flavors=["upstream","registry1","unicorn"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'flavors=["upstream"]' >> "$GITHUB_OUTPUT"
+          fi
+
   values:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install UDS CLI
-        uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.36.0
@@ -39,68 +62,19 @@ jobs:
       - name: Validate Zarf values
         run: uds run test-zarf-values --no-progress
 
-  prepare:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      flavors: ${{ steps.plan.outputs.flavors }}
-      release_flavors: ${{ steps.plan.outputs.release_flavors }}
-      run_publish: ${{ steps.plan.outputs.run_publish }}
-      run_tests: ${{ steps.plan.outputs.run_tests }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Install UDS CLI
-        uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
-        with:
-          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
-          version: v0.36.0
-
-      - name: Plan tests and releases
-        id: plan
-        shell: bash
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          EVENT_NAME: ${{ github.event_name }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          uds run publish-tasks:plan --no-progress \
-            --set BASE_SHA="$BASE_SHA" --set HEAD_SHA="$HEAD_SHA" --set EVENT_NAME="$EVENT_NAME"
-          uds run test:plan --no-progress \
-            --set BASE_SHA="$BASE_SHA" --set HEAD_SHA="$HEAD_SHA" --set EVENT_NAME="$EVENT_NAME"
-
-          echo "flavors=$(jq -c '.flavors' /tmp/delivery-zarf-init-test-plan.json)" >> "$GITHUB_OUTPUT"
-          echo "run_tests=$(jq -r '.required' /tmp/delivery-zarf-init-test-plan.json)" >> "$GITHUB_OUTPUT"
-          echo "release_flavors=$(jq -c '.flavors' /tmp/delivery-zarf-init-release-plan.json)" >> "$GITHUB_OUTPUT"
-          echo "run_publish=$(jq -r '.required' /tmp/delivery-zarf-init-release-plan.json)" >> "$GITHUB_OUTPUT"
-
-  test:
-    needs: prepare
-    if: ${{ needs.prepare.outputs.run_tests == 'true' }}
-    runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 45
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
+  create-arm64:
+    needs: plan
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        flavor: ${{ fromJSON(needs.prepare.outputs.flavors) }}
-        platform:
-          - arch: amd64
-            runner: ubuntu-24.04
-          - arch: arm64
-            runner: ubuntu-24.04-arm
+        package: [init, init-agent-only, init-gitea]
+        flavor: ${{ fromJSON(needs.plan.outputs.flavors) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install UDS CLI
-        uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.36.0
@@ -109,44 +83,66 @@ jobs:
         run: |
           echo "MARU_AUTH=\"{\"raw.githubusercontent.com\": \"${{ secrets.GITHUB_TOKEN }}\"}\"" >> "$GITHUB_ENV"
           uds run actions:setup-environment \
-          --set REGISTRY1_USERNAME="${{ secrets.IRON_BANK_ROBOT_USERNAME }}" \
-          --set REGISTRY1_PASSWORD="${{ secrets.IRON_BANK_ROBOT_PASSWORD }}" \
-          --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
-          --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
-        shell: bash
+            --set REGISTRY1_USERNAME="${{ secrets.IRON_BANK_ROBOT_USERNAME }}" \
+            --set REGISTRY1_PASSWORD="${{ secrets.IRON_BANK_ROBOT_PASSWORD }}" \
+            --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+            --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
 
-      - name: Build all packages with flavor-specific Zarf source, deploy, and test (${{ matrix.flavor }} / ${{ matrix.platform.arch }})
+      - name: Create ${{ matrix.package }} (${{ matrix.flavor }} / arm64)
         run: |
-          uds run ci-test \
-            --set FLAVOR=${{ matrix.flavor }} \
-            --set ARCH=${{ matrix.platform.arch }} \
+          uds run create-dev-package \
+            --set PACKAGE="${{ matrix.package }}" \
+            --set FLAVOR="${{ matrix.flavor }}" \
+            --set ARCH=arm64 \
+            --no-progress
+
+  test-install:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [init, init-gitea]
+        flavor: ${{ fromJSON(needs.plan.outputs.flavors) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+        with:
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.36.0
+
+      - name: Environment setup
+        run: |
+          echo "MARU_AUTH=\"{\"raw.githubusercontent.com\": \"${{ secrets.GITHUB_TOKEN }}\"}\"" >> "$GITHUB_ENV"
+          uds run actions:setup-environment \
+            --set REGISTRY1_USERNAME="${{ secrets.IRON_BANK_ROBOT_USERNAME }}" \
+            --set REGISTRY1_PASSWORD="${{ secrets.IRON_BANK_ROBOT_PASSWORD }}" \
+            --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+            --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
+
+      - name: Install-test ${{ matrix.package }} (${{ matrix.flavor }})
+        run: |
+          uds run test-install \
+            --set PACKAGE="${{ matrix.package }}" \
+            --set FLAVOR="${{ matrix.flavor }}" \
+            --set ARCH=amd64 \
             --no-progress
 
   verify-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ always() }}
-    needs:
-      - prepare
-      - test
-      - values
+    needs: [plan, values, create-arm64, test-install]
     steps:
       - name: Verify required jobs
         env:
-          PREPARE_RESULT: ${{ needs.prepare.result }}
-          RUN_TESTS: ${{ needs.prepare.outputs.run_tests }}
-          TEST_RESULT: ${{ needs.test.result }}
+          PLAN_RESULT: ${{ needs.plan.result }}
           VALUES_RESULT: ${{ needs.values.result }}
+          CREATE_RESULT: ${{ needs.create-arm64.result }}
+          INSTALL_RESULT: ${{ needs.test-install.result }}
         run: |
-          if [ "$PREPARE_RESULT" != "success" ]; then
-            echo "Test preparation failed: $PREPARE_RESULT" >&2
+          if [ "$PLAN_RESULT" != "success" ] || [ "$VALUES_RESULT" != "success" ] || [ "$CREATE_RESULT" != "success" ] || [ "$INSTALL_RESULT" != "success" ]; then
+            echo "Required package validation failed" >&2
             exit 1
           fi
-          if [ "$RUN_TESTS" = "true" ] && [ "$TEST_RESULT" != "success" ]; then
-            echo "Package tests failed: $TEST_RESULT" >&2
-            exit 1
-          fi
-          if [ "$VALUES_RESULT" != "success" ]; then
-            echo "Zarf values validation failed: $VALUES_RESULT" >&2
-            exit 1
-          fi
-          echo "Required tests passed"
