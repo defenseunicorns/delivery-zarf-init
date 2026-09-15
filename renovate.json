@@ -26,56 +26,69 @@
   "prConcurrentLimit": 0,
   "packageRules": [
     {
-      "description": "Update registry images across all flavors.",
+      "description": "Group CI, test, and repository automation dependencies.",
       "matchPackageNames": [
-        "library/registry",
-        "registry1.dso.mil/ironbank/opensource/docker/registry-v3",
-        "cgr.dev/defenseunicorns.com/distribution-fips"
+        "*"
       ],
-      "allowedVersions": "/^v?\\d+(\\.\\d+)+(-arm64)?$/",
-      "groupName": "Registry component",
-      "groupSlug": "registry-component",
+      "groupName": "CI dependencies",
+      "groupSlug": "ci-dependencies",
       "groupSingleUpdates": true,
-      "semanticCommitScope": "deps-shared"
+      "separateMajorMinor": false,
+      "semanticCommitScope": "deps-ci"
     },
     {
-      "description": "Update Socat images across all flavors.",
-      "matchPackageNames": [
-        "alpine/socat",
-        "registry1.dso.mil/ironbank/opensource/alpine/socat/socat",
-        "cgr.dev/defenseunicorns.com/socat-fips"
+      "description": "Group dependencies shipped in the Zarf packages.",
+      "matchFileNames": [
+        "components/**",
+        "flavors/**",
+        "packages/**",
+        "releaser.yaml"
       ],
-      "allowedVersions": "/^v?\\d+(\\.\\d+)+(-arm64)?$/",
-      "groupName": "Socat component",
-      "groupSlug": "socat-component",
+      "groupName": "Package dependencies",
+      "groupSlug": "package-dependencies",
       "groupSingleUpdates": true,
-      "semanticCommitScope": "deps-shared"
+      "separateMajorMinor": false,
+      "semanticCommitScope": "deps-pkg"
     },
     {
-      "description": "Update Gitea chart and images across all flavors.",
-      "matchPackageNames": [
-        "gitea",
-        "ghcr.io/go-gitea/gitea",
-        "registry1.dso.mil/ironbank/opensource/go-gitea/gitea",
-        "cgr.dev/defenseunicorns.com/gitea-fips"
-      ],
-      "groupName": "Gitea component",
-      "groupSlug": "gitea-component",
-      "groupSingleUpdates": true,
-      "semanticCommitScope": "deps-shared"
-    },
-    {
-      "description": "Update the shared Zarf release across all flavors.",
+      "description": "Keep the shared Zarf source pin with package dependencies.",
       "matchPackageNames": [
         "ghcr.io/zarf-dev/zarf/agent",
         "registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent",
         "cgr.dev/defenseunicorns.com/zarf-agent-fips"
       ],
-      "allowedVersions": "/^v\\d+\\.\\d+\\.\\d+(-arm64)?$/",
-      "groupName": "Zarf release",
-      "groupSlug": "zarf-release",
+      "groupName": "Package dependencies",
+      "groupSlug": "package-dependencies",
       "groupSingleUpdates": true,
-      "semanticCommitScope": "deps-shared"
+      "separateMajorMinor": false,
+      "semanticCommitScope": "deps-pkg"
+    },
+    {
+      "description": "Restrict registry images to release tags used across flavors.",
+      "matchPackageNames": [
+        "library/registry",
+        "registry1.dso.mil/ironbank/opensource/docker/registry-v3",
+        "cgr.dev/defenseunicorns.com/distribution-fips"
+      ],
+      "allowedVersions": "/^v?\\d+(\\.\\d+)+(-arm64)?$/"
+    },
+    {
+      "description": "Restrict Socat images to release tags used across flavors.",
+      "matchPackageNames": [
+        "alpine/socat",
+        "registry1.dso.mil/ironbank/opensource/alpine/socat/socat",
+        "cgr.dev/defenseunicorns.com/socat-fips"
+      ],
+      "allowedVersions": "/^v?\\d+(\\.\\d+)+(-arm64)?$/"
+    },
+    {
+      "description": "Restrict the shared Zarf release to matching architecture tags.",
+      "matchPackageNames": [
+        "ghcr.io/zarf-dev/zarf/agent",
+        "registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent",
+        "cgr.dev/defenseunicorns.com/zarf-agent-fips"
+      ],
+      "allowedVersions": "/^v\\d+\\.\\d+\\.\\d+(-arm64)?$/"
     },
     {
       "description": "Keep Gitea images on the minor supported by the chart pinned in components/common/zarf.yaml.",
