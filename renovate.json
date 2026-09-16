@@ -55,8 +55,7 @@
         "components/**",
         "flavors/**",
         "packages/**",
-        "releaser.yaml",
-        "tasks.yaml"
+        "releaser.yaml"
       ],
       "groupName": "Package dependencies",
       "groupSlug": "package-dependencies",
