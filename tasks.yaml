@@ -14,7 +14,7 @@ includes:
 variables:
   # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
   - name: ZARF_SOURCE_VERSION
-    default: v0.84.0
+    default: v0.85.0
   - name: FLAVOR
     default: upstream
   - name: PACKAGE

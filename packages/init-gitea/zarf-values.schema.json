@@ -699,14 +699,6 @@
         "priorityClassName": {
           "type": "string"
         },
-        "redis-cluster": {
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            }
-          },
-          "type": "object"
-        },
         "replicaCount": {
           "type": "integer"
         },
