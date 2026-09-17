@@ -98,6 +98,7 @@ components:
               - .gitea.postgresql-ha.postgresql.repmgrPassword
               - .gitea.postgresql-ha.global.postgresql.password
               - .gitea.postgresql-ha.volumePermissions.image
+              - .gitea.redis-cluster
               - .gitea.test
               - .gitea.serviceAccount.annotations
               - .gitea.serviceAccount.imagePullSecrets

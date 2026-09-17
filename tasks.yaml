@@ -44,8 +44,10 @@ tasks:
     description: Create the selected package with the uds-common create task
     inputs:
       architecture:
+        description: Package architecture
         default: ${ARCH}
       options:
+        description: Additional options passed to package creation
         default: ""
     actions:
       - task: package:validate-configs
@@ -71,6 +73,7 @@ tasks:
     description: Deploy and verify a registry-bearing package on a fresh cluster
     inputs:
       architecture:
+        description: Package architecture
         default: ${ARCH}
     actions:
       - task: package:resolve

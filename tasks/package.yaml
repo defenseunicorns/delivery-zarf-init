@@ -71,6 +71,7 @@ tasks:
     description: Resolve the flavor and architecture-specific Zarf config
     inputs:
       architecture:
+        description: Package architecture
         default: ${ARCH}
     actions:
       - cmd: |
@@ -96,6 +97,7 @@ tasks:
     description: Vendor upstream Zarf package definitions at the shared pinned version
     inputs:
       architecture:
+        description: Package architecture
         default: ${ARCH}
     actions:
       - task: resolve-config
@@ -121,6 +123,7 @@ tasks:
     description: Publish one init package architecture to its metadata-derived OCI repository
     inputs:
       architecture:
+        description: Package architecture
         default: ${ARCH}
     actions:
       - task: resolve

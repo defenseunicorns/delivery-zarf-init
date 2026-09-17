@@ -83,7 +83,6 @@ jobs:
             uds-pk release check "${{ matrix.target.flavor }}" \
               --package "${{ matrix.package }}" \
               --dir "$GITHUB_WORKSPACE" \
-              --skip-publish-check \
               --verbose
           ); then
             uds-pk release update-yaml "${{ matrix.target.flavor }}" \

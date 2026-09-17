@@ -7,7 +7,7 @@
     "workarounds:all"
   ],
   "automerge": true,
-  "platformAutomerge": true,
+  "platformAutomerge": false,
   "ignoreTests": false,
   "baseBranchPatterns": [
     "main"
