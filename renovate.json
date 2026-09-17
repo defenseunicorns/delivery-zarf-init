@@ -7,7 +7,7 @@
     "workarounds:all"
   ],
   "automerge": true,
-  "platformAutomerge": true,
+  "platformAutomerge": false,
   "ignoreTests": false,
   "baseBranchPatterns": [
     "main"
@@ -24,6 +24,19 @@
   ],
   "prHourlyLimit": 0,
   "prConcurrentLimit": 0,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track the shared Zarf source pin in the list-style task variables.",
+      "fileMatch": [
+        "^tasks\\.yaml$"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: versioning=(?<versioning>[^\\s]+))?\\s*\\n\\s*- name: ZARF_SOURCE_VERSION\\s*\\n\\s*default: (?<currentValue>[^\\s]+)"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver-coerced{{/if}}"
+    }
+  ],
   "packageRules": [
     {
       "description": "Group CI, test, and repository automation dependencies.",

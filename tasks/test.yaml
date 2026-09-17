@@ -20,8 +20,10 @@ tasks:
     description: Deploy the selected init package
     inputs:
       architecture:
+        description: Package architecture
         default: ${ARCH}
       values:
+        description: Additional values arguments passed to package deployment
         default: ""
     actions:
       - cmd: |
@@ -35,6 +37,7 @@ tasks:
     description: Deploy DOS games to exercise the internal registry and agent mutation
     inputs:
       architecture:
+        description: Package architecture
         default: ${ARCH}
     actions:
       - cmd: |
