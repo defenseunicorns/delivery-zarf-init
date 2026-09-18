@@ -1289,6 +1289,9 @@
         },
         "serviceAccount": {
           "properties": {
+            "annotations": {
+              "type": "object"
+            },
             "create": {
               "type": "boolean"
             },

@@ -44,7 +44,6 @@ components:
               - .zarf-registry.secrets
               - .zarf-registry.mtls
               - .zarf-registry.securityContext
-              - .zarf-registry.serviceAccount.annotations
               - .zarf-registry.fullnameOverride
               - .zarf-registry.ipv6Only
     healthChecks:
