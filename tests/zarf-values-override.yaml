@@ -6,6 +6,8 @@ zarf-agent:
   deployment:
     replicaCount: 1
 zarf-registry:
+  persistence:
+    enabled: false
   podLabels:
     values-test: registry
 gitea:

@@ -7,24 +7,26 @@ metadata:
   name: common
 
 components:
-  - name: zarf-agent
+  - name: zarf-seed-registry
     required: true
     import:
-      path: ../../.zarf-src/packages/zarf-agent
+      path: ../../.zarf-src/packages/zarf-registry
     charts:
-      - name: zarf-agent
+      - name: docker-registry
         values:
-          - sourcePath: .zarf-agent
+          - sourcePath: .zarf-registry
             targetPath: .
             excludePaths:
-              - .zarf-agent.image
-              - .zarf-agent.secret
-              - .zarf-agent.mutationPolicy
-    healthChecks:
-      - name: agent-hook
-        namespace: zarf
-        apiVersion: apps/v1
-        kind: Deployment
+              - .zarf-registry.image
+              - .zarf-registry.imagePullSecrets
+              - .zarf-registry.proxy.image
+              - .zarf-registry.proxy.registry
+              - .zarf-registry.proxy.injector
+              - .zarf-registry.secrets
+              - .zarf-registry.mtls
+              - .zarf-registry.securityContext
+              - .zarf-registry.fullnameOverride
+              - .zarf-registry.ipv6Only
 
   - name: zarf-registry
     required: true
@@ -48,6 +50,25 @@ components:
               - .zarf-registry.ipv6Only
     healthChecks:
       - name: zarf-docker-registry
+        namespace: zarf
+        apiVersion: apps/v1
+        kind: Deployment
+
+  - name: zarf-agent
+    required: true
+    import:
+      path: ../../.zarf-src/packages/zarf-agent
+    charts:
+      - name: zarf-agent
+        values:
+          - sourcePath: .zarf-agent
+            targetPath: .
+            excludePaths:
+              - .zarf-agent.image
+              - .zarf-agent.secret
+              - .zarf-agent.mutationPolicy
+    healthChecks:
+      - name: agent-hook
         namespace: zarf
         apiVersion: apps/v1
         kind: Deployment

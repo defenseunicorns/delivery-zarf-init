@@ -41,6 +41,12 @@ tasks:
             '[select(.kind == "Deployment" and .metadata.name == "zarf-docker-registry") | .spec.template.metadata.labels."values-test"] | any_c(. == "registry")' \
             "${rendered}" > /dev/null
           uds zarf tools yq ea -e \
+            '[select(.kind == "Deployment" and .metadata.name == "zarf-docker-registry") | .spec.template.spec.volumes[] | select(.name == "data" and has("emptyDir"))] | length == 2' \
+            "${rendered}" > /dev/null
+          uds zarf tools yq ea -e \
+            '[select(.kind == "PersistentVolumeClaim" and .metadata.name == "zarf-docker-registry")] | length == 0' \
+            "${rendered}" > /dev/null
+          uds zarf tools yq ea -e \
             '[select(.kind == "Deployment" and .metadata.name == "zarf-gitea") | .spec.template.metadata.labels."values-test"] | any_c(. == "gitea")' \
             "${rendered}" > /dev/null
 
