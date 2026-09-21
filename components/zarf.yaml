@@ -15,7 +15,7 @@ components:
   - name: zarf-seed-registry
     required: true
     import:
-      path: ../.zarf-src/packages/zarf-registry
+      path: common
 
   - name: zarf-registry
     required: true
