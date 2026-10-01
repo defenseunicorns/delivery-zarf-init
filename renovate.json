@@ -1,10 +1,6 @@
 {
   "extends": [
-    "github>defenseunicorns/uds-common//config/renovate.json5",
-    ":semanticCommits",
-    ":semanticPrefixFixDepsChoreOthers",
-    "replacements:all",
-    "workarounds:all"
+    "github>defenseunicorns/uds-ops-common//config/renovate.json5"
   ],
   "automerge": true,
   "platformAutomerge": false,
@@ -19,17 +15,15 @@
     "git-push"
   ],
   "rebaseWhen": "auto",
-  "labels": [
+  "addLabels": [
     "renovate"
   ],
-  "prHourlyLimit": 0,
-  "prConcurrentLimit": 0,
   "customManagers": [
     {
       "customType": "regex",
       "description": "Track the shared Zarf source pin in the list-style task variables.",
-      "fileMatch": [
-        "^tasks\\.yaml$"
+      "managerFilePatterns": [
+        "/(^|/)tasks\\.yaml$/"
       ],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: versioning=(?<versioning>[^\\s]+))?\\s*\\n\\s*- name: ZARF_SOURCE_VERSION\\s*\\n\\s*default: (?<currentValue>[^\\s]+)"
@@ -38,31 +32,6 @@
     }
   ],
   "packageRules": [
-    {
-      "description": "Group CI, test, and repository automation dependencies.",
-      "matchPackageNames": [
-        "*"
-      ],
-      "groupName": "CI dependencies",
-      "groupSlug": "ci-dependencies",
-      "groupSingleUpdates": true,
-      "separateMajorMinor": false,
-      "semanticCommitScope": "deps-ci"
-    },
-    {
-      "description": "Group dependencies shipped in the Zarf packages.",
-      "matchFileNames": [
-        "components/**",
-        "flavors/**",
-        "packages/**",
-        "releaser.yaml"
-      ],
-      "groupName": "Package dependencies",
-      "groupSlug": "package-dependencies",
-      "groupSingleUpdates": true,
-      "separateMajorMinor": false,
-      "semanticCommitScope": "deps-pkg"
-    },
     {
       "description": "Keep the shared Zarf source pin with package dependencies.",
       "matchPackageNames": [
@@ -73,7 +42,6 @@
       "groupName": "Package dependencies",
       "groupSlug": "package-dependencies",
       "groupSingleUpdates": true,
-      "separateMajorMinor": false,
       "semanticCommitScope": "deps-pkg"
     },
     {
