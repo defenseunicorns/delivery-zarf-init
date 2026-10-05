@@ -98,6 +98,10 @@ Pull requests:
 - create every public upstream package and install-test its registry-bearing packages on forks and Dependabot; and
 - validate Zarf values schemas and passthrough.
 
+Install tests run only when a pull request changes package definitions, components, flavors, tests,
+tasks, or release metadata. Repository automation and documentation-only changes still create the
+packages and validate Zarf values, but skip the cluster end-to-end matrix.
+
 Renovate creates two normal dependency groups: package dependencies and CI dependencies. Package
 dependencies include the charts, images, and release versions shipped in the Zarf packages; the CI
 group contains test fixtures, workflow actions, development tools, and repository automation.

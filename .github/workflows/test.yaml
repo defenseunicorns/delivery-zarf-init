@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       flavors: ${{ steps.flavors.outputs.flavors }}
+      run_e2e: ${{ steps.changes.outputs.run_e2e }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,6 +48,19 @@ jobs:
             echo 'flavors=["upstream","registry1","unicorn"]' >> "$GITHUB_OUTPUT"
           else
             echo 'flavors=["upstream"]' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Select package tests
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- \
+            components flavors packages tests tasks tasks.yaml releaser.yaml; then
+            echo 'run_e2e=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
           fi
 
   values:
@@ -98,6 +112,7 @@ jobs:
 
   test-install:
     needs: plan
+    if: needs.plan.outputs.run_e2e == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
@@ -142,7 +157,10 @@ jobs:
           CREATE_RESULT: ${{ needs.create-arm64.result }}
           INSTALL_RESULT: ${{ needs.test-install.result }}
         run: |
-          if [ "$PLAN_RESULT" != "success" ] || [ "$VALUES_RESULT" != "success" ] || [ "$CREATE_RESULT" != "success" ] || [ "$INSTALL_RESULT" != "success" ]; then
+          if [ "$PLAN_RESULT" != "success" ] || \
+            [ "$VALUES_RESULT" != "success" ] || \
+            [ "$CREATE_RESULT" != "success" ] || \
+            { [ "$INSTALL_RESULT" != "success" ] && [ "$INSTALL_RESULT" != "skipped" ]; }; then
             echo "Required package validation failed" >&2
             exit 1
           fi
