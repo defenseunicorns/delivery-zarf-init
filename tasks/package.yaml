@@ -120,7 +120,7 @@ tasks:
           printf '%s\n' "${ZARF_SOURCE_VERSION}" > .zarf-src/.zarf-version
 
   - name: publish
-    description: Publish one init package architecture to its metadata-derived OCI repository
+    description: Sign, verify, and publish one init package architecture
     inputs:
       architecture:
         description: Package architecture
@@ -136,4 +136,8 @@ tasks:
             echo "missing package artifact: $artifact" >&2
             exit 1
           fi
+          uds zarf package sign "$artifact" --keyless --confirm
+          uds zarf package verify "$artifact" \
+            --certificate-identity "https://github.com/defenseunicorns/delivery-zarf-init/.github/workflows/release.yaml@refs/tags/${GITHUB_REF_NAME}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
           uds zarf package publish "$artifact" "oci://${TARGET_REPO}" --retries "$PUBLISH_RETRIES"

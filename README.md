@@ -108,10 +108,15 @@ Zarf updates also advance every package and flavor in `releaser.yaml`. Registry,
 updates do not create a package release by themselves; they ship with the next Zarf release unless
 an affected package receives an explicit `-uds.N` revision bump.
 
-Pushes to `main` evaluate each package and flavor independently with package-scoped `uds-pk`.
-A release job creates both architectures, tests registry-bearing packages, publishes both, and then creates
-the package-specific GitHub release tag. The tag is the completion marker, so a failed partial
-publication is retried on the next push.
+Pushes to `main` evaluate each package and flavor independently with package-scoped `uds-pk` and
+create each unreleased package-specific GitHub release tag. Each tag triggers a release job that
+creates both architectures, tests registry-bearing packages, keyless-signs and verifies them against
+the exact tag identity, and publishes both. A failed release can be retried from its tagged workflow.
+
+Tag creation uses the `uds-release` GitHub Environment with the `APP_CLIENT_ID` variable and
+`APP_PRIVATE_KEY` secret for the protected release GitHub App. Repository rulesets must allow that
+App to create release tags. An App token is required because tags created with `GITHUB_TOKEN` do not
+trigger the tag-based release workflow.
 
 The registry can be backed by S3-compatible object storage; see
 [`docs/s3-backed-registry.md`](./docs/s3-backed-registry.md).
