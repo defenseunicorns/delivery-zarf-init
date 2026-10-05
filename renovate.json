@@ -1,6 +1,10 @@
 {
   "extends": [
-    "github>defenseunicorns/uds-ops-common//config/renovate.json5"
+    "github>defenseunicorns/uds-common//config/renovate.json5",
+    ":semanticCommits",
+    ":semanticPrefixFixDepsChoreOthers",
+    "replacements:all",
+    "workarounds:all"
   ],
   "automerge": true,
   "platformAutomerge": false,
@@ -18,6 +22,8 @@
   "addLabels": [
     "renovate"
   ],
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
   "customManagers": [
     {
       "customType": "regex",
@@ -33,6 +39,31 @@
   ],
   "packageRules": [
     {
+      "description": "Group CI, test, and repository automation dependencies.",
+      "matchPackageNames": [
+        "*"
+      ],
+      "groupName": "CI dependencies",
+      "groupSlug": "ci-dependencies",
+      "groupSingleUpdates": true,
+      "separateMajorMinor": false,
+      "semanticCommitScope": "deps-ci"
+    },
+    {
+      "description": "Group dependencies shipped in the Zarf packages.",
+      "matchFileNames": [
+        "components/**",
+        "flavors/**",
+        "packages/**",
+        "releaser.yaml"
+      ],
+      "groupName": "Package dependencies",
+      "groupSlug": "package-dependencies",
+      "groupSingleUpdates": true,
+      "separateMajorMinor": false,
+      "semanticCommitScope": "deps-pkg"
+    },
+    {
       "description": "Keep the shared Zarf source pin with package dependencies.",
       "matchPackageNames": [
         "ghcr.io/zarf-dev/zarf/agent",
@@ -42,6 +73,7 @@
       "groupName": "Package dependencies",
       "groupSlug": "package-dependencies",
       "groupSingleUpdates": true,
+      "separateMajorMinor": false,
       "semanticCommitScope": "deps-pkg"
     },
     {
