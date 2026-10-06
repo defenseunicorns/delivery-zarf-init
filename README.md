@@ -29,6 +29,14 @@ Each package has an independent entry in `releaser.yaml`. OCI tags use
 `<zarf-version>-uds.<revision>-<flavor>`, and GitHub release tags use
 `<package>-<zarf-version>-uds.<revision>-<flavor>`.
 
+Consumers can verify against the exact package release tag:
+
+```yaml
+keylessVerification:
+  certificateIdentity: https://github.com/defenseunicorns/delivery-zarf-init/.github/workflows/release.yaml@refs/tags/init-v0.87.0-uds.0-upstream
+  certificateOIDCIssuer: https://token.actions.githubusercontent.com
+```
+
 ## Deploy
 
 ```bash
