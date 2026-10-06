@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   plan:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       flavors: ${{ steps.flavors.outputs.flavors }}
       run_e2e: ${{ steps.changes.outputs.run_e2e }}
@@ -33,7 +33,7 @@ jobs:
         if: startsWith(github.head_ref, 'renovate/')
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
-          version: v0.37.0
+          version: v0.39.0
 
       - name: Check Renovate readiness
         if: startsWith(github.head_ref, 'renovate/')
@@ -64,21 +64,21 @@ jobs:
           fi
 
   values:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
-          version: v0.37.0
+          version: v0.39.0
 
       - name: Validate Zarf values
         run: uds run test-zarf-values --no-progress
 
   create-arm64:
     needs: plan
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -91,7 +91,7 @@ jobs:
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
-          version: v0.37.0
+          version: v0.39.0
 
       - name: Environment setup
         run: |
@@ -113,7 +113,7 @@ jobs:
   test-install:
     needs: plan
     if: needs.plan.outputs.run_e2e == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -126,7 +126,7 @@ jobs:
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
-          version: v0.37.0
+          version: v0.39.0
 
       - name: Environment setup
         run: |
@@ -146,7 +146,7 @@ jobs:
             --no-progress
 
   verify-test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     if: ${{ always() }}
     needs: [plan, values, create-arm64, test-install]
     steps:
