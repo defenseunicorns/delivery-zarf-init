@@ -9,12 +9,12 @@ package:
       agent_image_domain: cgr.dev/
       agent_image: defenseunicorns.com/zarf-agent-fips
       # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
-      agent_image_tag: v0.86.0
+      agent_image_tag: v0.87.0
 
       registry_image_domain: cgr.dev/
       registry_image: defenseunicorns.com/distribution-fips
       # renovate: datasource=docker depName=cgr.dev/defenseunicorns.com/distribution-fips versioning=docker
-      registry_image_tag: 3.1.1
+      registry_image_tag: v3.1.2
 
       proxy_image_domain: cgr.dev/
       proxy_image: defenseunicorns.com/socat-fips
