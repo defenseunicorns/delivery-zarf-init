@@ -13,8 +13,6 @@ components:
       path: ../../.zarf-src/packages/zarf-registry
     charts:
       - name: docker-registry
-        valuesFiles:
-          - zarf-seed-registry-values.yaml
         values:
           - sourcePath: .zarf-seed-registry
             targetPath: .

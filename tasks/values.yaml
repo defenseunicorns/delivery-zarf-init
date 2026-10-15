@@ -59,10 +59,10 @@ tasks:
           darwin: bash
 
   - name: test-values-files
-    description: "Verify generated Helm values for the seed registry, main registry, and agent."
+    description: Verify generated Helm values for the seed registry, main registry, and agent.
     actions:
-      - description: "Verify generated Helm values for the seed registry, main registry, and agent."
-        shell: { linux: bash, darwin: bash }
+      - description: Verify generated Helm values for the seed registry, main registry, and agent.
+        shell: {linux: bash, darwin: bash}
         cmd: |
           set -euo pipefail
 

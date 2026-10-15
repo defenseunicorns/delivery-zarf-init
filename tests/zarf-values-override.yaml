@@ -13,6 +13,8 @@ zarf-agent:
 zarf-seed-registry:
   podLabels:
     values-test: seed-registry
+  persistence:
+    enabled: false
 zarf-registry:
   podLabels:
     values-test: registry
