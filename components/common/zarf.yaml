@@ -13,20 +13,22 @@ components:
       path: ../../.zarf-src/packages/zarf-registry
     charts:
       - name: docker-registry
+        valuesFiles:
+          - zarf-seed-registry-values.yaml
         values:
-          - sourcePath: .zarf-registry
+          - sourcePath: .zarf-seed-registry
             targetPath: .
             excludePaths:
-              - .zarf-registry.image
-              - .zarf-registry.imagePullSecrets
-              - .zarf-registry.proxy.image
-              - .zarf-registry.proxy.registry
-              - .zarf-registry.proxy.injector
-              - .zarf-registry.secrets
-              - .zarf-registry.mtls
-              - .zarf-registry.securityContext
-              - .zarf-registry.fullnameOverride
-              - .zarf-registry.ipv6Only
+              - .zarf-seed-registry.image
+              - .zarf-seed-registry.imagePullSecrets
+              - .zarf-seed-registry.proxy.image
+              - .zarf-seed-registry.proxy.registry
+              - .zarf-seed-registry.proxy.injector
+              - .zarf-seed-registry.secrets
+              - .zarf-seed-registry.mtls
+              - .zarf-seed-registry.securityContext
+              - .zarf-seed-registry.fullnameOverride
+              - .zarf-seed-registry.ipv6Only
 
   - name: zarf-registry
     required: true

@@ -134,7 +134,7 @@ tasks:
       - task: values:generate
 
   - name: test-zarf-values
-    description: Validate Zarf values schemas and passthrough
+    description: Validate Zarf values schemas, rendered manifests, and generated Helm values files
     actions:
       - task: package:validate-configs
       - task: package:vendor

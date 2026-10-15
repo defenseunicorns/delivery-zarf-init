@@ -2,5 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 # Chart defaults are authoritative.
+zarf-seed-registry: {}
 zarf-registry: {}
 zarf-agent: {}
