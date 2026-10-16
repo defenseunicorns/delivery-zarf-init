@@ -28,7 +28,7 @@
               "type": "string"
             },
             "replicaCount": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -135,7 +135,7 @@
               "type": "integer"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -183,7 +183,7 @@
         "podDisruptionBudget": {
           "properties": {
             "minAvailable": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -201,11 +201,9 @@
             "enabled": {
               "type": "boolean"
             },
-            "hostNetwork": {
-              "type": "boolean"
-            },
+            "hostNetwork": {},
             "injectorHostPort": {
-              "type": "integer"
+              "type": "number"
             },
             "tolerations": {
               "type": "array"
@@ -214,7 +212,7 @@
           "type": "object"
         },
         "replicaCount": {
-          "type": "integer"
+          "type": "number"
         },
         "resources": {
           "properties": {
@@ -248,11 +246,15 @@
             "name": {
               "type": "string"
             },
-            "nodePort": {},
-            "port": {
-              "type": "integer"
+            "nodePort": {
+              "type": "string"
             },
-            "registryPort": {},
+            "port": {
+              "type": "number"
+            },
+            "registryPort": {
+              "type": "string"
+            },
             "type": {
               "type": "string"
             }
@@ -307,7 +309,7 @@
               "type": "integer"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -355,7 +357,7 @@
         "podDisruptionBudget": {
           "properties": {
             "minAvailable": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -373,11 +375,9 @@
             "enabled": {
               "type": "boolean"
             },
-            "hostNetwork": {
-              "type": "boolean"
-            },
+            "hostNetwork": {},
             "injectorHostPort": {
-              "type": "integer"
+              "type": "number"
             },
             "tolerations": {
               "type": "array"
@@ -386,7 +386,7 @@
           "type": "object"
         },
         "replicaCount": {
-          "type": "integer"
+          "type": "number"
         },
         "resources": {
           "properties": {
@@ -420,11 +420,15 @@
             "name": {
               "type": "string"
             },
-            "nodePort": {},
-            "port": {
-              "type": "integer"
+            "nodePort": {
+              "type": "string"
             },
-            "registryPort": {},
+            "port": {
+              "type": "number"
+            },
+            "registryPort": {
+              "type": "string"
+            },
             "type": {
               "type": "string"
             }
