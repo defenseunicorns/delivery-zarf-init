@@ -17,58 +17,80 @@ tasks:
         default: "false"
     actions:
       - cmd: |
-          set -euo pipefail
+          set -eu
 
           check="${{ .inputs.check }}"
-          arguments=()
-          while IFS=$'\t' read -r key value; do
-            uppercase_key=$(printf '%s' "$key" | tr '[:lower:]' '[:upper:]')
-            arguments+=(--set "${uppercase_key}=${value}")
-          done < <(uds zarf tools yq -r \
+          settings=$(mktemp)
+          generated=""
+          cleanup() {
+            rm -f "$settings"
+            if [ -n "$generated" ]; then
+              rm -f "$generated"
+            fi
+          }
+          trap cleanup 0
+          trap 'exit 1' 1 2 3 15
+
+          uds zarf tools yq -r \
             '.package.create.set | to_entries[] | select(.key != "pkg_version") | [.key, (.value | tostring)] | @tsv' \
-            flavors/upstream.yaml)
+            flavors/upstream.yaml > "$settings"
 
-          stale=()
-          values_files=(packages/*/zarf-values.yaml)
-          if [ ! -e "${values_files[0]}" ]; then
-            echo "no zarf-values.yaml files found" >&2
-            exit 1
-          fi
+          set --
+          tab=$(printf '\t')
+          while IFS="$tab" read -r key value; do
+            uppercase_key=$(printf '%s' "$key" | tr '[:lower:]' '[:upper:]')
+            set -- "$@" --set "${uppercase_key}=${value}"
+          done < "$settings"
 
-          for values_file in "${values_files[@]}"; do
+          found=false
+          stale=false
+
+          for values_file in packages/*/zarf-values.yaml; do
+            [ -e "$values_file" ] || continue
+            found=true
             package_dir=${values_file%/*}
             schema_file="${package_dir}/zarf-values.schema.json"
             generated=$(mktemp)
-            trap 'rm -f "${generated}"' EXIT
 
-            echo "$([ "$check" = "true" ] && printf 'Checking' || printf 'Generating') ${schema_file}"
+            if [ "$check" = "true" ]; then
+              action=Checking
+            else
+              action=Generating
+            fi
+            printf '%s %s\n' "$action" "$schema_file"
+
             ZARF_CONFIG=flavors/upstream.yaml uds zarf dev generate-schema "$package_dir" \
               --flavor upstream \
-              "${arguments[@]}" \
+              "$@" \
               --delete-not-found \
               --no-color \
               --log-level error > "$generated"
 
             if [ "$check" = "true" ]; then
               if ! cmp -s "$schema_file" "$generated"; then
-                stale+=("$schema_file")
+                printf 'ERROR: %s is stale\n' "$schema_file" >&2
+                stale=true
               fi
               rm -f "$generated"
             else
               chmod 0644 "$generated"
               mv "$generated" "$schema_file"
             fi
-            trap - EXIT
+            generated=""
           done
 
-          if [ "${#stale[@]}" -gt 0 ]; then
-            printf 'ERROR: %s is stale\n' "${stale[@]}" >&2
+          if [ "$found" = "false" ]; then
+            echo "no zarf-values.yaml files found" >&2
+            exit 1
+          fi
+
+          if [ "$stale" = "true" ]; then
             echo "Run: uds run generate-zarf-values-schemas" >&2
             exit 1
           fi
         shell:
-          linux: bash
-          darwin: bash
+          linux: sh
+          darwin: sh
 
   - name: check-generated
     description: Fail when committed Zarf values schemas are stale
@@ -81,9 +103,9 @@ tasks:
     description: Verify selected values affect rendered manifests and excluded values do not
     actions:
       - cmd: |
-          set -euo pipefail
+          set -eu
           rendered=$(mktemp)
-          trap 'rm -f "${rendered}"' EXIT
+          trap 'rm -f "${rendered}"' 0
 
           ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect manifests packages/init-gitea \
             --flavor upstream \
@@ -113,16 +135,16 @@ tasks:
             exit 1
           fi
         shell:
-          linux: bash
-          darwin: bash
+          linux: sh
+          darwin: sh
 
   - name: test-values-files
     description: Verify generated Helm values for the seed registry, main registry, and agent.
     actions:
       - description: Verify generated Helm values for the seed registry, main registry, and agent.
-        shell: {linux: bash, darwin: bash}
+        shell: {linux: sh, darwin: sh}
         cmd: |
-          set -euo pipefail
+          set -eu
 
           seed_init_default=$(mktemp)
           seed_init_multi=$(mktemp)
@@ -133,7 +155,7 @@ tasks:
           seed=$(mktemp)
           registry=$(mktemp)
           agent=$(mktemp)
-          trap 'rm -f "$seed_init_default" "$seed_init_multi" "$seed_init_legacy_pvc_disabled" "$seed_gitea_default" "$seed_gitea_multi" "$seed_gitea_multi_override" "$seed" "$registry" "$agent"' EXIT
+          trap 'rm -f "$seed_init_default" "$seed_init_multi" "$seed_init_legacy_pvc_disabled" "$seed_gitea_default" "$seed_gitea_multi" "$seed_gitea_multi_override" "$seed" "$registry" "$agent"' 0
 
           ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect values-files packages/init \
             --flavor upstream \
@@ -188,11 +210,9 @@ tasks:
             --no-color --log-level error > "$agent"
 
           assert_values() {
-            local component="$1" file="$2" condition="$3"
-
             if ! uds zarf tools yq ea -e \
-              "[select($condition)] | length == 1" "$file" > /dev/null; then
-              printf '%s values assertion failed: %s\n' "$component" "$condition" >&2
+              "[select($3)] | length == 1" "$2" > /dev/null; then
+              printf '%s values assertion failed: %s\n' "$1" "$3" >&2
               return 1
             fi
           }
