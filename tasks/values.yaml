@@ -18,6 +18,8 @@ tasks:
     actions:
       - cmd: |
           set -eu
+          # shellcheck disable=SC3040 # pipefail is standardized by POSIX.1-2024.
+          set -o pipefail
 
           check="${{ .inputs.check }}"
           settings=$(mktemp)
@@ -104,6 +106,8 @@ tasks:
     actions:
       - cmd: |
           set -eu
+          # shellcheck disable=SC3040 # pipefail is standardized by POSIX.1-2024.
+          set -o pipefail
           rendered=$(mktemp)
           trap 'rm -f "${rendered}"' 0
 
@@ -145,6 +149,8 @@ tasks:
         shell: {linux: sh, darwin: sh}
         cmd: |
           set -eu
+          # shellcheck disable=SC3040 # pipefail is standardized by POSIX.1-2024.
+          set -o pipefail
 
           seed_init_default=$(mktemp)
           seed_init_multi=$(mktemp)
