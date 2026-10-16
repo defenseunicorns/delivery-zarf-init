@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 set -eu
+# shellcheck disable=SC3040 # pipefail is standardized by POSIX.1-2024.
+set -o pipefail
 
 base_ref="${1:?base ref is required}"
 ready=true
