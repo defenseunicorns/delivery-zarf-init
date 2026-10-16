@@ -1,8 +1,14 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
-# Chart defaults are authoritative.
-zarf-seed-registry: {}
-zarf-registry: {}
+# Preserve numeric types obscured by upstream Zarf variable templating.
+zarf-seed-registry:
+  autoscaling:
+    minReplicas: 1
+    maxReplicas: 5
+zarf-registry:
+  autoscaling:
+    minReplicas: 1
+    maxReplicas: 5
 zarf-agent: {}
 gitea: {}

@@ -26,7 +26,7 @@
               "type": "object"
             },
             "terminationGracePeriodSeconds": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -225,19 +225,17 @@
                       "type": "string"
                     },
                     "SSH_LISTEN_PORT": {
-                      "type": "integer"
+                      "type": "number"
                     },
                     "SSH_PORT": {
-                      "type": "integer"
+                      "type": "number"
                     }
                   },
                   "type": "object"
                 },
                 "service": {
                   "properties": {
-                    "DISABLE_REGISTRATION": {
-                      "type": "boolean"
-                    }
+                    "DISABLE_REGISTRATION": {}
                   },
                   "type": "object"
                 },
@@ -262,16 +260,16 @@
                   "type": "boolean"
                 },
                 "failureThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "initialDelaySeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "periodSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "successThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "tcpSocket": {
                   "properties": {
@@ -282,7 +280,7 @@
                   "type": "object"
                 },
                 "timeoutSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 }
               },
               "type": "object"
@@ -332,16 +330,16 @@
                   "type": "boolean"
                 },
                 "failureThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "initialDelaySeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "periodSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "successThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "tcpSocket": {
                   "properties": {
@@ -352,7 +350,7 @@
                   "type": "object"
                 },
                 "timeoutSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 }
               },
               "type": "object"
@@ -371,16 +369,16 @@
                   "type": "boolean"
                 },
                 "failureThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "initialDelaySeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "periodSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "successThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "tcpSocket": {
                   "properties": {
@@ -391,7 +389,7 @@
                   "type": "object"
                 },
                 "timeoutSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 }
               },
               "type": "object"
@@ -529,7 +527,9 @@
             "size": {
               "type": "string"
             },
-            "storageClass": {},
+            "storageClass": {
+              "type": "string"
+            },
             "subPath": {},
             "volumeName": {
               "type": "string"
@@ -566,7 +566,7 @@
                         "ports": {
                           "properties": {
                             "postgresql": {
-                              "type": "integer"
+                              "type": "number"
                             }
                           },
                           "type": "object"
@@ -681,7 +681,7 @@
                 "ports": {
                   "properties": {
                     "postgresql": {
-                      "type": "integer"
+                      "type": "number"
                     }
                   },
                   "type": "object"
@@ -700,7 +700,7 @@
           "type": "string"
         },
         "replicaCount": {
-          "type": "integer"
+          "type": "number"
         },
         "resources": {
           "properties": {
@@ -790,7 +790,7 @@
                 },
                 "nodePort": {},
                 "port": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "type": {
                   "type": "string"
@@ -823,7 +823,7 @@
                 },
                 "nodePort": {},
                 "port": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "type": {
                   "type": "string"
@@ -860,7 +860,7 @@
                   "type": "string"
                 },
                 "maxUnavailable": {
-                  "type": "integer"
+                  "type": "number"
                 }
               },
               "type": "object"
@@ -901,14 +901,14 @@
             "master": {
               "properties": {
                 "count": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "service": {
                   "properties": {
                     "ports": {
                       "properties": {
                         "valkey": {
-                          "type": "integer"
+                          "type": "number"
                         }
                       },
                       "type": "object"
@@ -977,10 +977,10 @@
             "cluster": {
               "properties": {
                 "nodes": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "replicas": {
-                  "type": "integer"
+                  "type": "number"
                 }
               },
               "type": "object"
@@ -1011,7 +1011,7 @@
                 "ports": {
                   "properties": {
                     "valkey": {
-                      "type": "integer"
+                      "type": "number"
                     }
                   },
                   "type": "object"
@@ -1056,7 +1056,7 @@
               "type": "string"
             },
             "replicaCount": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -1163,7 +1163,7 @@
               "type": "integer"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -1211,7 +1211,7 @@
         "podDisruptionBudget": {
           "properties": {
             "minAvailable": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -1229,11 +1229,9 @@
             "enabled": {
               "type": "boolean"
             },
-            "hostNetwork": {
-              "type": "boolean"
-            },
+            "hostNetwork": {},
             "injectorHostPort": {
-              "type": "integer"
+              "type": "number"
             },
             "tolerations": {
               "type": "array"
@@ -1242,7 +1240,7 @@
           "type": "object"
         },
         "replicaCount": {
-          "type": "integer"
+          "type": "number"
         },
         "resources": {
           "properties": {
@@ -1276,11 +1274,15 @@
             "name": {
               "type": "string"
             },
-            "nodePort": {},
-            "port": {
-              "type": "integer"
+            "nodePort": {
+              "type": "string"
             },
-            "registryPort": {},
+            "port": {
+              "type": "number"
+            },
+            "registryPort": {
+              "type": "string"
+            },
             "type": {
               "type": "string"
             }
@@ -1335,7 +1337,7 @@
               "type": "integer"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -1383,7 +1385,7 @@
         "podDisruptionBudget": {
           "properties": {
             "minAvailable": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -1401,11 +1403,9 @@
             "enabled": {
               "type": "boolean"
             },
-            "hostNetwork": {
-              "type": "boolean"
-            },
+            "hostNetwork": {},
             "injectorHostPort": {
-              "type": "integer"
+              "type": "number"
             },
             "tolerations": {
               "type": "array"
@@ -1414,7 +1414,7 @@
           "type": "object"
         },
         "replicaCount": {
-          "type": "integer"
+          "type": "number"
         },
         "resources": {
           "properties": {
@@ -1448,11 +1448,15 @@
             "name": {
               "type": "string"
             },
-            "nodePort": {},
-            "port": {
-              "type": "integer"
+            "nodePort": {
+              "type": "string"
             },
-            "registryPort": {},
+            "port": {
+              "type": "number"
+            },
+            "registryPort": {
+              "type": "string"
+            },
             "type": {
               "type": "string"
             }
