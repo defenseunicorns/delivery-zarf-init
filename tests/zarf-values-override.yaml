@@ -5,11 +5,49 @@
 zarf-agent:
   deployment:
     replicaCount: 1
-zarf-registry:
+  resources:
+    requests:
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+zarf-seed-registry:
+  podLabels:
+    values-test: seed-registry
   persistence:
     enabled: false
+zarf-registry:
   podLabels:
     values-test: registry
+  persistence:
+    enabled: false
+  autoscaling:
+    minReplicas: 2
+    mapReplicasToNodes: true
+  serviceAccount:
+    name: docker-registry-sa
+    create: true
+    annotations:
+      values-test: registry-service-account
+  extraEnvVars:
+    - name: REGISTRY_STORAGE
+      value: s3
+  affinity:
+    custom:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - docker-registry
+              topologyKey: kubernetes.io/hostname
+  tolerations:
+    - effect: NoSchedule
+      key: dedicated
+      operator: Exists
 gitea:
   deployment:
     labels:

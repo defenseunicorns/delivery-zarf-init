@@ -17,6 +17,9 @@ TYPE_OVERRIDES = {
     "gitea": {
         ("gitea", "config", "service", "DISABLE_REGISTRATION"): "boolean",
     },
+    "zarf-seed-registry": {
+        ("proxy", "hostNetwork"): "boolean",
+    },
     "zarf-registry": {
         ("proxy", "hostNetwork"): "boolean",
     },
@@ -43,7 +46,7 @@ def normalize(schema: dict[str, Any], defaults: Any) -> None:
     expected_type = json_type(defaults)
     if expected_type is None:
         schema.pop("type", None)
-    elif "type" in schema:
+    else:
         schema["type"] = expected_type
 
     if isinstance(defaults, dict):
@@ -118,13 +121,15 @@ def chart_defaults(root: Path) -> dict[str, Any]:
         ],
         root,
     )
+    registry_values = load_yaml(
+        root / ".zarf-src/packages/zarf-registry/chart/values.yaml"
+    )
     return {
         "zarf-agent": load_yaml(
             root / ".zarf-src/packages/zarf-agent/chart/values.yaml"
         ),
-        "zarf-registry": load_yaml(
-            root / ".zarf-src/packages/zarf-registry/chart/values.yaml"
-        ),
+        "zarf-seed-registry": registry_values,
+        "zarf-registry": registry_values,
         "gitea": parse_yaml(gitea_values),
     }
 

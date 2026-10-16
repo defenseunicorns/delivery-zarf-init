@@ -19,8 +19,8 @@ tasks:
     actions:
       - cmd: python3 scripts/normalize-values-schema.py --check
 
-  - name: test-values-passthrough
-    description: Verify allowed values render and a security-sensitive exclusion does not
+  - name: test-rendered-manifests
+    description: Verify selected values affect rendered manifests and excluded values do not
     actions:
       - cmd: |
           set -euo pipefail
@@ -58,9 +58,81 @@ tasks:
           linux: bash
           darwin: bash
 
+  - name: test-values-files
+    description: Verify generated Helm values for the seed registry, main registry, and agent.
+    actions:
+      - description: Verify generated Helm values for the seed registry, main registry, and agent.
+        shell: {linux: bash, darwin: bash}
+        cmd: |
+          set -euo pipefail
+
+          seed=$(mktemp)
+          registry=$(mktemp)
+          agent=$(mktemp)
+          trap 'rm -f "$seed" "$registry" "$agent"' EXIT
+
+          ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect values-files packages/init-gitea \
+            --flavor upstream \
+            --components zarf-seed-registry \
+            --values tests/zarf-values-override.yaml \
+            --no-color --log-level error > "$seed"
+
+          ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect values-files packages/init-gitea \
+            --flavor upstream \
+            --components zarf-registry \
+            --values tests/zarf-values-override.yaml \
+            --no-color --log-level error > "$registry"
+
+          ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect values-files packages/init-gitea \
+            --flavor upstream \
+            --components zarf-agent \
+            --values tests/zarf-values-override.yaml \
+            --no-color --log-level error > "$agent"
+
+          assert_values() {
+            local component="$1" file="$2" condition="$3"
+
+            if ! uds zarf tools yq ea -e \
+              "[select($condition)] | length == 1" "$file" > /dev/null; then
+              printf '%s values assertion failed: %s\n' "$component" "$condition" >&2
+              return 1
+            fi
+          }
+
+          assert_seed() { assert_values zarf-seed-registry "$seed" "$1"; }
+          assert_registry() { assert_values zarf-registry "$registry" "$1"; }
+          assert_agent() { assert_values zarf-agent "$agent" "$1"; }
+
+          assert_seed '.podLabels."values-test" == "seed-registry"'
+          assert_seed '.persistence.enabled == false'
+
+          assert_registry '.podLabels."values-test" == "registry"'
+          assert_registry '.persistence.enabled == false'
+          assert_registry '.autoscaling.minReplicas == 2'
+          assert_registry '.autoscaling.mapReplicasToNodes == true'
+          assert_registry '.serviceAccount.name == "docker-registry-sa"'
+          assert_registry '.serviceAccount.create == true'
+          assert_registry '.serviceAccount.annotations."values-test" == "registry-service-account"'
+          assert_registry '(.extraEnvVars | length) == 1'
+          assert_registry '.extraEnvVars[0].name == "REGISTRY_STORAGE"'
+          assert_registry '.extraEnvVars[0].value == "s3"'
+          assert_registry '.affinity.custom.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight == 100'
+          assert_registry '.affinity.custom.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.labelSelector.matchExpressions[0].key == "app"'
+          assert_registry '.affinity.custom.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.labelSelector.matchExpressions[0].operator == "In"'
+          assert_registry '.affinity.custom.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.labelSelector.matchExpressions[0].values[0] == "docker-registry"'
+          assert_registry '.affinity.custom.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.topologyKey == "kubernetes.io/hostname"'
+          assert_registry '(.tolerations | length) == 1'
+          assert_registry '.tolerations[0].effect == "NoSchedule"'
+          assert_registry '.tolerations[0].key == "dedicated"'
+          assert_registry '.tolerations[0].operator == "Exists"'
+
+          assert_agent '.resources.requests.memory == "128Mi"'
+          assert_agent '.resources.limits.memory == "256Mi"'
+
   - name: test
-    description: Validate Zarf values schemas and passthrough
+    description: Validate Zarf values schemas, rendered manifests, and generated Helm values files
     actions:
       - task: lint
       - task: check-generated
-      - task: test-values-passthrough
+      - task: test-rendered-manifests
+      - task: test-values-files

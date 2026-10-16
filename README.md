@@ -73,7 +73,7 @@ uds run                                      # create and install-test init/upst
 uds run create-dev-package                   # create without an SBOM
 uds run test-install                         # create, deploy, and verify on a fresh cluster
 uds run publish-package                      # create both arches, test when deployable, then publish
-uds run test-zarf-values                     # validate schemas and passthrough
+uds run test-zarf-values                     # check schemas, manifests, and generated Helm values
 uds run pre-commit-all                       # run repository checks
 ```
 
