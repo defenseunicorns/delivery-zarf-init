@@ -235,7 +235,9 @@
                 },
                 "service": {
                   "properties": {
-                    "DISABLE_REGISTRATION": {}
+                    "DISABLE_REGISTRATION": {
+                      "type": "boolean"
+                    }
                   },
                   "type": "object"
                 },
@@ -1032,7 +1034,10 @@
     "zarf-agent": {
       "properties": {
         "affinity": {
-          "type": "object"
+          "type": [
+            "object",
+            "null"
+          ]
         },
         "clusterRole": {
           "properties": {
@@ -1056,26 +1061,45 @@
               "type": "string"
             },
             "replicaCount": {
-              "type": "number"
+              "type": "integer"
             }
           },
           "type": "object"
         },
         "mutationExclusions": {
+          "items": {
+            "enum": [
+              "argocd",
+              "flux"
+            ],
+            "type": "string"
+          },
           "type": "array"
         },
         "nodeSelector": {
-          "type": "object"
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": [
+            "object",
+            "null"
+          ]
         },
         "resources": {
           "properties": {
             "limits": {
               "properties": {
                 "cpu": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 },
                 "memory": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 }
               },
               "type": "object"
@@ -1083,10 +1107,16 @@
             "requests": {
               "properties": {
                 "cpu": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 },
                 "memory": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 }
               },
               "type": "object"
@@ -1127,9 +1157,19 @@
           "type": "object"
         },
         "tolerations": {
-          "type": "array"
+          "items": {
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
         },
         "webhookAnnotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "properties": {},
           "type": "object"
         }
       },
@@ -1140,7 +1180,10 @@
         "affinity": {
           "properties": {
             "custom": {
-              "type": "object"
+              "type": [
+                "object",
+                "null"
+              ]
             },
             "enabled": {
               "type": "boolean"
@@ -1157,13 +1200,22 @@
               "type": "boolean"
             },
             "maxReplicas": {
-              "type": "integer"
+              "type": [
+                "integer",
+                "string"
+              ]
             },
             "minReplicas": {
-              "type": "integer"
+              "type": [
+                "integer",
+                "string"
+              ]
             },
             "targetCPUUtilizationPercentage": {
-              "type": "number"
+              "type": [
+                "integer",
+                "string"
+              ]
             }
           },
           "type": "object"
@@ -1171,11 +1223,35 @@
         "caBundle": {
           "type": "string"
         },
+        "customLabels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
         "extraEnvVars": {
-          "type": "array"
+          "items": {
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "nameOverride": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
         },
         "nodeSelector": {
-          "type": "object"
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": [
+            "object",
+            "null"
+          ]
         },
         "opentelemetry": {
           "properties": {
@@ -1188,6 +1264,12 @@
         "persistence": {
           "properties": {
             "accessMode": {
+              "enum": [
+                "ReadWriteOnce",
+                "ReadOnlyMany",
+                "ReadWriteMany",
+                "ReadWriteOncePod"
+              ],
               "type": "string"
             },
             "deleteEnabled": {
@@ -1210,13 +1292,25 @@
         },
         "podDisruptionBudget": {
           "properties": {
+            "maxUnavailable": {
+              "type": [
+                "integer",
+                "string"
+              ]
+            },
             "minAvailable": {
-              "type": "number"
+              "type": [
+                "integer",
+                "string"
+              ]
             }
           },
           "type": "object"
         },
         "podLabels": {
+          "additionalProperties": {
+            "type": "string"
+          },
           "properties": {
             "zarf.dev/agent": {
               "type": "string"
@@ -1229,28 +1323,42 @@
             "enabled": {
               "type": "boolean"
             },
-            "hostNetwork": {},
+            "hostNetwork": {
+              "type": "boolean"
+            },
             "injectorHostPort": {
-              "type": "number"
+              "type": "integer"
             },
             "tolerations": {
-              "type": "array"
+              "items": {
+                "type": "object"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           "type": "object"
         },
         "replicaCount": {
-          "type": "number"
+          "type": "integer"
         },
         "resources": {
           "properties": {
             "limits": {
               "properties": {
                 "cpu": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 },
                 "memory": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 }
               },
               "type": "object"
@@ -1258,10 +1366,16 @@
             "requests": {
               "properties": {
                 "cpu": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 },
                 "memory": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 }
               },
               "type": "object"
@@ -1275,13 +1389,21 @@
               "type": "string"
             },
             "nodePort": {
-              "type": "string"
+              "type": [
+                "integer",
+                "string",
+                "null"
+              ]
             },
             "port": {
-              "type": "number"
+              "type": "integer"
             },
             "registryPort": {
-              "type": "string"
+              "type": [
+                "integer",
+                "string",
+                "null"
+              ]
             },
             "type": {
               "type": "string"
@@ -1292,7 +1414,13 @@
         "serviceAccount": {
           "properties": {
             "annotations": {
-              "type": "object"
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": [
+                "object",
+                "null"
+              ]
             },
             "create": {
               "type": "boolean"
@@ -1303,8 +1431,17 @@
           },
           "type": "object"
         },
+        "tlsSecretName": {
+          "type": "string"
+        },
         "tolerations": {
-          "type": "array"
+          "items": {
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
         }
       },
       "type": "object"
@@ -1314,7 +1451,10 @@
         "affinity": {
           "properties": {
             "custom": {
-              "type": "object"
+              "type": [
+                "object",
+                "null"
+              ]
             },
             "enabled": {
               "type": "boolean"
@@ -1331,13 +1471,22 @@
               "type": "boolean"
             },
             "maxReplicas": {
-              "type": "integer"
+              "type": [
+                "integer",
+                "string"
+              ]
             },
             "minReplicas": {
-              "type": "integer"
+              "type": [
+                "integer",
+                "string"
+              ]
             },
             "targetCPUUtilizationPercentage": {
-              "type": "number"
+              "type": [
+                "integer",
+                "string"
+              ]
             }
           },
           "type": "object"
@@ -1345,11 +1494,35 @@
         "caBundle": {
           "type": "string"
         },
+        "customLabels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
         "extraEnvVars": {
-          "type": "array"
+          "items": {
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "nameOverride": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
         },
         "nodeSelector": {
-          "type": "object"
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": [
+            "object",
+            "null"
+          ]
         },
         "opentelemetry": {
           "properties": {
@@ -1362,6 +1535,12 @@
         "persistence": {
           "properties": {
             "accessMode": {
+              "enum": [
+                "ReadWriteOnce",
+                "ReadOnlyMany",
+                "ReadWriteMany",
+                "ReadWriteOncePod"
+              ],
               "type": "string"
             },
             "deleteEnabled": {
@@ -1384,13 +1563,25 @@
         },
         "podDisruptionBudget": {
           "properties": {
+            "maxUnavailable": {
+              "type": [
+                "integer",
+                "string"
+              ]
+            },
             "minAvailable": {
-              "type": "number"
+              "type": [
+                "integer",
+                "string"
+              ]
             }
           },
           "type": "object"
         },
         "podLabels": {
+          "additionalProperties": {
+            "type": "string"
+          },
           "properties": {
             "zarf.dev/agent": {
               "type": "string"
@@ -1403,28 +1594,42 @@
             "enabled": {
               "type": "boolean"
             },
-            "hostNetwork": {},
+            "hostNetwork": {
+              "type": "boolean"
+            },
             "injectorHostPort": {
-              "type": "number"
+              "type": "integer"
             },
             "tolerations": {
-              "type": "array"
+              "items": {
+                "type": "object"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           "type": "object"
         },
         "replicaCount": {
-          "type": "number"
+          "type": "integer"
         },
         "resources": {
           "properties": {
             "limits": {
               "properties": {
                 "cpu": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 },
                 "memory": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 }
               },
               "type": "object"
@@ -1432,10 +1637,16 @@
             "requests": {
               "properties": {
                 "cpu": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 },
                 "memory": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 }
               },
               "type": "object"
@@ -1449,13 +1660,21 @@
               "type": "string"
             },
             "nodePort": {
-              "type": "string"
+              "type": [
+                "integer",
+                "string",
+                "null"
+              ]
             },
             "port": {
-              "type": "number"
+              "type": "integer"
             },
             "registryPort": {
-              "type": "string"
+              "type": [
+                "integer",
+                "string",
+                "null"
+              ]
             },
             "type": {
               "type": "string"
@@ -1466,7 +1685,13 @@
         "serviceAccount": {
           "properties": {
             "annotations": {
-              "type": "object"
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": [
+                "object",
+                "null"
+              ]
             },
             "create": {
               "type": "boolean"
@@ -1477,8 +1702,17 @@
           },
           "type": "object"
         },
+        "tlsSecretName": {
+          "type": "string"
+        },
         "tolerations": {
-          "type": "array"
+          "items": {
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
         }
       },
       "type": "object"
