@@ -28,7 +28,7 @@
               "type": "string"
             },
             "replicaCount": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -37,6 +37,9 @@
           "type": "array"
         },
         "nodeSelector": {
+          "additionalProperties": {
+            "type": "string"
+          },
           "type": "object"
         },
         "resources": {
@@ -102,6 +105,10 @@
           "type": "array"
         },
         "webhookAnnotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "properties": {},
           "type": "object"
         }
       },

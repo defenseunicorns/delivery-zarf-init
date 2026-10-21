@@ -26,7 +26,7 @@
               "type": "object"
             },
             "terminationGracePeriodSeconds": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -225,10 +225,10 @@
                       "type": "string"
                     },
                     "SSH_LISTEN_PORT": {
-                      "type": "integer"
+                      "type": "number"
                     },
                     "SSH_PORT": {
-                      "type": "integer"
+                      "type": "number"
                     }
                   },
                   "type": "object"
@@ -262,16 +262,16 @@
                   "type": "boolean"
                 },
                 "failureThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "initialDelaySeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "periodSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "successThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "tcpSocket": {
                   "properties": {
@@ -282,7 +282,7 @@
                   "type": "object"
                 },
                 "timeoutSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 }
               },
               "type": "object"
@@ -332,16 +332,16 @@
                   "type": "boolean"
                 },
                 "failureThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "initialDelaySeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "periodSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "successThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "tcpSocket": {
                   "properties": {
@@ -352,7 +352,7 @@
                   "type": "object"
                 },
                 "timeoutSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 }
               },
               "type": "object"
@@ -371,16 +371,16 @@
                   "type": "boolean"
                 },
                 "failureThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "initialDelaySeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "periodSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "successThreshold": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "tcpSocket": {
                   "properties": {
@@ -391,7 +391,7 @@
                   "type": "object"
                 },
                 "timeoutSeconds": {
-                  "type": "integer"
+                  "type": "number"
                 }
               },
               "type": "object"
@@ -529,7 +529,9 @@
             "size": {
               "type": "string"
             },
-            "storageClass": {},
+            "storageClass": {
+              "type": "string"
+            },
             "subPath": {},
             "volumeName": {
               "type": "string"
@@ -566,7 +568,7 @@
                         "ports": {
                           "properties": {
                             "postgresql": {
-                              "type": "integer"
+                              "type": "number"
                             }
                           },
                           "type": "object"
@@ -681,7 +683,7 @@
                 "ports": {
                   "properties": {
                     "postgresql": {
-                      "type": "integer"
+                      "type": "number"
                     }
                   },
                   "type": "object"
@@ -700,7 +702,7 @@
           "type": "string"
         },
         "replicaCount": {
-          "type": "integer"
+          "type": "number"
         },
         "resources": {
           "properties": {
@@ -790,7 +792,7 @@
                 },
                 "nodePort": {},
                 "port": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "type": {
                   "type": "string"
@@ -823,7 +825,7 @@
                 },
                 "nodePort": {},
                 "port": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "type": {
                   "type": "string"
@@ -860,7 +862,7 @@
                   "type": "string"
                 },
                 "maxUnavailable": {
-                  "type": "integer"
+                  "type": "number"
                 }
               },
               "type": "object"
@@ -901,14 +903,14 @@
             "master": {
               "properties": {
                 "count": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "service": {
                   "properties": {
                     "ports": {
                       "properties": {
                         "valkey": {
-                          "type": "integer"
+                          "type": "number"
                         }
                       },
                       "type": "object"
@@ -977,10 +979,10 @@
             "cluster": {
               "properties": {
                 "nodes": {
-                  "type": "integer"
+                  "type": "number"
                 },
                 "replicas": {
-                  "type": "integer"
+                  "type": "number"
                 }
               },
               "type": "object"
@@ -1011,7 +1013,7 @@
                 "ports": {
                   "properties": {
                     "valkey": {
-                      "type": "integer"
+                      "type": "number"
                     }
                   },
                   "type": "object"
@@ -1056,7 +1058,7 @@
               "type": "string"
             },
             "replicaCount": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -1065,6 +1067,9 @@
           "type": "array"
         },
         "nodeSelector": {
+          "additionalProperties": {
+            "type": "string"
+          },
           "type": "object"
         },
         "resources": {
@@ -1130,6 +1135,10 @@
           "type": "array"
         },
         "webhookAnnotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "properties": {},
           "type": "object"
         }
       },
@@ -1157,13 +1166,13 @@
               "type": "boolean"
             },
             "maxReplicas": {
-              "type": "integer"
+              "type": "string"
             },
             "minReplicas": {
-              "type": "integer"
+              "type": "string"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -1175,6 +1184,9 @@
           "type": "array"
         },
         "nodeSelector": {
+          "additionalProperties": {
+            "type": "string"
+          },
           "type": "object"
         },
         "opentelemetry": {
@@ -1188,6 +1200,12 @@
         "persistence": {
           "properties": {
             "accessMode": {
+              "enum": [
+                "ReadWriteOnce",
+                "ReadOnlyMany",
+                "ReadWriteMany",
+                "ReadWriteOncePod"
+              ],
               "type": "string"
             },
             "deleteEnabled": {
@@ -1211,12 +1229,15 @@
         "podDisruptionBudget": {
           "properties": {
             "minAvailable": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
         },
         "podLabels": {
+          "additionalProperties": {
+            "type": "string"
+          },
           "properties": {
             "zarf.dev/agent": {
               "type": "string"
@@ -1233,7 +1254,7 @@
               "type": "boolean"
             },
             "injectorHostPort": {
-              "type": "integer"
+              "type": "number"
             },
             "tolerations": {
               "type": "array"
@@ -1242,7 +1263,7 @@
           "type": "object"
         },
         "replicaCount": {
-          "type": "integer"
+          "type": "number"
         },
         "resources": {
           "properties": {
@@ -1276,11 +1297,15 @@
             "name": {
               "type": "string"
             },
-            "nodePort": {},
-            "port": {
-              "type": "integer"
+            "nodePort": {
+              "type": "string"
             },
-            "registryPort": {},
+            "port": {
+              "type": "number"
+            },
+            "registryPort": {
+              "type": "string"
+            },
             "type": {
               "type": "string"
             }
@@ -1290,6 +1315,9 @@
         "serviceAccount": {
           "properties": {
             "annotations": {
+              "additionalProperties": {
+                "type": "string"
+              },
               "type": "object"
             },
             "create": {
@@ -1329,13 +1357,13 @@
               "type": "boolean"
             },
             "maxReplicas": {
-              "type": "integer"
+              "type": "string"
             },
             "minReplicas": {
-              "type": "integer"
+              "type": "string"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
@@ -1347,6 +1375,9 @@
           "type": "array"
         },
         "nodeSelector": {
+          "additionalProperties": {
+            "type": "string"
+          },
           "type": "object"
         },
         "opentelemetry": {
@@ -1360,6 +1391,12 @@
         "persistence": {
           "properties": {
             "accessMode": {
+              "enum": [
+                "ReadWriteOnce",
+                "ReadOnlyMany",
+                "ReadWriteMany",
+                "ReadWriteOncePod"
+              ],
               "type": "string"
             },
             "deleteEnabled": {
@@ -1383,12 +1420,15 @@
         "podDisruptionBudget": {
           "properties": {
             "minAvailable": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "type": "object"
         },
         "podLabels": {
+          "additionalProperties": {
+            "type": "string"
+          },
           "properties": {
             "zarf.dev/agent": {
               "type": "string"
@@ -1405,7 +1445,7 @@
               "type": "boolean"
             },
             "injectorHostPort": {
-              "type": "integer"
+              "type": "number"
             },
             "tolerations": {
               "type": "array"
@@ -1414,7 +1454,7 @@
           "type": "object"
         },
         "replicaCount": {
-          "type": "integer"
+          "type": "number"
         },
         "resources": {
           "properties": {
@@ -1448,11 +1488,15 @@
             "name": {
               "type": "string"
             },
-            "nodePort": {},
-            "port": {
-              "type": "integer"
+            "nodePort": {
+              "type": "string"
             },
-            "registryPort": {},
+            "port": {
+              "type": "number"
+            },
+            "registryPort": {
+              "type": "string"
+            },
             "type": {
               "type": "string"
             }
@@ -1462,6 +1506,9 @@
         "serviceAccount": {
           "properties": {
             "annotations": {
+              "additionalProperties": {
+                "type": "string"
+              },
               "type": "object"
             },
             "create": {
