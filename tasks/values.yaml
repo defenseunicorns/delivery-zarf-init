@@ -68,13 +68,14 @@ tasks:
 
           seed_init_default=$(mktemp)
           seed_init_multi=$(mktemp)
+          seed_init_legacy_pvc_disabled=$(mktemp)
           seed_gitea_default=$(mktemp)
           seed_gitea_multi=$(mktemp)
           seed_gitea_multi_override=$(mktemp)
           seed=$(mktemp)
           registry=$(mktemp)
           agent=$(mktemp)
-          trap 'rm -f "$seed_init_default" "$seed_init_multi" "$seed_gitea_default" "$seed_gitea_multi" "$seed_gitea_multi_override" "$seed" "$registry" "$agent"' EXIT
+          trap 'rm -f "$seed_init_default" "$seed_init_multi" "$seed_init_legacy_pvc_disabled" "$seed_gitea_default" "$seed_gitea_multi" "$seed_gitea_multi_override" "$seed" "$registry" "$agent"' EXIT
 
           ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect values-files packages/init \
             --flavor upstream \
@@ -84,8 +85,14 @@ tasks:
           ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect values-files packages/init \
             --flavor upstream \
             --components zarf-seed-registry \
-            --set-values zarf-seed-registry.replicaCount=2 \
+            --set-values zarf-seed-registry.replicaCount=2,zarf-seed-registry.persistence.enabled=false \
             --no-color --log-level error > "$seed_init_multi"
+
+          ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect values-files packages/init \
+            --flavor upstream \
+            --components zarf-seed-registry \
+            --deploy-set-variables REGISTRY_PVC_ENABLED=false,REGISTRY_HPA_AUTO_SIZE=true,REGISTRY_HPA_MIN=2 \
+            --no-color --log-level error > "$seed_init_legacy_pvc_disabled"
 
           ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect values-files packages/init-gitea \
             --flavor upstream \
@@ -95,7 +102,7 @@ tasks:
           ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect values-files packages/init-gitea \
             --flavor upstream \
             --components zarf-seed-registry \
-            --set-values zarf-seed-registry.replicaCount=2 \
+            --set-values zarf-seed-registry.replicaCount=2,zarf-seed-registry.persistence.enabled=false \
             --no-color --log-level error > "$seed_gitea_multi"
 
           ZARF_CONFIG=flavors/upstream.yaml uds zarf dev inspect values-files packages/init-gitea \
@@ -139,6 +146,9 @@ tasks:
           assert_values zarf-seed-registry "$seed_init_default" '.persistence.enabled == true'
           assert_values zarf-seed-registry "$seed_init_multi" '.replicaCount == 2'
           assert_values zarf-seed-registry "$seed_init_multi" '.persistence.enabled == false'
+          assert_values zarf-seed-registry "$seed_init_legacy_pvc_disabled" '.persistence.enabled == false'
+          assert_values zarf-seed-registry "$seed_init_legacy_pvc_disabled" '.autoscaling.mapReplicasToNodes == true'
+          assert_values zarf-seed-registry "$seed_init_legacy_pvc_disabled" '.autoscaling.minReplicas == "2"'
 
           assert_values zarf-seed-registry "$seed_gitea_default" '.persistence.enabled == true'
           assert_values zarf-seed-registry "$seed_gitea_multi" '.replicaCount == 2'
