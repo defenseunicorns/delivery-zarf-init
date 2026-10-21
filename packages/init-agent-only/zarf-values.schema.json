@@ -4,7 +4,10 @@
     "zarf-agent": {
       "properties": {
         "affinity": {
-          "type": "object"
+          "type": [
+            "object",
+            "null"
+          ]
         },
         "clusterRole": {
           "properties": {
@@ -34,20 +37,39 @@
           "type": "object"
         },
         "mutationExclusions": {
+          "items": {
+            "enum": [
+              "argocd",
+              "flux"
+            ],
+            "type": "string"
+          },
           "type": "array"
         },
         "nodeSelector": {
-          "type": "object"
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": [
+            "object",
+            "null"
+          ]
         },
         "resources": {
           "properties": {
             "limits": {
               "properties": {
                 "cpu": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 },
                 "memory": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 }
               },
               "type": "object"
@@ -55,10 +77,16 @@
             "requests": {
               "properties": {
                 "cpu": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 },
                 "memory": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "number"
+                  ]
                 }
               },
               "type": "object"
@@ -99,9 +127,19 @@
           "type": "object"
         },
         "tolerations": {
-          "type": "array"
+          "items": {
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
         },
         "webhookAnnotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "properties": {},
           "type": "object"
         }
       },
