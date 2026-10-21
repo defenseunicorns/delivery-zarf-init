@@ -21,7 +21,7 @@ zarf-registry:
   persistence:
     enabled: false
   autoscaling:
-    minReplicas: "2"
+    minReplicas: 2
     mapReplicasToNodes: true
   serviceAccount:
     name: docker-registry-sa
