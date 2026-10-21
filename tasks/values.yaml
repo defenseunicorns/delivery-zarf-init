@@ -174,7 +174,7 @@ tasks:
 
           assert_registry '.podLabels."values-test" == "registry"'
           assert_registry '.persistence.enabled == false'
-          assert_registry '.autoscaling.minReplicas == 2'
+          assert_registry '.autoscaling.minReplicas == "2"'
           assert_registry '.autoscaling.mapReplicasToNodes == true'
           assert_registry '.serviceAccount.name == "docker-registry-sa"'
           assert_registry '.serviceAccount.create == true'
