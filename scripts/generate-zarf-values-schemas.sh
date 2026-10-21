@@ -4,10 +4,22 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 set -eu
-# shellcheck disable=SC3040 # pipefail is standardized by POSIX.1-2024.
-set -o pipefail
+# shellcheck disable=SC3040
+(set -o pipefail 2>/dev/null) && set -o pipefail
 
 check=${1:-false}
+if [ "$#" -gt 1 ]; then
+  echo "usage: $0 [true|false]" >&2
+  exit 2
+fi
+case "$check" in
+  true | false) ;;
+  *)
+    printf 'unsupported check mode: %s\n' "$check" >&2
+    exit 2
+    ;;
+esac
+
 settings=$(mktemp)
 generated=""
 
@@ -39,7 +51,7 @@ for values_file in packages/*/zarf-values.yaml; do
   found=true
   package_dir=${values_file%/*}
   schema_file="${package_dir}/zarf-values.schema.json"
-  generated=$(mktemp)
+  generated=$(mktemp "${schema_file}.tmp.XXXXXX")
 
   if [ "$check" = "true" ]; then
     action=Checking
@@ -54,6 +66,17 @@ for values_file in packages/*/zarf-values.yaml; do
     --delete-not-found \
     --no-color \
     --log-level error > "$generated"
+
+  if [ ! -s "$generated" ]; then
+    printf 'ERROR: generated schema is empty: %s\n' "$schema_file" >&2
+    exit 1
+  fi
+  if ! uds zarf tools yq -p=json -oy -e \
+    'type == "!!map" and (.properties | type == "!!map")' \
+    "$generated" > /dev/null 2>&1; then
+    printf 'ERROR: generated schema is invalid: %s\n' "$schema_file" >&2
+    exit 1
+  fi
 
   if [ "$check" = "true" ]; then
     if ! cmp -s "$schema_file" "$generated"; then

@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
 set -eu
-# shellcheck disable=SC3040 # pipefail is standardized by POSIX.1-2024.
-set -o pipefail
+# shellcheck disable=SC3040
+(set -o pipefail 2>/dev/null) && set -o pipefail
+
+# Most of this file is declarative pin data; keep the linear check portable for task runners.
 
 base_ref="${1:?base ref is required}"
 ready=true
