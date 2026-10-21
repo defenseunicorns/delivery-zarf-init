@@ -13,8 +13,6 @@ components:
       path: ../../.zarf-src/packages/zarf-registry
     charts:
       - name: docker-registry
-        templatedValuesFiles:
-          - seed-registry-values.gotmpl
         values:
           - sourcePath: .zarf-seed-registry
             targetPath: .
