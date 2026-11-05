@@ -82,11 +82,12 @@ uds run test-install                         # create, deploy, and verify on a f
 uds run publish-package                      # create both arches, test when deployable, then publish
 uds run bump-release                         # assign the next UDS revision to selected artifacts
 uds run test-zarf-values                     # check schemas, manifests, and generated Helm values
-uds run test-release-automation              # test GitHub Release updates
+uds run test-release-automation              # test release automation
 uds run pre-commit-all                       # run repository checks
 ```
 
-`test-release-automation` runs `gofmt`, `go vet`, and `go test` with a compatible local Go toolchain.
+`test-release-automation` runs `gofmt`, `go vet`, and `go test`, including fixture tests for release
+readiness, version bumps, and tag routing. It uses a compatible local Go toolchain.
 `pre-commit-all` adds `golangci-lint` formatting and linting. PR CI runs the hooks across all files
 with the toolchain pinned in `go.mod`. Renovate tracks Go and lint-tool updates with CI dependencies.
 See [ADR 0005](./adr/0005-release-automation-language.md) for the toolchain decision.

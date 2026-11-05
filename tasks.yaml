@@ -204,7 +204,7 @@ tasks:
       - task: values:test
 
   - name: test-release-automation
-    description: Format-check, vet, and test the Go GitHub Release helper
+    description: Format-check, vet, and test release automation
     actions:
       - cmd: |
           set -eu

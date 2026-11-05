@@ -27,6 +27,7 @@ jobs:
     timeout-minutes: 150
     outputs:
       rolling: ${{ steps.tag.outputs.rolling }}
+      skip: ${{ steps.tag.outputs.skip }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -51,16 +52,22 @@ jobs:
               exit 1
             fi
             echo "rolling=true" >> "$GITHUB_OUTPUT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           else
             artifact_version=$(TAG="$GITHUB_REF_NAME" yq -r '
               .packages[] | . as $package | .flavors[] |
               select($package.name + "-" + .version + "-" + .name == env(TAG)) | .version
             ' releaser.yaml)
-            if [ -z "$artifact_version" ] || [ "$(printf '%s\n' v0.89.0-uds.0 "$artifact_version" | sort -V | head -n 1)" = v0.89.0-uds.0 ]; then
-              echo "invalid legacy package tag: $GITHUB_REF_NAME" >&2
+            if [ -z "$artifact_version" ]; then
+              echo "unknown package tag: $GITHUB_REF_NAME" >&2
               exit 1
             fi
             echo "rolling=false" >> "$GITHUB_OUTPUT"
+            if [ "$(printf '%s\n' v0.89.0-uds.0 "$artifact_version" | sort -V | head -n 1)" = v0.89.0-uds.0 ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "skip=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Wait for preceding rolling release
@@ -95,6 +102,8 @@ jobs:
           exit 1
 
   values:
+    needs: validate
+    if: needs.validate.outputs.skip != 'true'
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -109,6 +118,7 @@ jobs:
 
   publish:
     needs: [validate, values]
+    if: needs.validate.outputs.skip != 'true'
     runs-on: ubuntu-26.04
     timeout-minutes: 120
     environment: uds-release
