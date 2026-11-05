@@ -28,7 +28,7 @@ restores native chart types that the pinned Zarf CLI cannot infer from templated
 
 These artifacts are `ZarfInitConfig` packages deployed before UDS Core. A UDS bundle and UDS
 `Package` CR are therefore intentionally absent. Package creation, task entry points, validation,
-and package-scoped releases otherwise follow the UDS package template and `uds-pk` conventions.
+and per-artifact version entries otherwise follow the UDS package template and `uds-pk` conventions.
 Document any additional exception in [`docs/justifications.md`](./docs/justifications.md).
 
 Renovate advances all package versions when Zarf updates. For a package-only release, use the bump
@@ -52,21 +52,33 @@ Zarf updates reset every package/flavor entry to `-uds.0` through Renovate.
 
 ## Releases
 
-The repository publishes one consolidated GitHub release representing the package/flavor versions
-declared in `releaser.yaml`. The highest declared version is the consolidated release tag. Merging a
-new highest version validates Zarf values, then creates that tag and starts publication automatically.
-Only entries carrying the new version are published; older entries remain available under their
-existing OCI tags.
+Starting with Zarf v0.89.0, the repository keeps one GitHub Release per Zarf version. The highest
+version in `releaser.yaml` is the next consolidated Git tag. Merging a new highest version validates
+Zarf values, then creates that tag and starts publication automatically. Only entries carrying the
+new version are published; older entries remain available under their existing OCI tags.
 
 Each published artifact also receives a package/flavor Git tag for traceability and compatibility
-with `uds-pk`, but those tags do not create GitHub Release records. The consolidated GitHub Release
-is created only after every selected artifact succeeds, and its notes inventory all current
-package/flavor OCI versions. Automation maps conventional pull request titles to the release-note
+with `uds-pk`, but those tags do not create GitHub Release records. After every selected artifact
+succeeds, automation creates or advances the GitHub Release for that Zarf version to the newest tag.
+A rolling revision waits for its predecessor's Release before publishing artifacts; retry a failed
+predecessor before rerunning a waiting revision. Earlier Git and OCI tags never move. The Release
+inventory lists all package/flavor OCI references and each artifact's signing tag. Add upgrade
+guidance outside the generated changelog and inventory comment blocks; automation preserves text
+outside those blocks when regenerating the notes. The tag-specific Release URL changes when the
+Release advances. Existing releases through v0.88.0 are not migrated; any further pre-v0.89.0
+revision uses the legacy package/flavor release path, whose tags trigger artifact publication
+without updating a consolidated Release. The first rolling changelog uses the final published legacy
+release tag as its baseline. Automation maps conventional pull request titles to the release-note
 labels `enhancement`, `bug`, `documentation`, and `breaking-change`; Renovate pull requests appear
 under Dependencies regardless of title. Unmatched pull requests appear under Other Changes. A `!`
 in a non-Renovate conventional title places the pull request under Breaking Changes, but explicit
 upgrade guidance is still required because generated notes cannot infer migration details from a
-title. GitHub selects the Latest release automatically.
+title. The newest Zarf version remains Latest even if an older release workflow finishes later.
+
+Release automation uses the Go helper in `cmd/update-github-release`. After changing it, run
+`uds run pre-commit-all` for formatting, linting, vetting, and tests. PR CI runs the same Go hooks.
+Renovate groups Go toolchain and hook updates with CI dependencies under the existing automerge
+policy. See [ADR 0005](./adr/0005-release-automation-language.md) for the toolchain decision.
 
 ## Architecture decisions
 

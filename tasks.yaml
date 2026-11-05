@@ -203,12 +203,30 @@ tasks:
       - task: package:vendor
       - task: values:test
 
+  - name: test-release-automation
+    description: Format-check, vet, and test the Go GitHub Release helper
+    actions:
+      - cmd: |
+          set -eu
+          export GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off
+          files=$(gofmt -l cmd/update-github-release)
+          if [ -n "$files" ]; then
+            printf 'Go files need gofmt:\n%s\n' "$files" >&2
+            exit 1
+          fi
+          go vet ./...
+          go test ./...
+        shell:
+          linux: sh
+          darwin: sh
+
   - name: pre-commit-all
     description: Run pre-commit hooks and the repository-scoped uds-common lint suite
     actions:
       - cmd: pre-commit run --all-files --show-diff-on-fail --color=always
       - task: lint:yaml
       - task: lint:shell
+      - task: test-release-automation
       - cmd: |
           log=$(mktemp)
           uds run lint:tasks --no-progress >"$log" 2>&1 || { cat "$log"; exit 1; }

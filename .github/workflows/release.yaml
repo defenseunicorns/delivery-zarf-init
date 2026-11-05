@@ -7,6 +7,9 @@ on:
   push:
     tags:
       - v*.*.*-uds.*
+      - init-v*.*.*-uds.*-*
+      - init-agent-only-v*.*.*-uds.*-*
+      - init-gitea-v*.*.*-uds.*-*
 
 permissions:
   contents: read
@@ -16,10 +19,14 @@ permissions:
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   validate:
     runs-on: ubuntu-26.04
+    timeout-minutes: 150
+    outputs:
+      rolling: ${{ steps.tag.outputs.rolling }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -28,13 +35,64 @@ jobs:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.40.0
 
-      - name: Validate consolidated release tag
+      - name: Validate release tag
+        id: tag
         run: |
-          release_version=$(yq -r '.packages[].flavors[].version' releaser.yaml | sort -V | tail -n 1)
-          if [ "$release_version" != "$GITHUB_REF_NAME" ]; then
-            echo "release tag $GITHUB_REF_NAME does not match consolidated release version $release_version" >&2
-            exit 1
+          # shellcheck disable=SC3040
+          set -euo pipefail
+          if [[ "$GITHUB_REF_NAME" == v* ]]; then
+            if [ "$(printf '%s\n' v0.89.0-uds.0 "$GITHUB_REF_NAME" | sort -V | head -n 1)" != v0.89.0-uds.0 ]; then
+              echo "Consolidated releases start at v0.89.0-uds.0" >&2
+              exit 1
+            fi
+            release_version=$(yq -r '.packages[].flavors[].version' releaser.yaml | sort -V | tail -n 1)
+            if [ "$release_version" != "$GITHUB_REF_NAME" ]; then
+              echo "release tag $GITHUB_REF_NAME does not match consolidated release version $release_version" >&2
+              exit 1
+            fi
+            echo "rolling=true" >> "$GITHUB_OUTPUT"
+          else
+            artifact_version=$(TAG="$GITHUB_REF_NAME" yq -r '
+              .packages[] | . as $package | .flavors[] |
+              select($package.name + "-" + .version + "-" + .name == env(TAG)) | .version
+            ' releaser.yaml)
+            if [ -z "$artifact_version" ] || [ "$(printf '%s\n' v0.89.0-uds.0 "$artifact_version" | sort -V | head -n 1)" = v0.89.0-uds.0 ]; then
+              echo "invalid legacy package tag: $GITHUB_REF_NAME" >&2
+              exit 1
+            fi
+            echo "rolling=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Wait for preceding rolling release
+        if: steps.tag.outputs.rolling == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # shellcheck disable=SC3040
+          set -euo pipefail
+          revision=${GITHUB_REF_NAME##*.}
+          if [ "$revision" -eq 0 ]; then
+            exit 0
+          fi
+
+          release_line=${GITHUB_REF_NAME%-uds.*}
+          predecessor=$((revision - 1))
+          deadline=$((SECONDS + 8400))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            published_revision=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts \
+              --json tagName --limit 1000 |
+              jq -r --arg prefix "$release_line-uds." \
+                '.[].tagName | select(startswith($prefix)) | ltrimstr($prefix) | select(test("^[0-9]+$"))' |
+              sort -n | tail -n 1)
+            if [ -n "$published_revision" ] && [ "$published_revision" -ge "$predecessor" ]; then
+              echo "$release_line-uds.$published_revision is published; proceeding with $GITHUB_REF_NAME"
+              exit 0
+            fi
+            echo "Waiting for $release_line-uds.$predecessor before publishing $GITHUB_REF_NAME"
+            sleep 60
+          done
+          echo "Timed out waiting for the preceding rolling release" >&2
+          exit 1
 
   values:
     runs-on: ubuntu-26.04
@@ -87,7 +145,8 @@ jobs:
             exit 1
           fi
 
-          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+          artifact_tag="$PACKAGE_NAME-$version-$FLAVOR_NAME"
+          if [ "$version" != "$GITHUB_REF_NAME" ] && [ "$artifact_tag" != "$GITHUB_REF_NAME" ]; then
             echo "$PACKAGE_NAME/$FLAVOR_NAME remains at $version; no artifact to publish for $GITHUB_REF_NAME"
             echo "publish=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -102,7 +161,7 @@ jobs:
             echo "version=$version"
             echo "publish_repo=$publish_repo"
             echo "artifact_ref=$publish_repo/$PACKAGE_NAME:$version-$FLAVOR_NAME"
-            echo "artifact_tag=$PACKAGE_NAME-$version-$FLAVOR_NAME"
+            echo "artifact_tag=$artifact_tag"
           } >> "$GITHUB_OUTPUT"
 
       - name: Environment setup
@@ -164,6 +223,23 @@ jobs:
             --set TARGET_REPO="${{ steps.release.outputs.publish_repo }}" \
             --no-progress
 
+      - name: Verify published architectures
+        if: steps.release.outputs.publish == 'true'
+        env:
+          ARTIFACT_REF: ${{ steps.release.outputs.artifact_ref }}
+        run: |
+          manifest_file=$(mktemp)
+          trap 'rm -f "$manifest_file"' EXIT
+          oras manifest fetch "$ARTIFACT_REF" > "$manifest_file"
+          for architecture in amd64 arm64; do
+            if ! ARCHITECTURE="$architecture" jq -e \
+              '.manifests[]? | select(.platform.os == "multi" and .platform.architecture == env.ARCHITECTURE)' \
+              "$manifest_file" > /dev/null; then
+              echo "$ARTIFACT_REF is missing $architecture after publication" >&2
+              exit 1
+            fi
+          done
+
       - name: Create GitHub App token
         if: steps.release.outputs.publish == 'true'
         id: app-token
@@ -178,7 +254,11 @@ jobs:
           ARTIFACT_TAG: ${{ steps.release.outputs.artifact_tag }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$ARTIFACT_TAG" > /dev/null 2>&1; then
+          if existing_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$ARTIFACT_TAG" --jq '.object.sha' 2> /dev/null); then
+            if [ "$existing_sha" != "$GITHUB_SHA" ]; then
+              echo "$ARTIFACT_TAG points to $existing_sha, not $GITHUB_SHA" >&2
+              exit 1
+            fi
             echo "$ARTIFACT_TAG already exists"
             exit 0
           fi
@@ -208,9 +288,14 @@ jobs:
             /tmp/k3d-uds-*.log
 
   github-release:
-    needs: publish
+    needs: [validate, publish]
+    if: needs.validate.outputs.rolling == 'true'
     runs-on: ubuntu-26.04
     environment: uds-release
+    concurrency:
+      group: consolidated-github-release
+      cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
     steps:
@@ -221,6 +306,19 @@ jobs:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.40.0
 
+      - name: Require preinstalled Go toolchain
+        run: |
+          go_version=$(awk '$1 == "toolchain" { sub(/^go/, "", $2); print $2; exit }' go.mod)
+          if [ -z "$go_version" ] || [ ! -x "$RUNNER_TOOL_CACHE/go/$go_version/x64/bin/go" ]; then
+            echo "Go $go_version is not preinstalled on this runner" >&2
+            exit 1
+          fi
+
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
       - name: Create GitHub App token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
@@ -228,34 +326,15 @@ jobs:
           client-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
-      - name: Create consolidated GitHub release
+      - name: Create or advance consolidated GitHub release
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GOTOOLCHAIN: local
+          GOPROXY: "off"
+          GOSUMDB: "off"
         run: |
-          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
-            echo "GitHub release $GITHUB_REF_NAME already exists"
-            exit 0
-          fi
-
-          notes_file=$(mktemp)
-          trap 'rm -f "$notes_file"' EXIT
-          {
-            printf '## Package inventory\n\n'
-            printf '| Package | Flavor | OCI version |\n'
-            printf '| --- | --- | --- |\n'
-            for package in $(yq -r '.packages[].name' releaser.yaml); do
-              for flavor in $(PACKAGE_NAME="$package" yq -r \
-                '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[].name' releaser.yaml); do
-                version=$(PACKAGE_NAME="$package" FLAVOR_NAME="$flavor" yq -r \
-                  '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[] | select(.name == env(FLAVOR_NAME)) | .version' \
-                  releaser.yaml)
-                printf '| `%s` | `%s` | `%s-%s` |\n' "$package" "$flavor" "$version" "$flavor"
-              done
-            done
-          } > "$notes_file"
-
-          gh release create "$GITHUB_REF_NAME" \
-            --verify-tag \
-            --title "$GITHUB_REF_NAME" \
-            --generate-notes \
-            --notes-file "$notes_file"
+          # shellcheck disable=SC3040
+          set -euo pipefail
+          go build -o "$RUNNER_TEMP/update-github-release" ./cmd/update-github-release
+          yq -o=json releaser.yaml | "$RUNNER_TEMP/update-github-release" \
+            --repo "$GITHUB_REPOSITORY" --tag "$GITHUB_REF_NAME"

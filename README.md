@@ -26,10 +26,13 @@ The `unicorn` packages publish beneath
 - `unicorn` uses Defense Unicorns Chainguard FIPS images.
 
 Each package/flavor build has an entry in `releaser.yaml`. OCI tags use
-`<zarf-version>-uds.<revision>-<flavor>`. One consolidated GitHub release records the complete set of
-package/flavor versions, using the highest declared artifact version as its tag.
+`<zarf-version>-uds.<revision>-<flavor>`. Starting with Zarf v0.89.0, one GitHub Release per Zarf
+version records the complete package/flavor inventory. It points to the highest successfully
+published `-uds.N` revision; earlier Git and OCI tags remain fixed.
 
-Consumers verify artifacts published by the consolidated workflow against the shared release tag:
+Verify each artifact against the signing tag in the GitHub Release inventory, not necessarily the
+Release's current tag. For example, an artifact published at `v0.89.0-uds.0` retains this identity
+when the Release advances to `v0.89.0-uds.1`:
 
 ```yaml
 keylessVerification:
@@ -38,8 +41,8 @@ keylessVerification:
 ```
 
 Packages published before the consolidated workflow retain their package- and flavor-specific
-certificate identities. Their Git tags remain available for verification even though the legacy
-GitHub Release records were retired.
+certificate identities. Their Git tags remain available for verification even where the old
+package/flavor GitHub Release records were removed.
 
 ## Deploy
 
@@ -79,8 +82,14 @@ uds run test-install                         # create, deploy, and verify on a f
 uds run publish-package                      # create both arches, test when deployable, then publish
 uds run bump-release                         # assign the next UDS revision to selected artifacts
 uds run test-zarf-values                     # check schemas, manifests, and generated Helm values
+uds run test-release-automation              # test GitHub Release updates
 uds run pre-commit-all                       # run repository checks
 ```
+
+`test-release-automation` runs `gofmt`, `go vet`, and `go test` with a compatible local Go toolchain.
+`pre-commit-all` adds `golangci-lint` formatting and linting. PR CI runs the hooks across all files
+with the toolchain pinned in `go.mod`. Renovate tracks Go and lint-tool updates with CI dependencies.
+See [ADR 0005](./adr/0005-release-automation-language.md) for the toolchain decision.
 
 Select another package or flavor with task variables:
 
@@ -139,17 +148,32 @@ matrix and publishes entries at the new release version; entries still on earlie
 available under their existing OCI tags. Before building, ORAS checks
 the selected OCI tag for both Zarf platforms (`multi/amd64` and `multi/arm64`); a complete artifact
 is skipped, while a missing tag or architecture is published. Registry or authentication errors
-fail the check instead of causing an existing artifact to be overwritten. New artifacts are tested,
-keyless-signed, and verified against the consolidated tag identity. Successful artifacts receive
-package/flavor Git tags, but not separate GitHub Releases. After every selected artifact succeeds,
-the workflow creates the consolidated GitHub Release with generated change notes and a complete OCI
-version inventory. GitHub selects Latest automatically. A failed release can be retried from its
-tagged workflow.
+fail the check instead of causing an existing artifact to be overwritten. An incomplete tag can be
+repaired on retry, but does not enter a GitHub Release until both architectures pass verification.
+New artifacts are tested, keyless-signed, and verified against the tag that published them.
+Successful artifacts receive package/flavor Git tags, but not separate GitHub Releases.
+
+After every selected artifact succeeds, the workflow creates or advances the GitHub Release for
+that Zarf version. It regenerates categorized notes from the previous Zarf version's final release
+tag and records every package/flavor OCI reference and signing tag. Add hand-written upgrade guidance
+outside the `generated-changelog` and `package-inventory` comment blocks; automation preserves text
+outside those blocks. A rolling revision waits for its predecessor's GitHub Release before starting
+artifact publication; if that predecessor fails, retry it before rerunning the waiting revision. An
+older retry cannot move the Release backward. When Zarf advances, the prior Release stays at its
+final revision and a new one begins. The Release URL changes with its associated tag, but earlier
+Git and OCI tags remain available. Existing releases through v0.88.0 are not migrated. If another
+pre-v0.89.0 revision is merged, the legacy `uds-pk` path creates package/flavor tags and Releases.
+Those tags trigger artifact publication, but not a new consolidated Release. The first rolling
+changelog starts from that line's final published release tag. A failed rolling release can be
+retried from its tagged
+workflow.
 
 Tag and release creation uses the `uds-release` GitHub Environment with the `APP_CLIENT_ID` variable
 and `APP_PRIVATE_KEY` secret for the protected release GitHub App. Repository rulesets must allow
-that App to create release tags. An App token is required because tags created with `GITHUB_TOKEN`
-do not trigger the tag-based release workflow.
+that App to create release tags while blocking tag updates and deletions. GitHub Release immutability
+is confirmed disabled for this rollout and must stay disabled so the Release record can advance to
+an existing tag; this setting is separate from Git tag protection. An App token is required because
+tags created with `GITHUB_TOKEN` do not trigger the tag-based release workflow.
 
 The registry can be backed by S3-compatible object storage; see
 [`docs/s3-backed-registry.md`](./docs/s3-backed-registry.md).

@@ -7,7 +7,8 @@ with no object store, not as the recommended posture.
 
 The registry deployed by the `init` and `init-gitea` packages is configured for S3 at deploy time
 through the Zarf values passthrough. Use AWS S3 with IRSA, or an S3-compatible store backed by
-stable out-of-cluster storage.
+stable out-of-cluster storage. This page describes `zarf-registry`; it does not configure
+`zarf-seed-registry`. Set seed-registry values separately when it needs the same storage behavior.
 
 Create the selected package with the standard task, then supply an environment-specific values
 file when deploying the resulting artifact:

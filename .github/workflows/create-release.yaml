@@ -1,7 +1,7 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
-name: Create Release Tag
+name: Create Releases
 
 on:
   push:
@@ -13,10 +13,13 @@ permissions:
 concurrency:
   group: create-release-tag-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   values:
     runs-on: ubuntu-26.04
+    outputs:
+      rolling: ${{ steps.version.outputs.rolling }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -28,8 +31,21 @@ jobs:
       - name: Validate Zarf values
         run: uds run test-zarf-values --no-progress
 
+      - name: Select release path
+        id: version
+        run: |
+          # shellcheck disable=SC3040
+          set -euo pipefail
+          release_version=$(yq -r '.packages[].flavors[].version' releaser.yaml | sort -V | tail -n 1)
+          if [ "$(printf '%s\n' v0.89.0-uds.0 "$release_version" | sort -V | head -n 1)" = v0.89.0-uds.0 ]; then
+            echo "rolling=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "rolling=false" >> "$GITHUB_OUTPUT"
+          fi
+
   tag:
     needs: values
+    if: needs.values.outputs.rolling == 'true'
     runs-on: ubuntu-26.04
     environment: uds-release
     steps:
@@ -62,3 +78,75 @@ jobs:
           gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
             -f ref="refs/tags/$release_version" \
             -f sha="$GITHUB_SHA"
+
+  legacy-release:
+    needs: values
+    if: needs.values.outputs.rolling == 'false'
+    runs-on: ubuntu-26.04
+    environment: uds-release
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [init, init-agent-only, init-gitea]
+        flavor: [upstream, registry1, unicorn]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+        with:
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.40.0
+
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Install release tooling
+        run: uds run actions:setup-environment --no-progress
+
+      - name: Create package release
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          # shellcheck disable=SC3040
+          set -euo pipefail
+          release_version=$(yq -r '.packages[].flavors[].version' releaser.yaml | sort -V | tail -n 1)
+          artifact_version=$(PACKAGE_NAME="${{ matrix.package }}" FLAVOR_NAME="${{ matrix.flavor }}" yq -r \
+            '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[] | select(.name == env(FLAVOR_NAME)) | .version' \
+            releaser.yaml)
+          if [ "$artifact_version" != "$release_version" ]; then
+            echo "${{ matrix.package }}/${{ matrix.flavor }} remains at $artifact_version"
+            exit 0
+          fi
+          if git show-ref --verify --quiet "refs/tags/$release_version"; then
+            echo "$release_version already has a consolidated tag; leaving its releases unchanged"
+            exit 0
+          fi
+
+          package_path=$(PACKAGE_NAME="${{ matrix.package }}" yq -r \
+            '.packages[] | select(.name == env(PACKAGE_NAME)) | .path // ""' releaser.yaml)
+          if [ -z "$package_path" ]; then
+            echo "unknown package: ${{ matrix.package }}" >&2
+            exit 1
+          fi
+
+          if (
+            cd "$package_path" || exit 1
+            uds-pk release check "${{ matrix.flavor }}" \
+              --package "${{ matrix.package }}" \
+              --dir "$GITHUB_WORKSPACE" \
+              --skip-publish-check \
+              --verbose
+          ); then
+            (
+              cd "$package_path" || exit 1
+              uds-pk release github "${{ matrix.flavor }}" \
+                --package "${{ matrix.package }}" \
+                --dir "$GITHUB_WORKSPACE"
+            )
+          fi
