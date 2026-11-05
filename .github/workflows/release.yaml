@@ -6,9 +6,7 @@ name: Release
 on:
   push:
     tags:
-      - "*-upstream"
-      - "*-registry1"
-      - "*-unicorn"
+      - v*.*.*-uds.*
 
 permissions:
   contents: read
@@ -20,63 +18,51 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  resolve:
+  validate:
     runs-on: ubuntu-26.04
-    outputs:
-      package: ${{ steps.release.outputs.package }}
-      flavor: ${{ steps.release.outputs.flavor }}
-      publish-repo: ${{ steps.release.outputs.publish-repo }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.40.0
-      - name: Resolve package release
-        id: release
+
+      - name: Validate consolidated release tag
         run: |
-          for package in $(yq -r '.packages[].name' releaser.yaml); do
-            for flavor in $(PACKAGE_NAME="$package" yq -r \
-              '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[].name' releaser.yaml); do
-              version=$(PACKAGE_NAME="$package" FLAVOR_NAME="$flavor" yq -r \
-                '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[] | select(.name == env(FLAVOR_NAME)) | .version' \
-                releaser.yaml)
-              if [ "${package}-${version}-${flavor}" = "$GITHUB_REF_NAME" ]; then
-                publish_repo="ghcr.io/defenseunicorns/delivery-zarf-init"
-                if [ "$flavor" = "unicorn" ]; then
-                  publish_repo="ghcr.io/defenseunicorns/packages/private/delivery-zarf-init"
-                fi
-                {
-                  echo "package=$package"
-                  echo "flavor=$flavor"
-                  echo "publish-repo=$publish_repo"
-                } >> "$GITHUB_OUTPUT"
-                exit 0
-              fi
-            done
-          done
-          echo "tag does not match a release in releaser.yaml: $GITHUB_REF_NAME" >&2
-          exit 1
+          release_version=$(yq -r '.packages[].flavors[].version' releaser.yaml | sort -V | tail -n 1)
+          if [ "$release_version" != "$GITHUB_REF_NAME" ]; then
+            echo "release tag $GITHUB_REF_NAME does not match consolidated release version $release_version" >&2
+            exit 1
+          fi
 
   values:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.40.0
+
       - name: Validate Zarf values
         run: uds run test-zarf-values --no-progress
 
   publish:
-    needs: [resolve, values]
+    needs: [validate, values]
     runs-on: ubuntu-26.04
     timeout-minutes: 120
+    environment: uds-release
     permissions:
       contents: read
       packages: write
       id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [init, init-agent-only, init-gitea]
+        flavor: [upstream, registry1, unicorn]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -87,7 +73,40 @@ jobs:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.40.0
 
+      - name: Select package release
+        id: release
+        env:
+          PACKAGE_NAME: ${{ matrix.package }}
+          FLAVOR_NAME: ${{ matrix.flavor }}
+        run: |
+          version=$(yq -r \
+            '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[] | select(.name == env(FLAVOR_NAME)) | .version // ""' \
+            releaser.yaml)
+          if [ -z "$version" ]; then
+            echo "unknown package or flavor: $PACKAGE_NAME/$FLAVOR_NAME" >&2
+            exit 1
+          fi
+
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "$PACKAGE_NAME/$FLAVOR_NAME remains at $version; no artifact to publish for $GITHUB_REF_NAME"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          publish_repo="ghcr.io/defenseunicorns/delivery-zarf-init"
+          if [ "$FLAVOR_NAME" = "unicorn" ]; then
+            publish_repo="ghcr.io/defenseunicorns/packages/private/delivery-zarf-init"
+          fi
+          {
+            echo "publish=true"
+            echo "version=$version"
+            echo "publish_repo=$publish_repo"
+            echo "artifact_ref=$publish_repo/$PACKAGE_NAME:$version-$FLAVOR_NAME"
+            echo "artifact_tag=$PACKAGE_NAME-$version-$FLAVOR_NAME"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Environment setup
+        if: steps.release.outputs.publish == 'true'
         run: |
           echo "MARU_AUTH=\"{\"raw.githubusercontent.com\": \"${{ secrets.GITHUB_TOKEN }}\"}\"" >> "$GITHUB_ENV"
           uds run actions:setup-environment \
@@ -96,29 +115,90 @@ jobs:
             --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
             --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
 
-      - name: Create, test, sign, verify, and publish
+      - name: Install ORAS
+        if: steps.release.outputs.publish == 'true'
+        run: uds run actions:install-oras --no-progress
+
+      - name: Check published architectures
+        if: steps.release.outputs.publish == 'true'
+        id: artifact
+        env:
+          ARTIFACT_REF: ${{ steps.release.outputs.artifact_ref }}
         run: |
-          uds-pk release update-yaml "${{ needs.resolve.outputs.flavor }}" \
-            --package "${{ needs.resolve.outputs.package }}" \
+          manifest_file=$(mktemp)
+          error_file=$(mktemp)
+          trap 'rm -f "$manifest_file" "$error_file"' EXIT
+
+          if oras manifest fetch "$ARTIFACT_REF" > "$manifest_file" 2> "$error_file"; then
+            publish=false
+            for architecture in amd64 arm64; do
+              if ! ARCHITECTURE="$architecture" jq -e \
+                '.manifests[]? | select(.platform.os == "multi" and .platform.architecture == env.ARCHITECTURE)' \
+                "$manifest_file" > /dev/null; then
+                echo "$ARTIFACT_REF is missing $architecture"
+                publish=true
+              fi
+            done
+          elif grep -qi 'not found' "$error_file"; then
+            echo "$ARTIFACT_REF is not published"
+            publish=true
+          else
+            cat "$error_file" >&2
+            exit 1
+          fi
+
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          if [ "$publish" = "false" ]; then
+            echo "$ARTIFACT_REF already contains amd64 and arm64; skipping publication"
+          fi
+
+      - name: Create, test, sign, verify, and publish
+        if: steps.artifact.outputs.publish == 'true'
+        run: |
+          uds-pk release update-yaml "${{ matrix.flavor }}" \
+            --package "${{ matrix.package }}" \
             --dir "$GITHUB_WORKSPACE"
           uds run publish-package \
-            --set PACKAGE="${{ needs.resolve.outputs.package }}" \
-            --set FLAVOR="${{ needs.resolve.outputs.flavor }}" \
-            --set TARGET_REPO="${{ needs.resolve.outputs.publish-repo }}" \
+            --set PACKAGE="${{ matrix.package }}" \
+            --set FLAVOR="${{ matrix.flavor }}" \
+            --set TARGET_REPO="${{ steps.release.outputs.publish_repo }}" \
             --no-progress
 
+      - name: Create GitHub App token
+        if: steps.release.outputs.publish == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Create artifact tag
+        if: steps.release.outputs.publish == 'true'
+        env:
+          ARTIFACT_TAG: ${{ steps.release.outputs.artifact_tag }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$ARTIFACT_TAG" > /dev/null 2>&1; then
+            echo "$ARTIFACT_TAG already exists"
+            exit 0
+          fi
+
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$ARTIFACT_TAG" \
+            -f sha="$GITHUB_SHA"
+
       - name: Debug output
-        if: ${{ always() }}
+        if: always() && steps.artifact.outputs.publish == 'true'
         run: uds run actions:debug-output
 
       - name: Save logs
-        if: ${{ always() }}
+        if: always() && steps.artifact.outputs.publish == 'true'
         run: uds run actions:save-logs
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: ${{ always() }}
+        if: always() && steps.artifact.outputs.publish == 'true'
         with:
-          name: debug-log-${{ needs.resolve.outputs.package }}-${{ needs.resolve.outputs.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: debug-log-${{ matrix.package }}-${{ matrix.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             /tmp/zarf-*.log
             /tmp/uds-*.log
@@ -126,3 +206,57 @@ jobs:
             /tmp/debug-*.log
             /tmp/uds-containerd-logs
             /tmp/k3d-uds-*.log
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-26.04
+    environment: uds-release
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+        with:
+          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
+          version: v0.40.0
+
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Create consolidated GitHub release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "GitHub release $GITHUB_REF_NAME already exists"
+            exit 0
+          fi
+
+          notes_file=$(mktemp)
+          trap 'rm -f "$notes_file"' EXIT
+          {
+            printf '## Package inventory\n\n'
+            printf '| Package | Flavor | OCI version |\n'
+            printf '| --- | --- | --- |\n'
+            for package in $(yq -r '.packages[].name' releaser.yaml); do
+              for flavor in $(PACKAGE_NAME="$package" yq -r \
+                '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[].name' releaser.yaml); do
+                version=$(PACKAGE_NAME="$package" FLAVOR_NAME="$flavor" yq -r \
+                  '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[] | select(.name == env(FLAVOR_NAME)) | .version' \
+                  releaser.yaml)
+                printf '| `%s` | `%s` | `%s-%s` |\n' "$package" "$flavor" "$version" "$flavor"
+              done
+            done
+          } > "$notes_file"
+
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --notes-file "$notes_file" \
+            --latest

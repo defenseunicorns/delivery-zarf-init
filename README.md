@@ -25,17 +25,21 @@ The `unicorn` packages publish beneath
 - `registry1` uses Iron Bank images. Its arm64 images use explicit `-arm64` tags.
 - `unicorn` uses Defense Unicorns Chainguard FIPS images.
 
-Each package has an independent entry in `releaser.yaml`. OCI tags use
-`<zarf-version>-uds.<revision>-<flavor>`, and GitHub release tags use
-`<package>-<zarf-version>-uds.<revision>-<flavor>`.
+Each package/flavor build has an entry in `releaser.yaml`. OCI tags use
+`<zarf-version>-uds.<revision>-<flavor>`. One consolidated GitHub release records the complete set of
+package/flavor versions, using the highest declared artifact version as its tag.
 
-Consumers can verify against the exact package release tag:
+Consumers verify artifacts published by the consolidated workflow against the shared release tag:
 
 ```yaml
 keylessVerification:
-  certificateIdentity: https://github.com/defenseunicorns/delivery-zarf-init/.github/workflows/release.yaml@refs/tags/init-v0.87.0-uds.0-upstream
+  certificateIdentity: https://github.com/defenseunicorns/delivery-zarf-init/.github/workflows/release.yaml@refs/tags/v0.89.0-uds.0
   certificateOIDCIssuer: https://token.actions.githubusercontent.com
 ```
+
+Packages published before the consolidated workflow retain their package- and flavor-specific
+certificate identities. Their Git tags remain available for verification even though the legacy
+GitHub Release records were retired.
 
 ## Deploy
 
@@ -54,7 +58,7 @@ packages/init-gitea/       Gitea package and values
 components/zarf.yaml       flavor-specific component composition
 components/common/         shared component definitions and chart values
 flavors/                   flavor and architecture-specific image sources
-releaser.yaml              independent uds-pk versions for all three packages
+releaser.yaml              uds-pk versions for all package/flavor builds
 tasks/                     init-specific create, deploy, test, and publish helpers
 tests/                     package-level fixtures
 .zarf-src/                 generated upstream Zarf package sources (gitignored)
@@ -73,6 +77,7 @@ uds run                                      # create and install-test init/upst
 uds run create-dev-package                   # create without an SBOM
 uds run test-install                         # create, deploy, and verify on a fresh cluster
 uds run publish-package                      # create both arches, test when deployable, then publish
+uds run bump-release                         # assign the next UDS revision to selected artifacts
 uds run test-zarf-values                     # check schemas, manifests, and generated Helm values
 uds run pre-commit-all                       # run repository checks
 ```
@@ -117,18 +122,32 @@ Renovate PRs stop before package tests until every flavor pin for a changed comp
 the same normalized version. Gitea chart-only updates also wait for the flavor images.
 
 Zarf updates also advance every package and flavor in `releaser.yaml`. Registry, Socat, and Gitea
-updates do not create a package release by themselves; they ship with the next Zarf release unless
-an affected package receives an explicit `-uds.N` revision bump.
+updates require an explicit `-uds.N` revision bump for the affected package/flavor entries unless
+they are included in a Zarf update that resets every entry to `-uds.0`.
 
-Pushes to `main` evaluate each package and flavor independently with package-scoped `uds-pk` and
-create each unreleased package-specific GitHub release tag. Each tag triggers a release job that
-creates both architectures, tests registry-bearing packages, keyless-signs and verifies them against
-the exact tag identity, and publishes both. A failed release can be retried from its tagged workflow.
+Run `uds run bump-release --set PACKAGE=<package> --set FLAVOR=<flavor>` to select artifacts for a
+package-only release. The task assigns one revision greater than the highest `-uds.N` for the current
+Zarf version. `all` may be used for either selector. Renovate resets all entries to `-uds.0` when it
+updates Zarf. Run the task only once for a release because running it again assigns another revision.
+If one change affects a package across all flavors and another affects a flavor across all packages,
+use `PACKAGE=all` and `FLAVOR=all`; the task may bump unaffected entries in this mixed-scope case.
 
-Tag creation uses the `uds-release` GitHub Environment with the `APP_CLIENT_ID` variable and
-`APP_PRIVATE_KEY` secret for the protected release GitHub App. Repository rulesets must allow that
-App to create release tags. An App token is required because tags created with `GITHUB_TOKEN` do not
-trigger the tag-based release workflow.
+When that change reaches `main`, automation creates one consolidated tag from the highest version
+in `releaser.yaml`. The tag evaluates the complete package/flavor matrix and publishes entries at
+the new release version; entries still on earlier revisions remain available under their existing
+OCI tags. Before building, ORAS checks
+the selected OCI tag for both Zarf platforms (`multi/amd64` and `multi/arm64`); a complete artifact
+is skipped, while a missing tag or architecture is published. Registry or authentication errors
+fail the check instead of causing an existing artifact to be overwritten. New artifacts are tested,
+keyless-signed, and verified against the consolidated tag identity. Successful artifacts receive
+package/flavor Git tags, but not separate GitHub Releases. After every selected artifact succeeds,
+the workflow creates the consolidated GitHub Release with generated change notes and a complete OCI
+version inventory. A failed release can be retried from its tagged workflow.
+
+Tag and release creation uses the `uds-release` GitHub Environment with the `APP_CLIENT_ID` variable
+and `APP_PRIVATE_KEY` secret for the protected release GitHub App. Repository rulesets must allow
+that App to create release tags. An App token is required because tags created with `GITHUB_TOKEN`
+do not trigger the tag-based release workflow.
 
 The registry can be backed by S3-compatible object storage; see
 [`docs/s3-backed-registry.md`](./docs/s3-backed-registry.md).

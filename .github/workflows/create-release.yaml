@@ -1,7 +1,7 @@
 # Copyright 2026 Defense Unicorns
 # SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
 
-name: Create Releases
+name: Create Release Tag
 
 on:
   push:
@@ -11,34 +11,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: create-release-${{ github.ref }}
+  group: create-release-tag-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  values:
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
-        with:
-          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
-          version: v0.40.0
-      - name: Validate Zarf values
-        run: uds run test-zarf-values --no-progress
-
-  release:
-    needs: values
+  tag:
     runs-on: ubuntu-26.04
     environment: uds-release
-    strategy:
-      fail-fast: false
-      matrix:
-        package: [init, init-agent-only, init-gitea]
-        flavor: [upstream, registry1, unicorn]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
@@ -53,32 +34,17 @@ jobs:
           client-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
-      - name: Install release tooling
-        run: uds run actions:setup-environment --no-progress
-
-      - name: Create package release
+      - name: Create consolidated release tag
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          package_path=$(PACKAGE_NAME="${{ matrix.package }}" yq -r \
-            '.packages[] | select(.name == env(PACKAGE_NAME)) | .path // ""' releaser.yaml)
-          if [ -z "$package_path" ]; then
-            echo "unknown package: ${{ matrix.package }}" >&2
-            exit 1
+          release_version=$(yq -r '.packages[].flavors[].version' releaser.yaml | sort -V | tail -n 1)
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$release_version" > /dev/null 2>&1; then
+            echo "$release_version already exists; no release requested"
+            exit 0
           fi
 
-          if (
-            cd "$package_path" || exit 1
-            uds-pk release check "${{ matrix.flavor }}" \
-              --package "${{ matrix.package }}" \
-              --dir "$GITHUB_WORKSPACE" \
-              --skip-publish-check \
-              --verbose
-          ); then
-            (
-              cd "$package_path" || exit 1
-              uds-pk release github "${{ matrix.flavor }}" \
-                --package "${{ matrix.package }}" \
-                --dir "$GITHUB_WORKSPACE"
-            )
-          fi
+          echo "Creating consolidated release tag $release_version at $GITHUB_SHA"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$release_version" \
+            -f sha="$GITHUB_SHA"

@@ -30,10 +30,12 @@ jobs:
           fetch-depth: 0
 
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
-        if: startsWith(github.head_ref, 'renovate/')
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.40.0
+
+      - name: Check release readiness
+        run: scripts/check-release-readiness.sh "${{ github.event.pull_request.base.sha }}"
 
       - name: Check Renovate readiness
         if: startsWith(github.head_ref, 'renovate/')
