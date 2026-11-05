@@ -108,8 +108,9 @@ Pull requests:
 
 - create all three packages for arm64 across all three flavors on trusted pull requests;
 - install-test the registry-bearing packages across all three flavors on trusted pull requests;
-- create every public upstream package and install-test its registry-bearing packages on forks and Dependabot; and
-- validate Zarf values schemas and passthrough.
+- create every public upstream package and install-test its registry-bearing packages on forks and Dependabot;
+- validate Zarf values schemas and passthrough; and
+- require release bumps for artifact-affecting changes, including package build tasks.
 
 Install tests run only when a pull request changes package definitions, components, flavors, tests,
 tasks, or release metadata. Repository automation and documentation-only changes still create the
@@ -132,17 +133,18 @@ updates Zarf. Run the task only once for a release because running it again assi
 If one change affects a package across all flavors and another affects a flavor across all packages,
 use `PACKAGE=all` and `FLAVOR=all`; the task may bump unaffected entries in this mixed-scope case.
 
-When that change reaches `main`, automation creates one consolidated tag from the highest version
-in `releaser.yaml`. The tag evaluates the complete package/flavor matrix and publishes entries at
-the new release version; entries still on earlier revisions remain available under their existing
-OCI tags. Before building, ORAS checks
+When that change reaches `main`, automation validates Zarf values before creating one consolidated
+tag from the highest version in `releaser.yaml`. The tag evaluates the complete package/flavor
+matrix and publishes entries at the new release version; entries still on earlier revisions remain
+available under their existing OCI tags. Before building, ORAS checks
 the selected OCI tag for both Zarf platforms (`multi/amd64` and `multi/arm64`); a complete artifact
 is skipped, while a missing tag or architecture is published. Registry or authentication errors
 fail the check instead of causing an existing artifact to be overwritten. New artifacts are tested,
 keyless-signed, and verified against the consolidated tag identity. Successful artifacts receive
 package/flavor Git tags, but not separate GitHub Releases. After every selected artifact succeeds,
 the workflow creates the consolidated GitHub Release with generated change notes and a complete OCI
-version inventory. A failed release can be retried from its tagged workflow.
+version inventory. GitHub selects Latest automatically. A failed release can be retried from its
+tagged workflow.
 
 Tag and release creation uses the `uds-release` GitHub Environment with the `APP_CLIENT_ID` variable
 and `APP_PRIVATE_KEY` secret for the protected release GitHub App. Repository rulesets must allow

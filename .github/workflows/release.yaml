@@ -258,5 +258,4 @@ jobs:
             --verify-tag \
             --title "$GITHUB_REF_NAME" \
             --generate-notes \
-            --notes-file "$notes_file" \
-            --latest
+            --notes-file "$notes_file"

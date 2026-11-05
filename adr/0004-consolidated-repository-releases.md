@@ -38,12 +38,14 @@ Release.
   with existing tooling. Do not create package- or flavor-specific GitHub Releases.
 - Create one GitHub Release after all selected artifacts succeed. Generate categorized change notes
   from pull request labels and append an inventory of every package/flavor OCI version represented
-  by the release.
-- Map conventional pull request titles to release-note labels. A conventional `!` maps to the
-  breaking-change category, but migration guidance remains an explicit author responsibility.
-- Check release readiness in pull request CI. Shared component changes require the complete matrix,
-  flavor changes require that flavor across all packages, package changes require all flavors of
-  that package, and a Zarf source change requires the complete matrix at `-uds.0`.
+  by the release. Let GitHub select the Latest release automatically.
+- Map conventional pull request titles to release-note labels. Renovate pull requests use the
+  dependency category regardless of their title. A conventional `!` on other pull requests maps
+  to the breaking-change category, but migration guidance remains an explicit author responsibility.
+- Validate Zarf values before creating the consolidated tag. Check release readiness in pull
+  request CI. Shared component and package build task changes require the complete matrix, flavor
+  changes require that flavor across all packages, package changes require all flavors of that
+  package, and a Zarf source change requires the complete matrix at `-uds.0`.
 
 ## Consequences
 

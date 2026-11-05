@@ -43,9 +43,9 @@ Use `all` to update a wider set in one release, for example
 the same revision; running it again assigns another revision. Unselected entries retain their
 existing OCI versions. Pull request CI checks artifact-affecting changes and reports any
 package/flavor entries that still need the release bump. Flavor files require that flavor across all
-packages, package files require that package across all flavors, and shared component changes
-require all package/flavor entries. If a change spans both package and flavor scopes, use
-`--set PACKAGE=all --set FLAVOR=all`; this may bump unaffected entries.
+packages, package files require that package across all flavors, and shared component or package
+build task changes require all package/flavor entries. If a change spans both package and flavor
+scopes, use `--set PACKAGE=all --set FLAVOR=all`; this may bump unaffected entries.
 
 Registry, Socat, and Gitea updates require this explicit bump unless they are part of a Zarf update.
 Zarf updates reset every package/flavor entry to `-uds.0` through Renovate.
@@ -54,17 +54,19 @@ Zarf updates reset every package/flavor entry to `-uds.0` through Renovate.
 
 The repository publishes one consolidated GitHub release representing the package/flavor versions
 declared in `releaser.yaml`. The highest declared version is the consolidated release tag. Merging a
-new highest version creates that tag and starts publication automatically. Only entries carrying
-the new version are published; older entries remain available under their existing OCI tags.
+new highest version validates Zarf values, then creates that tag and starts publication automatically.
+Only entries carrying the new version are published; older entries remain available under their
+existing OCI tags.
 
 Each published artifact also receives a package/flavor Git tag for traceability and compatibility
 with `uds-pk`, but those tags do not create GitHub Release records. The consolidated GitHub Release
 is created only after every selected artifact succeeds, and its notes inventory all current
 package/flavor OCI versions. Automation maps conventional pull request titles to the release-note
-labels `enhancement`, `bug`, `documentation`, and `breaking-change`; Renovate pull requests retain
-their own category. Unmatched pull requests appear under Other Changes. A `!` in the conventional
-title places the pull request under Breaking Changes, but explicit upgrade guidance is still
-required because generated notes cannot infer migration details from a title.
+labels `enhancement`, `bug`, `documentation`, and `breaking-change`; Renovate pull requests appear
+under Dependencies regardless of title. Unmatched pull requests appear under Other Changes. A `!`
+in a non-Renovate conventional title places the pull request under Breaking Changes, but explicit
+upgrade guidance is still required because generated notes cannot infer migration details from a
+title. GitHub selects the Latest release automatically.
 
 ## Architecture decisions
 

@@ -35,11 +35,14 @@ jobs:
             const type = title.match(/^([a-z][a-z0-9-]*)/)?.[1];
             const header = title.split(":", 1)[0];
 
-            if (type === "feat") desiredLabels.add("enhancement");
-            if (type === "fix") desiredLabels.add("bug");
-            if (type === "docs") desiredLabels.add("documentation");
-            if (header.includes("!")) desiredLabels.add("breaking-change");
-            if (pullRequest.user.login === "renovate[bot]") desiredLabels.add("renovate");
+            if (pullRequest.user.login === "renovate[bot]") {
+              desiredLabels.add("renovate");
+            } else {
+              if (type === "feat") desiredLabels.add("enhancement");
+              if (type === "fix") desiredLabels.add("bug");
+              if (type === "docs") desiredLabels.add("documentation");
+              if (header.includes("!")) desiredLabels.add("breaking-change");
+            }
 
             if (desiredLabels.has("breaking-change")) {
               try {

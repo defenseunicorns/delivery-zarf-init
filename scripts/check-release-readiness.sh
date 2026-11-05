@@ -24,10 +24,10 @@ append_unique() {
   esac
 }
 
-for path in $(git diff --name-only "$base_ref" -- components flavors packages); do
+for path in $(git diff --name-only "$base_ref" -- components flavors packages tasks/package.yaml); do
   artifact_changed=true
   case "$path" in
-    components/*) require_all=true ;;
+    components/*|tasks/package.yaml) require_all=true ;;
     flavors/upstream.yaml) required_flavors=$(append_unique "$required_flavors" upstream) ;;
     flavors/registry1*.yaml) required_flavors=$(append_unique "$required_flavors" registry1) ;;
     flavors/unicorn.yaml) required_flavors=$(append_unique "$required_flavors" unicorn) ;;
@@ -38,6 +38,16 @@ for path in $(git diff --name-only "$base_ref" -- components flavors packages); 
       ;;
   esac
 done
+
+build_tasks_query='[ (.includes[] | select(has("create")) | .create),
+  (.tasks[] | select(.name == "create-package" or .name == "publish-package") |
+    {"name": .name, "inputs": (.inputs // {} | with_entries(.value = .value.default)), "actions": .actions}) ]'
+base_build_tasks=$(git show "$base_ref:tasks.yaml" | yq -o=json -I=0 "$build_tasks_query")
+current_build_tasks=$(yq -o=json -I=0 "$build_tasks_query" tasks.yaml)
+if [ "$base_build_tasks" != "$current_build_tasks" ]; then
+  artifact_changed=true
+  require_all=true
+fi
 
 source_query='.variables[] | select(.name == "ZARF_SOURCE_VERSION") | .default'
 base_source=$(git show "$base_ref:tasks.yaml" | yq -r "$source_query")
