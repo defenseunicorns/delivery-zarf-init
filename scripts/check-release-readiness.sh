@@ -25,6 +25,11 @@ append_unique() {
 }
 
 for path in $(git diff --name-only "$base_ref" -- components flavors packages tasks/package.yaml release-registries.yaml); do
+  # The first metadata file records existing routes; later edits change publish targets.
+  if [ "$path" = release-registries.yaml ] &&
+    ! git cat-file -e "$base_ref:$path" 2>/dev/null; then
+    continue
+  fi
   artifact_changed=true
   case "$path" in
     components/*|tasks/package.yaml|release-registries.yaml) require_all=true ;;

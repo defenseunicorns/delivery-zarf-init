@@ -52,10 +52,10 @@ Zarf updates reset every package/flavor entry to `-uds.0` through Renovate.
 
 ## Releases
 
-Starting with Zarf v0.89.0, the repository keeps one GitHub Release per Zarf version. The highest
-version in `releaser.yaml` is the next consolidated Git tag. Merging a new highest version validates
-Zarf values, then creates that tag and starts publication automatically. Only entries carrying the
-new version are published; older entries remain available under their existing OCI tags.
+The repository keeps one GitHub Release per Zarf version. The highest version in `releaser.yaml` is
+the next consolidated Git tag. Merging a new highest version validates Zarf values, then creates
+that tag and starts publication automatically. Only entries carrying the new version are published;
+older entries remain available under their existing OCI tags.
 
 Each published artifact also receives a package/flavor Git tag for traceability and compatibility
 with `uds-pk`, but those tags do not create GitHub Release records. After every selected artifact
@@ -65,12 +65,11 @@ predecessor before rerunning a waiting revision. Earlier Git and OCI tags never 
 inventory lists all package/flavor OCI references and each artifact's signing tag. Add upgrade
 guidance outside the generated changelog and inventory comment blocks; automation preserves text
 outside those blocks when regenerating the notes. The tag-specific Release URL changes when the
-Release advances. Existing releases through v0.88.0 are not migrated; any further pre-v0.89.0
-revision uses the legacy package/flavor release path, whose tags trigger artifact publication
-without updating a consolidated Release. The first rolling changelog uses the final published legacy
-release tag as its baseline. Automation maps conventional pull request titles to the release-note
-labels `enhancement`, `bug`, `documentation`, and `breaking-change`; Renovate pull requests appear
-under Dependencies regardless of title. Unmatched pull requests appear under Other Changes. A `!`
+Release advances. Existing releases through v0.88.0 are not migrated. The first new changelog uses
+the preceding Zarf version's final published release tag as its baseline. Automation maps
+conventional pull request titles to the release-note labels `enhancement`, `bug`, `documentation`,
+and `breaking-change`; Renovate pull requests appear under Dependencies regardless of title.
+Unmatched pull requests appear under Other Changes. A `!`
 in a non-Renovate conventional title places the pull request under Breaking Changes, but explicit
 upgrade guidance is still required because generated notes cannot infer migration details from a
 title. The newest Zarf version remains Latest even if an older release workflow finishes later.

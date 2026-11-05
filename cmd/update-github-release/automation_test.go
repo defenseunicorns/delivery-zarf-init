@@ -117,6 +117,18 @@ func TestReleaseReadinessRegistryRouting(t *testing.T) {
 	checkReadiness(t, dir, true, "9 release entries are ready at v0.88.0-uds.2")
 }
 
+func TestReleaseReadinessInitialRegistryMetadata(t *testing.T) {
+	dir := releaseFixture(t)
+	mustAutomationCommand(t, dir, nil, "git", "rm", "-q", "release-registries.yaml")
+	mustAutomationCommand(t, dir, nil, "git", "-c", "user.name=Release Test", "-c", "user.email=release-test@example.invalid", "commit", "-qm", "legacy baseline")
+	contents, err := os.ReadFile(filepath.Join("..", "..", "release-registries.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFixtureFile(t, dir, "release-registries.yaml", string(contents))
+	checkReadiness(t, dir, true, "No package release required")
+}
+
 func TestReleaseReadinessZarfReset(t *testing.T) {
 	dir := releaseFixture(t)
 	mustAutomationCommand(t, dir, nil, "yq", "-i", `(.variables[] | select(.name == "ZARF_SOURCE_VERSION") | .default) = "v0.89.0"`, "tasks.yaml")
@@ -146,6 +158,7 @@ func TestBumpReleaseTask(t *testing.T) {
 
 func TestReleaseMetadata(t *testing.T) {
 	dir := releaseFixture(t)
+	setFixtureVersions(t, dir, "all", "all", "v0.89.0-uds.0")
 	script, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release-metadata.sh"))
 	if err != nil {
 		t.Fatal(err)
@@ -181,12 +194,17 @@ func TestReleaseMetadata(t *testing.T) {
 	if len(inventory.Artifacts) != 9 {
 		t.Fatalf("wrong artifact count: %d", len(inventory.Artifacts))
 	}
-	if inventory.Artifacts[0].OCIRef != "oci://ghcr.io/defenseunicorns/delivery-zarf-init/init:v0.88.0-uds.0-upstream" ||
-		inventory.Artifacts[2].OCIRef != "oci://ghcr.io/defenseunicorns/packages/private/delivery-zarf-init/init:v0.88.0-uds.1-unicorn" ||
-		inventory.Artifacts[2].SigningTag != "v0.88.0-uds.1" {
+	if inventory.Artifacts[0].OCIRef != "oci://ghcr.io/defenseunicorns/delivery-zarf-init/init:v0.89.0-uds.0-upstream" ||
+		inventory.Artifacts[1].OCIRef != "oci://ghcr.io/defenseunicorns/delivery-zarf-init/init:v0.89.0-uds.0-registry1" ||
+		inventory.Artifacts[2].OCIRef != "oci://ghcr.io/defenseunicorns/packages/private/delivery-zarf-init/init:v0.89.0-uds.0-unicorn" {
 		t.Fatalf("wrong OCI routing or signing identity: %+v", inventory.Artifacts[:3])
 	}
-	if _, err := renderInventory(inventory, "v0.88.0-uds.1"); err != nil {
+	for _, artifact := range inventory.Artifacts {
+		if artifact.SigningTag != "v0.89.0-uds.0" {
+			t.Fatalf("%s/%s signing tag = %q", artifact.Package, artifact.Flavor, artifact.SigningTag)
+		}
+	}
+	if _, err := renderInventory(inventory, "v0.89.0-uds.0"); err != nil {
 		t.Fatal(err)
 	}
 	mustAutomationCommand(t, dir, nil, "yq", "-i", `del(.registries.unicorn)`, "release-registries.yaml")
