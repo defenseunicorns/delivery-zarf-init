@@ -27,17 +27,10 @@ type fakeClient struct {
 	notes     []noteCall
 	creates   []releaseRequest
 	updates   []updateCall
-	tagCalls  int
-	tagErr    error
 	listErr   error
 	notesErr  error
 	createErr error
 	updateErr error
-}
-
-func (fake *fakeClient) GetTag(_ context.Context, _, _ string) error {
-	fake.tagCalls++
-	return fake.tagErr
 }
 
 func (fake *fakeClient) ListReleases(_ context.Context, _ string) ([]githubRelease, error) {
@@ -131,56 +124,23 @@ func TestFirstRollingRevision(t *testing.T) {
 	}
 }
 
-func TestFirstRollingRevisionUsesFinalLegacyRelease(t *testing.T) {
-	fake := &fakeClient{releases: []githubRelease{
-		{ID: 7, TagName: "init-v0.88.0-uds.1-upstream"},
-		{ID: 8, TagName: "init-gitea-v0.88.0-uds.2-unicorn"},
-		{ID: 9, TagName: "other-v0.99.0-uds.0-upstream"},
-	}}
-	publish(t, fake, "v0.89.0-uds.0", fixture("v0.89.0-uds.0", ""))
-	if fake.notes[0].previous != "init-gitea-v0.88.0-uds.2-unicorn" {
-		t.Fatalf("wrong legacy baseline: %+v", fake.notes[0])
-	}
-}
-
-func TestLaterLegacyReleaseSupersedesConsolidatedBaseline(t *testing.T) {
-	fake := &fakeClient{releases: []githubRelease{
-		{ID: 7, TagName: "v0.88.0-uds.1"},
-		{ID: 8, TagName: "init-v0.88.0-uds.2-upstream"},
-	}}
-	publish(t, fake, "v0.89.0-uds.0", fixture("v0.89.0-uds.0", ""))
-	if fake.notes[0].previous != "init-v0.88.0-uds.2-upstream" {
-		t.Fatalf("wrong baseline: %+v", fake.notes[0])
-	}
-}
-
-func TestConsolidatedBaselineWinsAtSameRevision(t *testing.T) {
-	fake := &fakeClient{releases: []githubRelease{
-		{ID: 7, TagName: "init-v0.88.0-uds.1-upstream"},
-		{ID: 8, TagName: "v0.88.0-uds.1"},
-	}}
-	publish(t, fake, "v0.89.0-uds.0", fixture("v0.89.0-uds.0", ""))
-	if fake.notes[0].previous != "v0.88.0-uds.1" {
-		t.Fatalf("wrong baseline: %+v", fake.notes[0])
-	}
-}
-
-func TestLatestPublishedLegacyReleaseWinsAtSameRevision(t *testing.T) {
-	fake := &fakeClient{releases: []githubRelease{
-		{ID: 7, TagName: "init-v0.88.0-uds.2-upstream", PublishedAt: "2026-11-01T00:00:00Z"},
-		{ID: 8, TagName: "init-gitea-v0.88.0-uds.2-unicorn", PublishedAt: "2026-11-02T00:00:00Z"},
-	}}
-	publish(t, fake, "v0.89.0-uds.0", fixture("v0.89.0-uds.0", ""))
-	if fake.notes[0].previous != "init-gitea-v0.88.0-uds.2-unicorn" {
-		t.Fatalf("wrong baseline: %+v", fake.notes[0])
-	}
-}
-
 func TestRollingReleaseRequiresBaseline(t *testing.T) {
-	fake := &fakeClient{releases: []githubRelease{{ID: 7, TagName: "other-v0.88.0-uds.1-upstream"}}}
+	fake := &fakeClient{releases: []githubRelease{{ID: 7, TagName: "init-v0.88.0-uds.1-upstream"}}}
 	_, err := updateRelease(context.Background(), fake, testRepo, "v0.89.0-uds.0", fixture("v0.89.0-uds.0", ""))
 	if err == nil || !strings.Contains(err.Error(), "changelog baseline") || len(fake.creates) != 0 {
 		t.Fatalf("expected missing baseline failure, got %v", err)
+	}
+}
+
+func TestFirstReleaseUsesNewestConsolidatedBaseline(t *testing.T) {
+	fake := &fakeClient{releases: []githubRelease{
+		{ID: 7, TagName: "v0.87.0-uds.2"},
+		{ID: 8, TagName: "v0.88.0-uds.1"},
+		{ID: 9, TagName: "init-v0.88.0-uds.2-upstream"},
+	}}
+	publish(t, fake, "v0.89.0-uds.0", fixture("v0.89.0-uds.0", ""))
+	if fake.notes[0].previous != "v0.88.0-uds.1" {
+		t.Fatalf("wrong consolidated baseline: %+v", fake.notes[0])
 	}
 }
 
@@ -320,18 +280,6 @@ func TestInventoryUsesExplicitArtifactMetadata(t *testing.T) {
 	inventory.Artifacts[0].OCIRef = "oci:///init:v0.89.0-uds.0-upstream"
 	if _, err := renderInventory(inventory, "v0.89.0-uds.0"); err == nil {
 		t.Fatal("accepted OCI reference without a registry")
-	}
-}
-
-func TestTagVerificationFailureStopsBeforeMutation(t *testing.T) {
-	tagErr := errors.New("tag unavailable")
-	fake := &fakeClient{tagErr: tagErr}
-	_, err := updateRelease(context.Background(), fake, testRepo, "v0.89.0-uds.0", fixture("v0.89.0-uds.0", ""))
-	if !errors.Is(err, tagErr) || !strings.Contains(err.Error(), "verify tag") {
-		t.Fatalf("expected tag verification failure, got %v", err)
-	}
-	if len(fake.notes) != 0 || len(fake.creates) != 0 || len(fake.updates) != 0 {
-		t.Fatalf("tag verification failure reached later operations: %+v", fake)
 	}
 }
 

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -73,10 +72,6 @@ func (api *githubAPI) request(ctx context.Context, method, path string, input, o
 	return nil
 }
 
-func (api *githubAPI) GetTag(ctx context.Context, repo, tag string) error {
-	return api.request(ctx, http.MethodGet, "/repos/"+repo+"/git/ref/tags/"+url.PathEscape(tag), nil, nil)
-}
-
 func (api *githubAPI) ListReleases(ctx context.Context, repo string) ([]githubRelease, error) {
 	var all []githubRelease
 	for page := 1; page <= 100; page++ {
@@ -92,13 +87,6 @@ func (api *githubAPI) ListReleases(ctx context.Context, repo string) ([]githubRe
 			if release.ID <= 0 || release.TagName == "" {
 				return nil, fmt.Errorf("GitHub returned a release without an ID or tag")
 			}
-			for _, timestamp := range []string{release.PublishedAt, release.CreatedAt} {
-				if timestamp != "" {
-					if _, err := time.Parse(time.RFC3339, timestamp); err != nil {
-						return nil, fmt.Errorf("GitHub returned an invalid release timestamp: %w", err)
-					}
-				}
-			}
 		}
 		all = append(all, releases...)
 		if len(releases) < 100 {
@@ -109,10 +97,7 @@ func (api *githubAPI) ListReleases(ctx context.Context, repo string) ([]githubRe
 }
 
 func (api *githubAPI) GenerateNotes(ctx context.Context, repo, tag, previous string) (string, error) {
-	input := map[string]string{"tag_name": tag}
-	if previous != "" {
-		input["previous_tag_name"] = previous
-	}
+	input := map[string]string{"tag_name": tag, "previous_tag_name": previous}
 	var output struct {
 		Body string `json:"body"`
 	}

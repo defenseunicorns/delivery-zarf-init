@@ -8,10 +8,8 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -41,13 +39,11 @@ type releaseArtifact struct {
 }
 
 type githubRelease struct {
-	ID          int64  `json:"id"`
-	TagName     string `json:"tag_name"`
-	Draft       bool   `json:"draft"`
-	Immutable   bool   `json:"immutable"`
-	Body        string `json:"body"`
-	PublishedAt string `json:"published_at"`
-	CreatedAt   string `json:"created_at"`
+	ID        int64  `json:"id"`
+	TagName   string `json:"tag_name"`
+	Draft     bool   `json:"draft"`
+	Immutable bool   `json:"immutable"`
+	Body      string `json:"body"`
 }
 
 type releaseRequest struct {
@@ -58,7 +54,6 @@ type releaseRequest struct {
 }
 
 type releaseClient interface {
-	GetTag(context.Context, string, string) error
 	ListReleases(context.Context, string) ([]githubRelease, error)
 	GenerateNotes(context.Context, string, string, string) (string, error)
 	CreateRelease(context.Context, string, releaseRequest) (int64, error)
@@ -79,18 +74,6 @@ func parseTag(tag string) (version, bool) {
 		parsed[i] = value
 	}
 	return parsed, true
-}
-
-func parseLegacyTag(tag string, inventory releaseInventory) (version, bool) {
-	for _, artifact := range inventory.Artifacts {
-		prefix, suffix := artifact.Package+"-", "-"+artifact.Flavor
-		if strings.HasPrefix(tag, prefix) && strings.HasSuffix(tag, suffix) {
-			if parsed, valid := parseTag(strings.TrimSuffix(strings.TrimPrefix(tag, prefix), suffix)); valid {
-				return parsed, true
-			}
-		}
-	}
-	return version{}, false
 }
 
 func compareVersions(left, right version, parts int) int {
@@ -159,66 +142,42 @@ func renderInventory(inventory releaseInventory, tag string) (string, error) {
 	return strings.Join(rows, "\n"), nil
 }
 
-type candidate struct {
-	release      githubRelease
-	version      version
-	consolidated bool
-}
-
-func releaseTime(release githubRelease) time.Time {
-	value := release.PublishedAt
-	if value == "" {
-		value = release.CreatedAt
-	}
-	parsed, _ := time.Parse(time.RFC3339, value)
-	return parsed
-}
-
 func updateRelease(ctx context.Context, client releaseClient, repo, tag string, inventory releaseInventory) (string, error) {
 	current, ok := parseTag(tag)
 	if !ok {
 		return "", fmt.Errorf("invalid consolidated release tag: %s", tag)
 	}
-	if err := client.GetTag(ctx, repo, tag); err != nil {
-		return "", fmt.Errorf("verify tag %s: %w", tag, err)
-	}
 	releases, err := client.ListReleases(ctx, repo)
 	if err != nil {
 		return "", fmt.Errorf("list releases: %w", err)
 	}
-	var previous []candidate
+	var previousTag string
+	var previousVersion version
 	var existing *githubRelease
-	var sameLine int
 	newer := false
 	for _, release := range releases {
 		if parsed, valid := parseTag(release.TagName); valid {
-			entry := candidate{release: release, version: parsed, consolidated: true}
 			if compareVersions(parsed, current, 3) == 0 {
-				sameLine++
+				if existing != nil {
+					return "", fmt.Errorf("multiple GitHub Releases already exist for %s", strings.Split(tag, "-uds.")[0])
+				}
 				matchedRelease := release
 				existing = &matchedRelease
 			}
 			if !release.Draft && compareVersions(parsed, current, 4) > 0 {
 				newer = true
 			}
-			if !release.Draft && compareVersions(parsed, current, 3) < 0 {
-				previous = append(previous, entry)
-			}
-		} else {
-			if parsed, valid := parseLegacyTag(release.TagName, inventory); valid && !release.Draft &&
-				compareVersions(parsed, current, 3) < 0 {
-				previous = append(previous, candidate{release: release, version: parsed})
+			if !release.Draft && compareVersions(parsed, current, 3) < 0 &&
+				(previousTag == "" || compareVersions(parsed, previousVersion, 4) > 0) {
+				previousTag, previousVersion = release.TagName, parsed
 			}
 		}
-	}
-	if sameLine > 1 {
-		return "", fmt.Errorf("multiple GitHub Releases already exist for %s", strings.Split(tag, "-uds.")[0])
 	}
 	if existing != nil {
 		if existing.Draft {
 			return "", fmt.Errorf("release %s is still a draft", existing.TagName)
 		}
-		if prior, valid := parseTag(existing.TagName); valid && compareVersions(prior, current, 4) >= 0 {
+		if prior, _ := parseTag(existing.TagName); compareVersions(prior, current, 4) >= 0 {
 			return existing.TagName + " is already the current or newer release; skipping", nil
 		}
 		if existing.Immutable {
@@ -234,21 +193,8 @@ func updateRelease(ctx context.Context, client releaseClient, repo, tag string, 
 			return "", fmt.Errorf("publish the preceding %s revision first", strings.Split(tag, "-uds.")[0])
 		}
 	}
-	if len(previous) == 0 {
-		return "", fmt.Errorf("no prior GitHub Release provides a changelog baseline for %s", tag)
-	}
-	sort.Slice(previous, func(i, j int) bool {
-		if comparison := compareVersions(previous[i].version, previous[j].version, 4); comparison != 0 {
-			return comparison > 0
-		}
-		if previous[i].consolidated != previous[j].consolidated {
-			return previous[i].consolidated
-		}
-		return releaseTime(previous[i].release).After(releaseTime(previous[j].release))
-	})
-	previousTag := ""
-	if len(previous) > 0 {
-		previousTag = previous[0].release.TagName
+	if previousTag == "" {
+		return "", fmt.Errorf("no prior consolidated GitHub Release provides a changelog baseline for %s", tag)
 	}
 	changelog, err := client.GenerateNotes(ctx, repo, tag, previousTag)
 	if err != nil {

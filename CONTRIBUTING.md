@@ -52,29 +52,11 @@ Zarf updates reset every package/flavor entry to `-uds.0` through Renovate.
 
 ## Releases
 
-The repository keeps one GitHub Release per Zarf version. The highest version in `releaser.yaml` is
-the next consolidated Git tag. Merging a new highest version validates Zarf values, then creates
-that tag and starts publication automatically. Only entries carrying the new version are published;
-older entries remain available under their existing OCI tags.
+Merging a new highest version in `releaser.yaml` publishes changed artifacts and creates or
+advances one GitHub Release for that Zarf version. See the [release process](./README.md#ci-and-release-behavior)
+for publication, signing, and release-note details.
 
-Each published artifact also receives a package/flavor Git tag for traceability and compatibility
-with `uds-pk`, but those tags do not create GitHub Release records. After every selected artifact
-succeeds, automation creates or advances the GitHub Release for that Zarf version to the newest tag.
-A rolling revision waits for its predecessor's Release before publishing artifacts; retry a failed
-predecessor before rerunning a waiting revision. Earlier Git and OCI tags never move. The Release
-inventory lists all package/flavor OCI references and each artifact's signing tag. Add upgrade
-guidance outside the generated changelog and inventory comment blocks; automation preserves text
-outside those blocks when regenerating the notes. The tag-specific Release URL changes when the
-Release advances. Existing releases through v0.88.0 are not migrated. The first new changelog uses
-the preceding Zarf version's final published release tag as its baseline. Automation maps
-conventional pull request titles to the release-note labels `enhancement`, `bug`, `documentation`,
-and `breaking-change`; Renovate pull requests appear under Dependencies regardless of title.
-Unmatched pull requests appear under Other Changes. A `!`
-in a non-Renovate conventional title places the pull request under Breaking Changes, but explicit
-upgrade guidance is still required because generated notes cannot infer migration details from a
-title. The newest Zarf version remains Latest even if an older release workflow finishes later.
-
-Release automation uses the Go helper in `cmd/update-github-release`. After changing it, run
+Release automation uses Go commands in `cmd/`. After changing them, run
 `uds run pre-commit-all` for formatting, linting, vetting, and tests. PR CI runs the same Go hooks.
 Renovate groups Go toolchain and hook updates with CI dependencies under the existing automerge
 policy. See [ADR 0005](./adr/0005-release-automation-language.md) for the toolchain decision.

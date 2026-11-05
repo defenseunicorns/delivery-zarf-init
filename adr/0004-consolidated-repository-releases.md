@@ -42,8 +42,8 @@ Release.
 - Regenerate categorized notes from the previous Zarf version's final release tag and append an
   inventory of every package/flavor OCI reference and its signing tag. Resolve repository paths
   from `release-registries.yaml` before passing the inventory to the GitHub Release helper. Replace
-  only marked generated sections so hand-written upgrade guidance remains intact. Accept a final
-  historical package release tag as the first changelog baseline when needed. Wait for a revision's
+  only marked generated sections so hand-written upgrade guidance remains intact. Require a prior
+  consolidated GitHub Release as the first changelog baseline. Wait for a revision's
   GitHub Release before publishing the next revision's artifacts, serialize Release record changes,
   and never let an older workflow move a Release backward or change Latest to an older Zarf version.
 - Protect release and artifact Git tags against update and deletion while allowing the release App
@@ -56,7 +56,7 @@ Release.
   changes require that flavor across all packages, package changes require all flavors of that
   package, registry routing changes require the complete matrix, and a Zarf source change requires
   the complete matrix at `-uds.0`.
-- Choose and maintain the GitHub Release helper's structured-language toolchain under
+- Choose and maintain the release automation toolchain under
   [ADR 0005](./0005-release-automation-language.md); release behavior does not depend on that choice.
 
 ## Consequences

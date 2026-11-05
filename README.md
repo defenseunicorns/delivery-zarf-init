@@ -30,9 +30,10 @@ Each package/flavor build has an entry in `releaser.yaml`. OCI tags use
 package/flavor inventory. It points to the highest successfully
 published `-uds.N` revision; earlier Git and OCI tags remain fixed.
 
-Verify each artifact against the signing tag in the GitHub Release inventory, not necessarily the
-Release's current tag. For example, an artifact published at `v0.89.0-uds.0` retains this identity
-when the Release advances to `v0.89.0-uds.1`:
+The GitHub Release record does not sign packages; the Git tag that triggers publication determines
+the certificate identity. Verify each artifact against the signing tag in the inventory, not
+necessarily the Release's current tag. For example, an artifact published at `v0.89.0-uds.0`
+retains this identity when the Release advances to `v0.89.0-uds.1`:
 
 ```yaml
 keylessVerification:
@@ -63,7 +64,8 @@ components/common/         shared component definitions and chart values
 flavors/                   flavor and architecture-specific image sources
 releaser.yaml              uds-pk versions for all package/flavor builds
 release-registries.yaml    publish repository for each flavor
-scripts/                   release readiness and metadata generation
+cmd/                       Go release readiness and GitHub Release commands
+scripts/                   Renovate checks, values schemas, release metadata
 tasks/                     init-specific create, deploy, test, and publish helpers
 tests/                     package-level fixtures
 .zarf-src/                 generated upstream Zarf package sources (gitignored)
@@ -134,16 +136,8 @@ group contains test fixtures, workflow actions, development tools, and repositor
 Renovate PRs stop before package tests until every flavor pin for a changed component is present at
 the same normalized version. Gitea chart-only updates also wait for the flavor images.
 
-Zarf updates also advance every package and flavor in `releaser.yaml`. Registry, Socat, and Gitea
-updates require an explicit `-uds.N` revision bump for the affected package/flavor entries unless
-they are included in a Zarf update that resets every entry to `-uds.0`.
-
-Run `uds run bump-release --set PACKAGE=<package> --set FLAVOR=<flavor>` to select artifacts for a
-package-only release. The task assigns one revision greater than the highest `-uds.N` for the current
-Zarf version. `all` may be used for either selector. Renovate resets all entries to `-uds.0` when it
-updates Zarf. Run the task only once for a release because running it again assigns another revision.
-If one change affects a package across all flavors and another affects a flavor across all packages,
-use `PACKAGE=all` and `FLAVOR=all`; the task may bump unaffected entries in this mixed-scope case.
+Zarf updates reset every `releaser.yaml` entry to `-uds.0`. For package-only bump commands and
+scope rules, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 When that change reaches `main`, automation validates Zarf values before creating one consolidated
 tag from the highest version in `releaser.yaml`. The tag evaluates the package/flavor matrix from
@@ -166,8 +160,8 @@ outside those blocks. A rolling revision waits for its predecessor's GitHub Rele
 artifact publication; if that predecessor fails, retry it before rerunning the waiting revision. An
 older retry cannot move the Release backward. When Zarf advances, the prior Release stays at its
 final revision and a new one begins. The Release URL changes with its associated tag, but earlier
-Git and OCI tags remain available. Existing releases through v0.88.0 are not migrated. The first
-new changelog starts from the preceding Zarf line's final published release tag. A failed release
+Git and OCI tags remain available. Pre-cutover releases stay unchanged. The first new changelog
+starts from the preceding Zarf line's final consolidated release tag. A failed release
 can be retried from its tagged workflow.
 
 Tag and release creation uses the `uds-release` GitHub Environment with the `APP_CLIENT_ID` variable

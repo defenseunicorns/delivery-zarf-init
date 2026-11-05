@@ -72,11 +72,11 @@ func setFixtureVersions(t *testing.T, dir, packageName, flavorName, version stri
 
 func checkReadiness(t *testing.T, dir string, wantSuccess bool, wantText string) {
 	t.Helper()
-	script, err := filepath.Abs(filepath.Join("..", "..", "scripts", "check-release-readiness.sh"))
+	source, err := filepath.Abs(filepath.Join("..", "check-release-readiness", "main.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	output, err := automationCommand(t, dir, nil, script, "HEAD")
+	output, err := automationCommand(t, dir, nil, "go", "run", source, "HEAD")
 	if (err == nil) != wantSuccess || !strings.Contains(output, wantText) {
 		t.Fatalf("readiness: success=%t, output=%q; want success=%t and %q", err == nil, output, wantSuccess, wantText)
 	}
@@ -96,6 +96,12 @@ func TestReleaseReadinessPackageAndFlavorScope(t *testing.T) {
 		checkReadiness(t, dir, false, "init-gitea/upstream changed artifact inputs")
 		setFixtureVersions(t, dir, "all", "upstream", "v0.88.0-uds.2")
 		checkReadiness(t, dir, true, "3 release entries are ready at v0.88.0-uds.2")
+	})
+	t.Run("unknown flavor", func(t *testing.T) {
+		dir := releaseFixture(t)
+		writeFixtureFile(t, dir, "flavors/new.yaml", "new\n")
+		mustAutomationCommand(t, dir, nil, "git", "add", "-N", "flavors/new.yaml")
+		checkReadiness(t, dir, false, "init-gitea/unicorn changed artifact inputs")
 	})
 }
 

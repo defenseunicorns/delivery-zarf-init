@@ -4,24 +4,21 @@ Date: 2026-11-05
 
 ## Status
 
-Accepted for the repository-local release helper. This record assigns toolchain ownership and
-documents the CI controls for normal repository review; it does not introduce a separate approval
-process. The branch implements the helper, but no release has been published through it.
+Accepted for repository-local release automation.
 
 ## Context
 
-The proposed rolling-release workflow needs a helper to compare versioned GitHub Releases,
-identify the final legacy baseline, generate and preserve release-note sections, inventory OCI
-artifacts, and create or advance one Release record after publication succeeds. An earlier draft
-implemented that helper in JavaScript through `actions/github-script` and added a separately pinned
-Node.js runtime for local tests and CI.
+The rolling-release workflow checks artifact changes against release versions and updates one
+GitHub Release after publication succeeds. The Release command selects the previous consolidated
+baseline, preserves generated notes, and inventories OCI artifacts. An earlier draft used
+`actions/github-script` and a separately pinned Node.js runtime for local tests and CI.
 
 This repository has shell and YAML automation, but no established Go or Python toolchain. The
 owning team reports a substantial, maintained Go ecosystem with vetted Zarf and UDS libraries,
 while its Python ecosystem and vetted-library set are lighter. Sibling infrastructure repositories
 owned by the team also use Go, including code that depends on Zarf libraries. That evidence makes
 team maintenance and potential library reuse material selection factors; it does not mean this
-helper needs a Zarf or UDS dependency today.
+automation needs a Zarf or UDS dependency today.
 
 Concretely, [Defense Unicorns `pkg`](https://github.com/defenseunicorns/pkg) publishes common Go
 modules for command execution, helpers, and OCI artifacts. [UDS CLI](https://github.com/defenseunicorns/uds-cli)
@@ -30,12 +27,8 @@ familiar to this ecosystem. They are not blanket-approved dependencies: UDS CLI 
 application, and importability, API stability, license compatibility, and transitive dependencies
 must be checked for any specific package before use.
 
-The Development Automation Best Practices guidance supports Go and Python for structured
-automation and requires explicit ownership when introducing a toolchain; this record names that
-owner. The helper runs in GitHub Actions and locally during tests. It is not shipped to package
-users or intended as a shared CLI. Its work is sequential GitHub API and JSON/text processing;
-package builds and workflow concurrency remain outside the helper. The workflow already uses `gh`
-and `yq` elsewhere.
+The commands run in GitHub Actions and local tests. They use Git, `yq`, and the GitHub API;
+package builds and workflow concurrency remain outside them.
 
 ## Decision Drivers
 
@@ -43,21 +36,16 @@ and `yq` elsewhere.
 | --- | --- | --- |
 | Team fit and ownership | Existing team ecosystem, review experience, and vetted libraries reduce maintenance risk. This repository still needs its own Go CI profile. | New repository toolchain with less team-wide library vetting and ownership experience. |
 | Task fit | Standard library covers JSON, text, subprocess, HTTP, and testing. More code is likely. | Standard library also fits; concise for API and text processing. |
-| Execution and portability | CI builds and runs the helper on the same Ubuntu runner with a pinned Go compiler; local contributors need a compatible Go toolchain. A future target-specific build can run without an installed Go toolchain. | The source can run on hosts with a compatible interpreter and reproducibly provisioned environment. A packaged application could change that distribution model. |
+| Execution and portability | CI builds and runs the commands on Ubuntu with a pinned Go compiler; local contributors need a compatible Go toolchain. A future target-specific build can run without an installed Go toolchain. | The source can run on hosts with a compatible interpreter and reproducibly provisioned environment. A packaged application could change that distribution model. |
 | Dependencies and security | Start with standard library and existing `gh`/`yq`. Adopt a shared Zarf/UDS module only if it replaces meaningful custom logic and passes normal dependency review. | Standard-library runtime is also possible, but a Python profile adds uv and its lint/type/test tools to the team's maintenance set. |
 | Longevity | Aligns future release or package metadata work with the team's maintained ecosystem. | Lower initial implementation effort, but creates a less-established support path for durable release automation. |
 | Concurrency and performance | No decisive advantage: workflow serialization, not language concurrency, preserves release ordering. | Adequate for a few paginated API calls. |
 
-The decisive factor is maintained organizational fit, not a claim that Go is inherently more secure
-than Python. Both can meet the same correctness and supply-chain controls. Python's shorter
-implementation does not outweigh the team's established Go review, tooling, and dependency
-practices for long-lived release automation. Go's potential binary portability is not a deciding
-benefit for this repository-local helper: CI builds it where it runs, and local tests still require
-Go. A Go binary is specific to a target operating system and architecture, not universal. If the
-helper later runs on other hosts or in a minimal image, build and test each supported target;
-check whether cgo or system-library dependencies affect execution. Python is also portable at the
-source level, but each target needs a compatible interpreter and environment unless the tool is
-packaged differently. Review the Go choice against the actual implementation's size and dependencies.
+Team ownership, not inherent language security or binary portability, decides this choice. Python
+would be shorter, but needs a less-established team toolchain. CI builds Go where it runs; local
+tests still require Go. If distributed later, each OS/architecture needs a tested binary, with cgo
+and system-library constraints checked. Python source likewise needs a compatible interpreter and
+environment on each target. Revisit the choice if implementation size outweighs the team fit.
 
 Keeping JavaScript would retain the ready-made Octokit client but also retain a separate Node.js
 source/test toolchain outside the repository's Go/Python guidance. Extending Bash would put
@@ -66,17 +54,17 @@ Neither alternative reduces the long-term ownership burden enough to justify it 
 
 ## Decision
 
-Adopt Go as this repository's first maintained structured-language toolchain, initially for the
-repository-local GitHub Release helper. Keep UDS task actions in POSIX `sh`, short CI glue in Bash,
+Adopt Go as this repository's first maintained structured-language toolchain for release readiness
+and GitHub Release updates. Keep UDS task actions in POSIX `sh`, short CI glue in Bash,
 and package-building tools unchanged. This is not a mandate to rewrite existing shell or a ban on
 Python when a future task has a stronger Python-specific fit.
 
-Use Go's standard library for release-state logic and authenticated GitHub HTTP calls. This avoids
-adding a Go library or depending on the runner's `gh` version for release-record updates. Validate
-tag names, API responses, and release-note markers before mutation; propagate API and authentication
-errors; never print tokens. Provide the GitHub App token through `GH_TOKEN`. The helper must only
-mutate the intended GitHub Release record; Git and OCI tags remain immutable. Preserve behavioral
-coverage for legacy baselines, notes, ordering, Latest, and retry/failure cases.
+Use Go's standard library for readiness policy, release-state logic, and authenticated GitHub HTTP
+calls. This avoids adding a Go library or depending on the runner's `gh` version for release-record
+updates. Validate tag names, API responses, and release-note markers before mutation; propagate API
+and authentication errors; never print tokens. Provide the GitHub App token through `GH_TOKEN`.
+The Release command must only mutate the intended GitHub Release record; Git and OCI tags remain
+immutable. Test baselines, notes, ordering, Latest, and retry/failure cases.
 
 The repository's Go profile for this toolchain is:
 
@@ -95,37 +83,22 @@ The repository's Go profile for this toolchain is:
   dependencies in the PR. Do not add dependencies merely to justify the language choice. For
   disconnected CI, pre-provision or vendor modules, or use an internally controlled mirror.
 - Quality: expose tests through `uds run test-release-automation`; run `gofmt`, `go test ./...`,
-  and the repository-standard `golangci-lint` configuration. Unit tests must use a fake API
-  transport or command runner and must not require GitHub credentials. Keep the compiler pin
+  and the repository-standard `golangci-lint` configuration. Test GitHub calls with fakes and
+  readiness against temporary Git fixtures; tests must not require GitHub credentials. Keep the compiler pin
   current through Renovate and review Go security advisories when it updates. Do not make
-  `govulncheck` a required CI gate while this undistributed helper has no third-party Go modules;
-  reconsider if dependencies are added or the helper is distributed.
+  `govulncheck` a required CI gate while these undistributed commands have no third-party Go modules;
+  reconsider if dependencies are added or the commands are distributed.
 - Distribution: build and execute repository-local source on the same CI runner; do not publish a
-  binary solely for this helper. If it becomes a shared tool, follow the guidance's Section 3:
+  binary solely for these commands. If they become shared tools, follow the guidance's Section 3:
   publish precompiled, versioned binaries for each supported OS/architecture with verification,
   provenance, and appropriate SBOMs, and make disconnected availability explicit. Do not require
   target hosts to install Go or assume that one binary works on every target.
-
-The helper uses only the Go standard library. Official `golangci-lint` pre-commit hooks at the
-signed [`v2.15.0` release](https://github.com/golangci/golangci-lint/releases/tag/v2.15.0) provide
-formatting, full linting, and configuration validation locally and in PR CI. Renovate groups hook
-updates with CI dependencies.
-Zarf and UDS Registry use `govulncheck`, so that vetted scanner is available if this helper later
-needs dependency scanning. An ad hoc `govulncheck ./...` scan of the current helper found no
-vulnerabilities, but the live database result is not a substitute for keeping the compiler current.
 
 ## Consequences
 
 - Go becomes a maintained repository toolchain with an explicit owner and recurring update cost.
   Its stronger team fit should make security review and future maintenance easier, but does not
   replace dependency review or secure API handling.
-- The CI release job must build the helper with a pinned compiler. After migration it no longer
-  needs `actions/github-script` for release updates. The PR-label workflow's separate use of that
-  action is outside this decision and needs no repository Node.js test runtime.
-- The helper may be longer than a Python version. Keep its API boundary and tests direct; avoid a
-  CLI framework or Zarf/UDS imports unless they simplify real requirements.
-- Go does not remove the local development toolchain requirement. Its runtime and cross-compilation
-  advantages become material only if this helper is distributed beyond the repository.
 - Reconsider Python if this work becomes predominantly Python-native data processing, or if the
   owning team's maintained ecosystem changes. Document any new CI download and use an internal
   source when the execution environment requires one.

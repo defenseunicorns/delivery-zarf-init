@@ -35,19 +35,6 @@ func testAPI(t *testing.T, handler http.HandlerFunc) *githubAPI {
 	return api
 }
 
-func TestGitHubAPIGetTag(t *testing.T) {
-	api := testAPI(t, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodGet ||
-			request.URL.Path != "/repos/defenseunicorns/delivery-zarf-init/git/ref/tags/v0.89.0-uds.0" {
-			t.Errorf("unexpected tag request: %s %s", request.Method, request.URL)
-			writer.WriteHeader(http.StatusNotFound)
-		}
-	}))
-	if err := api.GetTag(context.Background(), testRepo, "v0.89.0-uds.0"); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestGitHubAPIListReleasesPagination(t *testing.T) {
 	var pages int
 	api := testAPI(t, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -179,7 +166,7 @@ func TestGitHubAPIFailsClosed(t *testing.T) {
 			t.Error(err)
 		}
 	}))
-	err := api.GetTag(context.Background(), testRepo, "v0.89.0-uds.0")
+	_, err := api.ListReleases(context.Background(), testRepo)
 	if err == nil || !strings.Contains(err.Error(), "403") || !strings.Contains(err.Error(), "permission denied") ||
 		strings.Contains(err.Error(), "test-token") {
 		t.Fatalf("incorrect API error: %v", err)
