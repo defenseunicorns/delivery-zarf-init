@@ -26,8 +26,8 @@ The `unicorn` packages publish beneath
 - `unicorn` uses Defense Unicorns Chainguard FIPS images.
 
 Each package/flavor build has an entry in `releaser.yaml`. OCI tags use
-`<zarf-version>-uds.<revision>-<flavor>`. Starting with Zarf v0.89.0, one GitHub Release per Zarf
-version records the complete package/flavor inventory. It points to the highest successfully
+`<zarf-version>-uds.<revision>-<flavor>`. One GitHub Release per Zarf version records the complete
+package/flavor inventory. It points to the highest successfully
 published `-uds.N` revision; earlier Git and OCI tags remain fixed.
 
 Verify each artifact against the signing tag in the GitHub Release inventory, not necessarily the
@@ -62,6 +62,8 @@ components/zarf.yaml       flavor-specific component composition
 components/common/         shared component definitions and chart values
 flavors/                   flavor and architecture-specific image sources
 releaser.yaml              uds-pk versions for all package/flavor builds
+release-registries.yaml    publish repository for each flavor
+scripts/                   release readiness and metadata generation
 tasks/                     init-specific create, deploy, test, and publish helpers
 tests/                     package-level fixtures
 .zarf-src/                 generated upstream Zarf package sources (gitignored)
@@ -87,7 +89,7 @@ uds run pre-commit-all                       # run repository checks
 ```
 
 `test-release-automation` runs `gofmt`, `go vet`, and `go test`, including fixture tests for release
-readiness, version bumps, and tag routing. It uses a compatible local Go toolchain.
+readiness, version bumps, and release metadata. It uses a compatible local Go toolchain.
 `pre-commit-all` adds `golangci-lint` formatting and linting. PR CI runs the hooks across all files
 with the toolchain pinned in `go.mod`. Renovate tracks Go and lint-tool updates with CI dependencies.
 See [ADR 0005](./adr/0005-release-automation-language.md) for the toolchain decision.
@@ -144,8 +146,8 @@ If one change affects a package across all flavors and another affects a flavor 
 use `PACKAGE=all` and `FLAVOR=all`; the task may bump unaffected entries in this mixed-scope case.
 
 When that change reaches `main`, automation validates Zarf values before creating one consolidated
-tag from the highest version in `releaser.yaml`. The tag evaluates the complete package/flavor
-matrix and publishes entries at the new release version; entries still on earlier revisions remain
+tag from the highest version in `releaser.yaml`. The tag evaluates the package/flavor matrix from
+that file and publishes entries at the new release version; entries still on earlier revisions remain
 available under their existing OCI tags. Before building, ORAS checks
 the selected OCI tag for both Zarf platforms (`multi/amd64` and `multi/arm64`); a complete artifact
 is skipped, while a missing tag or architecture is published. Registry or authentication errors
@@ -153,6 +155,8 @@ fail the check instead of causing an existing artifact to be overwritten. An inc
 repaired on retry, but does not enter a GitHub Release until both architectures pass verification.
 New artifacts are tested, keyless-signed, and verified against the tag that published them.
 Successful artifacts receive package/flavor Git tags, but not separate GitHub Releases.
+`release-registries.yaml` supplies the publish repository for each flavor and the release inventory's
+OCI references. Changing that routing requires a release bump for every package/flavor entry.
 
 After every selected artifact succeeds, the workflow creates or advances the GitHub Release for
 that Zarf version. It regenerates categorized notes from the previous Zarf version's final release
@@ -162,12 +166,9 @@ outside those blocks. A rolling revision waits for its predecessor's GitHub Rele
 artifact publication; if that predecessor fails, retry it before rerunning the waiting revision. An
 older retry cannot move the Release backward. When Zarf advances, the prior Release stays at its
 final revision and a new one begins. The Release URL changes with its associated tag, but earlier
-Git and OCI tags remain available. Existing releases through v0.88.0 are not migrated. If another
-pre-v0.89.0 revision is merged, the legacy `uds-pk` path creates package/flavor tags and Releases.
-Those tags trigger artifact publication, but not a new consolidated Release. The first rolling
-changelog starts from that line's final published release tag. A failed rolling release can be
-retried from its tagged
-workflow.
+Git and OCI tags remain available. Existing releases through v0.88.0 are not migrated. The first
+new changelog starts from the preceding Zarf line's final published release tag. A failed release
+can be retried from its tagged workflow.
 
 Tag and release creation uses the `uds-release` GitHub Environment with the `APP_CLIENT_ID` variable
 and `APP_PRIVATE_KEY` secret for the protected release GitHub App. Repository rulesets must allow

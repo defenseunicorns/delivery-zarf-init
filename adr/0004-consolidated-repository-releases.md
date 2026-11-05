@@ -29,23 +29,23 @@ Release.
   Renovate.
 - Use the highest version declared in `releaser.yaml` as the consolidated repository release
   version. A push to `main` creates that Git tag when it does not already exist.
-- Trigger one release workflow from the consolidated tag. Evaluate the complete package/flavor
-  matrix, but publish only entries whose version equals the consolidated release version.
+- Trigger one release workflow from the consolidated tag. Derive its package/flavor matrix from
+  `releaser.yaml`, but publish only entries whose version equals the consolidated release version.
 - Before publishing, inspect each selected OCI tag. Skip an artifact that already contains both
   supported architectures and publish when the tag or an architecture is missing. Fail on registry
   or authentication errors rather than treating them as an unpublished artifact.
 - Create a package/flavor Git tag for every selected artifact for traceability and compatibility
   with existing tooling. Do not create package- or flavor-specific GitHub Releases.
-- Starting with Zarf v0.89.0, keep one GitHub Release per Zarf version. After every selected artifact
-  succeeds, create the Release for `-uds.0` or advance the same Release record to the newest `-uds.N`
-  tag. Keep every earlier Git and OCI tag fixed. Do not migrate the existing 85–88 releases. Route
-  any additional pre-v0.89.0 revisions through the legacy package/flavor release workflow.
+- Keep one GitHub Release per Zarf version. After every selected artifact succeeds, create the
+  Release for `-uds.0` or advance the same Release record to the newest `-uds.N` tag. Keep every
+  earlier Git and OCI tag fixed. Do not migrate the existing 85–88 releases.
 - Regenerate categorized notes from the previous Zarf version's final release tag and append an
-  inventory of every package/flavor OCI reference and its signing tag. Replace only marked generated
-  sections so hand-written upgrade guidance remains intact. Accept the final legacy package release
-  tag as the first rolling changelog baseline. Wait for a revision's GitHub Release before publishing
-  the next revision's artifacts, serialize Release record changes, and never let an older workflow
-  move a Release backward or change Latest to an older Zarf version.
+  inventory of every package/flavor OCI reference and its signing tag. Resolve repository paths
+  from `release-registries.yaml` before passing the inventory to the GitHub Release helper. Replace
+  only marked generated sections so hand-written upgrade guidance remains intact. Accept a final
+  historical package release tag as the first changelog baseline when needed. Wait for a revision's
+  GitHub Release before publishing the next revision's artifacts, serialize Release record changes,
+  and never let an older workflow move a Release backward or change Latest to an older Zarf version.
 - Protect release and artifact Git tags against update and deletion while allowing the release App
   to create tags. Keep GitHub Release immutability disabled so the Release record can be reassociated.
 - Map conventional pull request titles to release-note labels. Renovate pull requests use the
@@ -54,7 +54,8 @@ Release.
 - Validate Zarf values before creating the consolidated tag. Check release readiness in pull
   request CI. Shared component and package build task changes require the complete matrix, flavor
   changes require that flavor across all packages, package changes require all flavors of that
-  package, and a Zarf source change requires the complete matrix at `-uds.0`.
+  package, registry routing changes require the complete matrix, and a Zarf source change requires
+  the complete matrix at `-uds.0`.
 - Choose and maintain the GitHub Release helper's structured-language toolchain under
   [ADR 0005](./0005-release-automation-language.md); release behavior does not depend on that choice.
 

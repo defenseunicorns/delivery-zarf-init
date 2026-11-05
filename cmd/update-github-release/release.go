@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
@@ -23,23 +24,20 @@ const (
 var (
 	tagPattern  = regexp.MustCompile(`^v([0-9]+)\.([0-9]+)\.([0-9]+)-uds\.([0-9]+)$`)
 	namePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
-	rollingFrom = version{0, 89, 0, 0}
 )
 
 type version [4]int
 
-type releaser struct {
-	Packages []releasePackage `json:"packages"`
+type releaseInventory struct {
+	Artifacts []releaseArtifact `json:"artifacts"`
 }
 
-type releasePackage struct {
-	Name    string          `json:"name"`
-	Flavors []releaseFlavor `json:"flavors"`
-}
-
-type releaseFlavor struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
+type releaseArtifact struct {
+	Package    string `json:"package"`
+	Flavor     string `json:"flavor"`
+	Version    string `json:"version"`
+	OCIRef     string `json:"ociRef"`
+	SigningTag string `json:"signingTag"`
 }
 
 type githubRelease struct {
@@ -83,14 +81,12 @@ func parseTag(tag string) (version, bool) {
 	return parsed, true
 }
 
-func parseLegacyTag(tag string, config releaser) (version, bool) {
-	for _, pkg := range config.Packages {
-		for _, flavor := range pkg.Flavors {
-			prefix, suffix := pkg.Name+"-", "-"+flavor.Name
-			if strings.HasPrefix(tag, prefix) && strings.HasSuffix(tag, suffix) {
-				if parsed, valid := parseTag(strings.TrimSuffix(strings.TrimPrefix(tag, prefix), suffix)); valid {
-					return parsed, true
-				}
+func parseLegacyTag(tag string, inventory releaseInventory) (version, bool) {
+	for _, artifact := range inventory.Artifacts {
+		prefix, suffix := artifact.Package+"-", "-"+artifact.Flavor
+		if strings.HasPrefix(tag, prefix) && strings.HasSuffix(tag, suffix) {
+			if parsed, valid := parseTag(strings.TrimSuffix(strings.TrimPrefix(tag, prefix), suffix)); valid {
+				return parsed, true
 			}
 		}
 	}
@@ -129,38 +125,36 @@ func renderBody(existing, changelog, inventory string) (string, error) {
 	return replaceBlock(updated, inventoryStart, inventoryEnd, inventory)
 }
 
-func renderInventory(config releaser, tag string) (string, error) {
+func renderInventory(inventory releaseInventory, tag string) (string, error) {
 	current, ok := parseTag(tag)
 	if !ok {
 		return "", fmt.Errorf("invalid consolidated release tag: %s", tag)
 	}
 	rows := []string{"## Package inventory", "", "| Package | Flavor | OCI artifact | Signing tag |", "| --- | --- | --- | --- |"}
-	if len(config.Packages) == 0 {
-		return "", fmt.Errorf("releaser has no packages")
+	if len(inventory.Artifacts) == 0 {
+		return "", fmt.Errorf("release inventory has no artifacts")
 	}
 	seen := make(map[string]bool)
-	for _, pkg := range config.Packages {
-		if !namePattern.MatchString(pkg.Name) || len(pkg.Flavors) == 0 {
-			return "", fmt.Errorf("invalid package or empty flavors: %q", pkg.Name)
+	for _, artifact := range inventory.Artifacts {
+		key := artifact.Package + "/" + artifact.Flavor
+		if !namePattern.MatchString(artifact.Package) || !namePattern.MatchString(artifact.Flavor) || seen[key] {
+			return "", fmt.Errorf("invalid or duplicate package/flavor: %s", key)
 		}
-		for _, flavor := range pkg.Flavors {
-			key := pkg.Name + "/" + flavor.Name
-			if !namePattern.MatchString(flavor.Name) || seen[key] {
-				return "", fmt.Errorf("invalid or duplicate package/flavor: %s", key)
-			}
-			seen[key] = true
-			artifactVersion, valid := parseTag(flavor.Version)
-			if !valid || compareVersions(artifactVersion, current, 3) != 0 ||
-				compareVersions(artifactVersion, current, 4) > 0 {
-				return "", fmt.Errorf("%s has invalid release version %q", key, flavor.Version)
-			}
-			registry := "ghcr.io/defenseunicorns/delivery-zarf-init"
-			if flavor.Name == "unicorn" {
-				registry = "ghcr.io/defenseunicorns/packages/private/delivery-zarf-init"
-			}
-			rows = append(rows, fmt.Sprintf("| `%s` | `%s` | `oci://%s/%s:%s-%s` | `%s` |",
-				pkg.Name, flavor.Name, registry, pkg.Name, flavor.Version, flavor.Name, flavor.Version))
+		seen[key] = true
+		artifactVersion, valid := parseTag(artifact.Version)
+		if !valid || compareVersions(artifactVersion, current, 3) != 0 ||
+			compareVersions(artifactVersion, current, 4) > 0 {
+			return "", fmt.Errorf("%s has invalid release version %q", key, artifact.Version)
 		}
+		ref, err := url.Parse(artifact.OCIRef)
+		if err != nil || ref.Scheme != "oci" || ref.Host == "" || ref.Path == "" ||
+			!strings.HasSuffix(artifact.OCIRef, ":"+artifact.Version+"-"+artifact.Flavor) ||
+			strings.ContainsAny(artifact.OCIRef, " `|\r\n\t") ||
+			artifact.SigningTag == "" || strings.ContainsAny(artifact.SigningTag, " `|\r\n\t") {
+			return "", fmt.Errorf("%s has invalid OCI reference or signing tag", key)
+		}
+		rows = append(rows, fmt.Sprintf("| `%s` | `%s` | `%s` | `%s` |",
+			artifact.Package, artifact.Flavor, artifact.OCIRef, artifact.SigningTag))
 	}
 	return strings.Join(rows, "\n"), nil
 }
@@ -180,13 +174,10 @@ func releaseTime(release githubRelease) time.Time {
 	return parsed
 }
 
-func updateRelease(ctx context.Context, client releaseClient, repo, tag string, config releaser) (string, error) {
+func updateRelease(ctx context.Context, client releaseClient, repo, tag string, inventory releaseInventory) (string, error) {
 	current, ok := parseTag(tag)
 	if !ok {
 		return "", fmt.Errorf("invalid consolidated release tag: %s", tag)
-	}
-	if compareVersions(current, rollingFrom, 3) < 0 {
-		return "", fmt.Errorf("rolling GitHub Releases start at v0.89.0: %s", tag)
 	}
 	if err := client.GetTag(ctx, repo, tag); err != nil {
 		return "", fmt.Errorf("verify tag %s: %w", tag, err)
@@ -214,7 +205,7 @@ func updateRelease(ctx context.Context, client releaseClient, repo, tag string, 
 				previous = append(previous, entry)
 			}
 		} else {
-			if parsed, valid := parseLegacyTag(release.TagName, config); valid && !release.Draft &&
+			if parsed, valid := parseLegacyTag(release.TagName, inventory); valid && !release.Draft &&
 				compareVersions(parsed, current, 3) < 0 {
 				previous = append(previous, candidate{release: release, version: parsed})
 			}
@@ -263,7 +254,7 @@ func updateRelease(ctx context.Context, client releaseClient, repo, tag string, 
 	if err != nil {
 		return "", fmt.Errorf("generate release notes: %w", err)
 	}
-	inventory, err := renderInventory(config, tag)
+	inventoryBody, err := renderInventory(inventory, tag)
 	if err != nil {
 		return "", err
 	}
@@ -271,7 +262,7 @@ func updateRelease(ctx context.Context, client releaseClient, repo, tag string, 
 	if existing != nil {
 		oldBody = existing.Body
 	}
-	body, err := renderBody(oldBody, changelog, inventory)
+	body, err := renderBody(oldBody, changelog, inventoryBody)
 	if err != nil {
 		return "", err
 	}

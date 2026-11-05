@@ -24,10 +24,10 @@ append_unique() {
   esac
 }
 
-for path in $(git diff --name-only "$base_ref" -- components flavors packages tasks/package.yaml); do
+for path in $(git diff --name-only "$base_ref" -- components flavors packages tasks/package.yaml release-registries.yaml); do
   artifact_changed=true
   case "$path" in
-    components/*|tasks/package.yaml) require_all=true ;;
+    components/*|tasks/package.yaml|release-registries.yaml) require_all=true ;;
     flavors/upstream.yaml) required_flavors=$(append_unique "$required_flavors" upstream) ;;
     flavors/registry1*.yaml) required_flavors=$(append_unique "$required_flavors" registry1) ;;
     flavors/unicorn.yaml) required_flavors=$(append_unique "$required_flavors" unicorn) ;;

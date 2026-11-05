@@ -1,0 +1,7 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+registries:
+  upstream: ghcr.io/defenseunicorns/delivery-zarf-init
+  registry1: ghcr.io/defenseunicorns/delivery-zarf-init
+  unicorn: ghcr.io/defenseunicorns/packages/private/delivery-zarf-init

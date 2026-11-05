@@ -62,25 +62,31 @@ func (fake *fakeClient) UpdateRelease(_ context.Context, _ string, id int64, req
 	return fake.updateErr
 }
 
-func fixture(version, unicornVersion string) releaser {
-	config := releaser{}
+func fixture(version, unicornVersion string) releaseInventory {
+	inventory := releaseInventory{}
 	for _, name := range []string{"init", "init-agent-only", "init-gitea"} {
-		pkg := releasePackage{Name: name}
 		for _, flavorName := range []string{"upstream", "registry1", "unicorn"} {
 			artifactVersion := version
 			if flavorName == "unicorn" && unicornVersion != "" {
 				artifactVersion = unicornVersion
 			}
-			pkg.Flavors = append(pkg.Flavors, releaseFlavor{Name: flavorName, Version: artifactVersion})
+			registry := "ghcr.io/defenseunicorns/delivery-zarf-init"
+			if flavorName == "unicorn" {
+				registry = "ghcr.io/defenseunicorns/packages/private/delivery-zarf-init"
+			}
+			inventory.Artifacts = append(inventory.Artifacts, releaseArtifact{
+				Package: name, Flavor: flavorName, Version: artifactVersion,
+				OCIRef:     "oci://" + registry + "/" + name + ":" + artifactVersion + "-" + flavorName,
+				SigningTag: artifactVersion,
+			})
 		}
-		config.Packages = append(config.Packages, pkg)
 	}
-	return config
+	return inventory
 }
 
-func publish(t *testing.T, fake *fakeClient, tag string, config releaser) string {
+func publish(t *testing.T, fake *fakeClient, tag string, inventory releaseInventory) string {
 	t.Helper()
-	message, err := updateRelease(context.Background(), fake, testRepo, tag, config)
+	message, err := updateRelease(context.Background(), fake, testRepo, tag, inventory)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,11 +286,11 @@ func TestRollingRevisionsMustPublishInOrder(t *testing.T) {
 	}
 }
 
-func TestHistoricalTagsAreNotHandledByRollingHelper(t *testing.T) {
-	fake := &fakeClient{}
-	_, err := updateRelease(context.Background(), fake, testRepo, "v0.88.0-uds.2", fixture("v0.88.0-uds.2", ""))
-	if err == nil || !strings.Contains(err.Error(), "start at v0.89.0") || fake.tagCalls != 0 {
-		t.Fatalf("historical tag reached GitHub API: %v", err)
+func TestEarlierVersionHasNoSpecialCutoff(t *testing.T) {
+	fake := &fakeClient{releases: []githubRelease{{ID: 8, TagName: "v0.87.0-uds.2"}}}
+	publish(t, fake, "v0.88.0-uds.0", fixture("v0.88.0-uds.0", ""))
+	if len(fake.creates) != 1 || fake.notes[0].previous != "v0.87.0-uds.2" {
+		t.Fatalf("earlier release line was rejected: %+v", fake)
 	}
 }
 
@@ -297,6 +303,23 @@ func TestMalformedNotesAndVersionsFailClosed(t *testing.T) {
 	}
 	if _, err := renderInventory(fixture("v0.89.0-uds.0", ""), "v0.89.0-uds.0"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestInventoryUsesExplicitArtifactMetadata(t *testing.T) {
+	inventory := fixture("v0.89.0-uds.0", "")
+	inventory.Artifacts[0].OCIRef = "oci://registry.example/packages/init:v0.89.0-uds.0-upstream"
+	inventory.Artifacts[0].SigningTag = "init-v0.89.0-uds.0-upstream"
+	body, err := renderInventory(inventory, "v0.89.0-uds.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(body, "| `init` | `upstream` | `oci://registry.example/packages/init:v0.89.0-uds.0-upstream` | `init-v0.89.0-uds.0-upstream` |") {
+		t.Fatalf("explicit artifact metadata was ignored: %s", body)
+	}
+	inventory.Artifacts[0].OCIRef = "oci:///init:v0.89.0-uds.0-upstream"
+	if _, err := renderInventory(inventory, "v0.89.0-uds.0"); err == nil {
+		t.Fatal("accepted OCI reference without a registry")
 	}
 }
 

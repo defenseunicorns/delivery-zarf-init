@@ -4,9 +4,11 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -43,7 +45,7 @@ func writeFixtureFile(t *testing.T, dir, path, contents string) {
 func releaseFixture(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	for _, path := range []string{"tasks.yaml", "releaser.yaml"} {
+	for _, path := range []string{"tasks.yaml", "releaser.yaml", "release-registries.yaml"} {
 		contents, err := os.ReadFile(filepath.Join("..", "..", path))
 		if err != nil {
 			t.Fatal(err)
@@ -107,6 +109,14 @@ func TestReleaseReadinessSharedBuildAndRevision(t *testing.T) {
 	checkReadiness(t, dir, true, "9 release entries are ready at v0.88.0-uds.2")
 }
 
+func TestReleaseReadinessRegistryRouting(t *testing.T) {
+	dir := releaseFixture(t)
+	mustAutomationCommand(t, dir, nil, "yq", "-i", `.registries.unicorn = "ghcr.io/example/private"`, "release-registries.yaml")
+	checkReadiness(t, dir, false, "init-agent-only/registry1 changed artifact inputs")
+	setFixtureVersions(t, dir, "all", "all", "v0.88.0-uds.2")
+	checkReadiness(t, dir, true, "9 release entries are ready at v0.88.0-uds.2")
+}
+
 func TestReleaseReadinessZarfReset(t *testing.T) {
 	dir := releaseFixture(t)
 	mustAutomationCommand(t, dir, nil, "yq", "-i", `(.variables[] | select(.name == "ZARF_SOURCE_VERSION") | .default) = "v0.89.0"`, "tasks.yaml")
@@ -134,40 +144,84 @@ func TestBumpReleaseTask(t *testing.T) {
 	}
 }
 
-func TestReleaseTagRouting(t *testing.T) {
+func TestReleaseMetadata(t *testing.T) {
+	dir := releaseFixture(t)
+	script, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release-metadata.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	matrixOutput := mustAutomationCommand(t, dir, nil, "sh", script, "matrix")
+	var matrix struct {
+		Include []struct {
+			Package string `json:"package"`
+			Flavor  string `json:"flavor"`
+		} `json:"include"`
+	}
+	if err := json.Unmarshal([]byte(matrixOutput), &matrix); err != nil {
+		t.Fatal(err)
+	}
+	wantMatrix := []string{
+		"init/upstream", "init/registry1", "init/unicorn",
+		"init-agent-only/upstream", "init-agent-only/registry1", "init-agent-only/unicorn",
+		"init-gitea/upstream", "init-gitea/registry1", "init-gitea/unicorn",
+	}
+	var gotMatrix []string
+	for _, entry := range matrix.Include {
+		gotMatrix = append(gotMatrix, entry.Package+"/"+entry.Flavor)
+	}
+	if !reflect.DeepEqual(gotMatrix, wantMatrix) {
+		t.Fatalf("publish matrix = %v, want %v", gotMatrix, wantMatrix)
+	}
+
+	inventoryOutput := mustAutomationCommand(t, dir, nil, "sh", script, "inventory")
+	var inventory releaseInventory
+	if err := json.Unmarshal([]byte(inventoryOutput), &inventory); err != nil {
+		t.Fatal(err)
+	}
+	if len(inventory.Artifacts) != 9 {
+		t.Fatalf("wrong artifact count: %d", len(inventory.Artifacts))
+	}
+	if inventory.Artifacts[0].OCIRef != "oci://ghcr.io/defenseunicorns/delivery-zarf-init/init:v0.88.0-uds.0-upstream" ||
+		inventory.Artifacts[2].OCIRef != "oci://ghcr.io/defenseunicorns/packages/private/delivery-zarf-init/init:v0.88.0-uds.1-unicorn" ||
+		inventory.Artifacts[2].SigningTag != "v0.88.0-uds.1" {
+		t.Fatalf("wrong OCI routing or signing identity: %+v", inventory.Artifacts[:3])
+	}
+	if _, err := renderInventory(inventory, "v0.88.0-uds.1"); err != nil {
+		t.Fatal(err)
+	}
+	mustAutomationCommand(t, dir, nil, "yq", "-i", `del(.registries.unicorn)`, "release-registries.yaml")
+	missingOutput, err := automationCommand(t, dir, nil, "sh", script, "inventory")
+	if err == nil || !strings.Contains(missingOutput, "no publish repository configured for unicorn") {
+		t.Fatalf("missing registry was accepted: err=%v output=%q", err, missingOutput)
+	}
+}
+
+func TestReleaseTagValidation(t *testing.T) {
 	project, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
 		t.Fatal(err)
 	}
-	script := mustAutomationCommand(t, project, nil, "yq", "-r", `.jobs.validate.steps[] | select(.id == "tag") | .run`, ".github/workflows/release.yaml")
+	script := mustAutomationCommand(t, project, nil, "yq", "-r", `.jobs.validate.steps[] | select(.name == "Validate release tag") | .run`, ".github/workflows/release.yaml")
 	for _, tc := range []struct {
-		name, tag, version, want string
+		name, tag, want string
+		valid           bool
 	}{
-		{"legacy artifact", "init-v0.88.0-uds.1-unicorn", "", "rolling=false\nskip=false\n"},
-		{"rolling artifact", "init-v0.89.0-uds.0-unicorn", "v0.89.0-uds.0", "rolling=false\nskip=true\n"},
-		{"consolidated", "v0.89.0-uds.0", "v0.89.0-uds.0", "rolling=true\nskip=false\n"},
+		{"current", "v0.88.0-uds.1", "", true},
+		{"artifact", "init-v0.88.0-uds.1-unicorn", "invalid consolidated release tag", false},
+		{"future", "v0.89.0-uds.0", "does not match consolidated release version", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := releaseFixture(t)
-			if tc.version != "" {
-				setFixtureVersions(t, dir, "all", "all", tc.version)
-			}
-			outputFile := filepath.Join(t.TempDir(), "output")
 			scriptFile := filepath.Join(t.TempDir(), "validate.sh")
 			writeFixtureFile(t, filepath.Dir(scriptFile), filepath.Base(scriptFile), script)
-			env := []string{"GITHUB_REF_NAME=" + tc.tag, "GITHUB_OUTPUT=" + outputFile}
-			mustAutomationCommand(t, dir, env, "bash", scriptFile)
-			output, err := os.ReadFile(outputFile)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if string(output) != tc.want {
-				t.Fatalf("tag outputs = %q, want %q", output, tc.want)
+			output, err := automationCommand(t, dir, []string{"GITHUB_REF_NAME=" + tc.tag}, "bash", scriptFile)
+			if (err == nil) != tc.valid || !strings.Contains(output, tc.want) {
+				t.Fatalf("validation: success=%t, output=%q; want success=%t and %q", err == nil, output, tc.valid, tc.want)
 			}
 		})
 	}
-	gates := mustAutomationCommand(t, project, nil, "yq", "-r", `[.jobs.values.needs, .jobs.values.if, .jobs.publish.if] | join("|")`, ".github/workflows/release.yaml")
-	if strings.TrimSpace(gates) != "validate|needs.validate.outputs.skip != 'true'|needs.validate.outputs.skip != 'true'" {
-		t.Fatalf("artifact-tag job gates = %q", gates)
+	triggers := mustAutomationCommand(t, project, nil, "yq", "-r", `.on.push.tags[]`, ".github/workflows/release.yaml")
+	if strings.TrimSpace(triggers) != "v*.*.*-uds.*" {
+		t.Fatalf("unexpected release tag triggers: %q", triggers)
 	}
 }

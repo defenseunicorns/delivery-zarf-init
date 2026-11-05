@@ -33,11 +33,11 @@ func run(ctx context.Context, input io.Reader, output io.Writer, repo, tag strin
 	if token == "" {
 		return fmt.Errorf("GH_TOKEN is required")
 	}
-	var config releaser
-	if err := json.NewDecoder(io.LimitReader(input, 1<<20)).Decode(&config); err != nil {
-		return fmt.Errorf("decode releaser config: %w", err)
+	var inventory releaseInventory
+	if err := json.NewDecoder(io.LimitReader(input, 1<<20)).Decode(&inventory); err != nil {
+		return fmt.Errorf("decode release inventory: %w", err)
 	}
-	message, err := updateRelease(ctx, newGitHubAPI(token), repo, tag, config)
+	message, err := updateRelease(ctx, newGitHubAPI(token), repo, tag, inventory)
 	if err != nil {
 		return err
 	}

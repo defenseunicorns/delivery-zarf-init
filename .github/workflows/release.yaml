@@ -7,9 +7,6 @@ on:
   push:
     tags:
       - v*.*.*-uds.*
-      - init-v*.*.*-uds.*-*
-      - init-agent-only-v*.*.*-uds.*-*
-      - init-gitea-v*.*.*-uds.*-*
 
 permissions:
   contents: read
@@ -26,8 +23,7 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 150
     outputs:
-      rolling: ${{ steps.tag.outputs.rolling }}
-      skip: ${{ steps.tag.outputs.skip }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -37,41 +33,30 @@ jobs:
           version: v0.40.0
 
       - name: Validate release tag
-        id: tag
         run: |
           # shellcheck disable=SC3040
           set -euo pipefail
-          if [[ "$GITHUB_REF_NAME" == v* ]]; then
-            if [ "$(printf '%s\n' v0.89.0-uds.0 "$GITHUB_REF_NAME" | sort -V | head -n 1)" != v0.89.0-uds.0 ]; then
-              echo "Consolidated releases start at v0.89.0-uds.0" >&2
-              exit 1
-            fi
-            release_version=$(yq -r '.packages[].flavors[].version' releaser.yaml | sort -V | tail -n 1)
-            if [ "$release_version" != "$GITHUB_REF_NAME" ]; then
-              echo "release tag $GITHUB_REF_NAME does not match consolidated release version $release_version" >&2
-              exit 1
-            fi
-            echo "rolling=true" >> "$GITHUB_OUTPUT"
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          else
-            artifact_version=$(TAG="$GITHUB_REF_NAME" yq -r '
-              .packages[] | . as $package | .flavors[] |
-              select($package.name + "-" + .version + "-" + .name == env(TAG)) | .version
-            ' releaser.yaml)
-            if [ -z "$artifact_version" ]; then
-              echo "unknown package tag: $GITHUB_REF_NAME" >&2
-              exit 1
-            fi
-            echo "rolling=false" >> "$GITHUB_OUTPUT"
-            if [ "$(printf '%s\n' v0.89.0-uds.0 "$artifact_version" | sort -V | head -n 1)" = v0.89.0-uds.0 ]; then
-              echo "skip=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "skip=false" >> "$GITHUB_OUTPUT"
-            fi
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-uds\.[0-9]+$ ]]; then
+            echo "invalid consolidated release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          release_version=$(yq -r '.packages[].flavors[].version' releaser.yaml | sort -V | tail -n 1)
+          if [ "$release_version" != "$GITHUB_REF_NAME" ]; then
+            echo "release tag $GITHUB_REF_NAME does not match consolidated release version $release_version" >&2
+            exit 1
           fi
 
-      - name: Wait for preceding rolling release
-        if: steps.tag.outputs.rolling == 'true'
+      - name: Select package/flavor matrix
+        id: matrix
+        run: |
+          matrix=$(sh scripts/release-metadata.sh matrix)
+          printf '%s' "$matrix" | jq -e '.include | length > 0' > /dev/null
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+      - name: Validate artifact inventory
+        run: sh scripts/release-metadata.sh inventory > /dev/null
+
+      - name: Wait for preceding release revision
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -103,7 +88,6 @@ jobs:
 
   values:
     needs: validate
-    if: needs.validate.outputs.skip != 'true'
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -118,7 +102,6 @@ jobs:
 
   publish:
     needs: [validate, values]
-    if: needs.validate.outputs.skip != 'true'
     runs-on: ubuntu-26.04
     timeout-minutes: 120
     environment: uds-release
@@ -128,9 +111,7 @@ jobs:
       id-token: write
     strategy:
       fail-fast: false
-      matrix:
-        package: [init, init-agent-only, init-gitea]
-        flavor: [upstream, registry1, unicorn]
+      matrix: ${{ fromJSON(needs.validate.outputs.matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -156,15 +137,16 @@ jobs:
           fi
 
           artifact_tag="$PACKAGE_NAME-$version-$FLAVOR_NAME"
-          if [ "$version" != "$GITHUB_REF_NAME" ] && [ "$artifact_tag" != "$GITHUB_REF_NAME" ]; then
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
             echo "$PACKAGE_NAME/$FLAVOR_NAME remains at $version; no artifact to publish for $GITHUB_REF_NAME"
             echo "publish=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          publish_repo="ghcr.io/defenseunicorns/delivery-zarf-init"
-          if [ "$FLAVOR_NAME" = "unicorn" ]; then
-            publish_repo="ghcr.io/defenseunicorns/packages/private/delivery-zarf-init"
+          publish_repo=$(yq -r '.registries[env(FLAVOR_NAME)] // ""' release-registries.yaml)
+          if [ -z "$publish_repo" ]; then
+            echo "no publish repository configured for $FLAVOR_NAME" >&2
+            exit 1
           fi
           {
             echo "publish=true"
@@ -299,7 +281,6 @@ jobs:
 
   github-release:
     needs: [validate, publish]
-    if: needs.validate.outputs.rolling == 'true'
     runs-on: ubuntu-26.04
     environment: uds-release
     concurrency:
@@ -346,5 +327,5 @@ jobs:
           # shellcheck disable=SC3040
           set -euo pipefail
           go build -o "$RUNNER_TEMP/update-github-release" ./cmd/update-github-release
-          yq -o=json releaser.yaml | "$RUNNER_TEMP/update-github-release" \
+          sh scripts/release-metadata.sh inventory | "$RUNNER_TEMP/update-github-release" \
             --repo "$GITHUB_REPOSITORY" --tag "$GITHUB_REF_NAME"
