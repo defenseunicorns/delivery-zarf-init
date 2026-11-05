@@ -59,7 +59,10 @@ func main() {
 	buildTasks := `[ (.includes[] | select(has("create")) | .create),
       (.tasks[] | select(.name == "create-package" or .name == "publish-package") |
         {"name": .name, "inputs": (.inputs // {} | with_entries(.value = .value.default)), "actions": .actions}) ]`
-	requireAll := yq(baseTasks, buildTasks) != yq(currentTasks, buildTasks)
+	buildJSON := func(input []byte) []byte {
+		return command(input, "yq", "-o=json", "-I=0", buildTasks, "-")
+	}
+	requireAll := !bytes.Equal(buildJSON(baseTasks), buildJSON(currentTasks))
 	baseSource := yq(baseTasks, `.variables[] | select(.name == "ZARF_SOURCE_VERSION") | .default`)
 	currentSource := yq(currentTasks, `.variables[] | select(.name == "ZARF_SOURCE_VERSION") | .default`)
 	requireAll = requireAll || baseSource != currentSource

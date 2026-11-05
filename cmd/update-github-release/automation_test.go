@@ -115,6 +115,21 @@ func TestReleaseReadinessSharedBuildAndRevision(t *testing.T) {
 	checkReadiness(t, dir, true, "9 release entries are ready at v0.88.0-uds.2")
 }
 
+func TestReleaseReadinessIgnoresBuildTaskFormatting(t *testing.T) {
+	dir := releaseFixture(t)
+	path := filepath.Join(dir, "tasks.yaml")
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	formatted := strings.Replace(string(contents), "- task: package:resolve", "- task: \"package:resolve\" # same task", 1)
+	if formatted == string(contents) {
+		t.Fatal("build task fixture did not change")
+	}
+	writeFixtureFile(t, dir, "tasks.yaml", formatted)
+	checkReadiness(t, dir, true, "No package release required")
+}
+
 func TestReleaseReadinessRegistryRouting(t *testing.T) {
 	dir := releaseFixture(t)
 	mustAutomationCommand(t, dir, nil, "yq", "-i", `.registries.unicorn = "ghcr.io/example/private"`, "release-registries.yaml")
