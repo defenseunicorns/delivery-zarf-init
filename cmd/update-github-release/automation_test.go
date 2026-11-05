@@ -50,6 +50,9 @@ func releaseFixture(t *testing.T) string {
 		}
 		writeFixtureFile(t, dir, path, string(contents))
 	}
+	mustAutomationCommand(t, dir, nil, "yq", "-i", `(.variables[] | select(.name == "ZARF_SOURCE_VERSION") | .default) = "v0.88.0"`, "tasks.yaml")
+	setFixtureVersions(t, dir, "all", "all", "v0.88.0-uds.0")
+	setFixtureVersions(t, dir, "all", "unicorn", "v0.88.0-uds.1")
 	writeFixtureFile(t, dir, "packages/init/config.yaml", "before\n")
 	writeFixtureFile(t, dir, "flavors/upstream.yaml", "before\n")
 	writeFixtureFile(t, dir, "tasks/package.yaml", "before\n")
@@ -120,7 +123,7 @@ func TestBumpReleaseTask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mustAutomationCommand(t, project, nil, "uds", "run", "bump-release", "--with", "file="+releaser, "--set", "PACKAGE=init", "--set", "FLAVOR=unicorn", "--no-progress")
+	mustAutomationCommand(t, project, nil, "uds", "run", "bump-release", "--with", "file="+releaser, "--set", "PACKAGE=init", "--set", "FLAVOR=unicorn", "--set", "ZARF_SOURCE_VERSION=v0.88.0", "--no-progress")
 	selected := mustAutomationCommand(t, dir, nil, "yq", "-r", `.packages[] | select(.name == "init") | .flavors[] | select(.name == "unicorn") | .version`, "releaser.yaml")
 	if strings.TrimSpace(selected) != "v0.88.0-uds.2" {
 		t.Fatalf("selected version = %q, want v0.88.0-uds.2", selected)
