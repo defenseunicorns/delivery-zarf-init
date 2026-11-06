@@ -16,6 +16,9 @@
     "after 7am and before 9am every weekday"
   ],
   "rebaseWhen": "auto",
+  "pre-commit": {
+    "enabled": true
+  },
   "addLabels": [
     "renovate"
   ],

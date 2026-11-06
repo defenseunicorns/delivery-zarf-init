@@ -4,7 +4,8 @@ Date: 2026-09-03
 
 ## Status
 
-Accepted; supersedes [ADR 0002](./0002-flavors-packages-vendored-upstream.md)
+Accepted; supersedes [ADR 0002](./0002-flavors-packages-vendored-upstream.md). The release mechanics
+are proposed to be superseded by [ADR 0004](./0004-consolidated-repository-releases.md).
 
 ## Context
 

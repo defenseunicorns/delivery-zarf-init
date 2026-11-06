@@ -1,0 +1,82 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+name: Release Note Labels
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, edited, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  label:
+    runs-on: ubuntu-26.04
+    steps:
+      # This workflow intentionally does not check out or execute pull request code.
+      - name: Map conventional PR title to release-note labels
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const managedLabels = new Set([
+              "breaking-change",
+              "bug",
+              "documentation",
+              "enhancement",
+              "renovate",
+            ]);
+            const desiredLabels = new Set();
+            const pullRequest = context.payload.pull_request;
+            const title = pullRequest.title;
+            const type = title.match(/^([a-z][a-z0-9-]*)/)?.[1];
+            const header = title.split(":", 1)[0];
+
+            if (pullRequest.user.login === "renovate[bot]") {
+              desiredLabels.add("renovate");
+            } else {
+              if (type === "feat") desiredLabels.add("enhancement");
+              if (type === "fix") desiredLabels.add("bug");
+              if (type === "docs") desiredLabels.add("documentation");
+              if (header.includes("!")) desiredLabels.add("breaking-change");
+            }
+
+            if (desiredLabels.has("breaking-change")) {
+              try {
+                await github.rest.issues.getLabel({
+                  ...context.repo,
+                  name: "breaking-change",
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({
+                  ...context.repo,
+                  name: "breaking-change",
+                  color: "b60205",
+                  description: "Requires upgrade or migration guidance",
+                });
+              }
+            }
+
+            const currentLabels = new Set(pullRequest.labels.map(label => label.name));
+            for (const label of managedLabels) {
+              if (currentLabels.has(label) && !desiredLabels.has(label)) {
+                await github.rest.issues.removeLabel({
+                  ...context.repo,
+                  issue_number: pullRequest.number,
+                  name: label,
+                });
+              }
+            }
+
+            const labelsToAdd = [...desiredLabels].filter(label => !currentLabels.has(label));
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                ...context.repo,
+                issue_number: pullRequest.number,
+                labels: labelsToAdd,
+              });
+            }

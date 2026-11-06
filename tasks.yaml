@@ -127,6 +127,69 @@ tasks:
         with:
           architecture: arm64
 
+  - name: bump-release
+    description: Assign the next repository UDS revision to selected package flavors
+    inputs:
+      file:
+        description: Releaser file to update
+        default: releaser.yaml
+    actions:
+      - cmd: |
+          release_file="${{ .inputs.file }}"
+          package_selector="${PACKAGE}"
+          flavor_selector="${FLAVOR}"
+
+          if [ ! -f "$release_file" ]; then
+            echo "releaser file not found: $release_file" >&2
+            exit 1
+          fi
+
+          match_count=$(PACKAGE_SELECTOR="$package_selector" FLAVOR_SELECTOR="$flavor_selector" yq -r '
+            [
+              .packages[] |
+              select(env(PACKAGE_SELECTOR) == "all" or .name == env(PACKAGE_SELECTOR)) |
+              .flavors[] |
+              select(env(FLAVOR_SELECTOR) == "all" or .name == env(FLAVOR_SELECTOR))
+            ] | length
+          ' "$release_file")
+          if [ "$match_count" -eq 0 ]; then
+            echo "no releaser entries match package=$package_selector flavor=$flavor_selector" >&2
+            exit 1
+          fi
+
+          max_revision=$(SOURCE_VERSION="${ZARF_SOURCE_VERSION}" yq -r '
+            .packages[].flavors[].version |
+            split("-uds.") as $parts |
+            select(($parts | length) == 2 and $parts[0] == env(SOURCE_VERSION)) |
+            $parts[1]
+          ' "$release_file" | sort -n | tail -n 1)
+          if [ -z "$max_revision" ]; then
+            echo "no releases match Zarf version ${ZARF_SOURCE_VERSION}" >&2
+            exit 1
+          fi
+
+          release_version="${ZARF_SOURCE_VERSION}-uds.$((max_revision + 1))"
+          PACKAGE_SELECTOR="$package_selector" \
+          FLAVOR_SELECTOR="$flavor_selector" \
+          RELEASE_VERSION="$release_version" \
+            yq -i '
+              (.packages[] |
+                select(env(PACKAGE_SELECTOR) == "all" or .name == env(PACKAGE_SELECTOR)) |
+                .flavors[] |
+                select(env(FLAVOR_SELECTOR) == "all" or .name == env(FLAVOR_SELECTOR)) |
+                .version) = env(RELEASE_VERSION)
+            ' "$release_file"
+
+          echo "Updated $match_count release entries to $release_version:"
+          PACKAGE_SELECTOR="$package_selector" FLAVOR_SELECTOR="$flavor_selector" yq -r '
+            .packages[] |
+            select(env(PACKAGE_SELECTOR) == "all" or .name == env(PACKAGE_SELECTOR)) |
+            . as $package |
+            .flavors[] |
+            select(env(FLAVOR_SELECTOR) == "all" or .name == env(FLAVOR_SELECTOR)) |
+            "  \($package.name)/\(.name) -> \(.version)"
+          ' "$release_file"
+
   - name: generate-zarf-values-schemas
     description: Regenerate schemas for packages that expose Zarf values
     actions:
@@ -140,12 +203,30 @@ tasks:
       - task: package:vendor
       - task: values:test
 
+  - name: test-release-automation
+    description: Format-check, vet, and test release automation
+    actions:
+      - cmd: |
+          set -eu
+          export GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off
+          files=$(gofmt -l cmd)
+          if [ -n "$files" ]; then
+            printf 'Go files need gofmt:\n%s\n' "$files" >&2
+            exit 1
+          fi
+          go vet ./...
+          go test ./...
+        shell:
+          linux: sh
+          darwin: sh
+
   - name: pre-commit-all
     description: Run pre-commit hooks and the repository-scoped uds-common lint suite
     actions:
       - cmd: pre-commit run --all-files --show-diff-on-fail --color=always
       - task: lint:yaml
       - task: lint:shell
+      - task: test-release-automation
       - cmd: |
           log=$(mktemp)
           uds run lint:tasks --no-progress >"$log" 2>&1 || { cat "$log"; exit 1; }

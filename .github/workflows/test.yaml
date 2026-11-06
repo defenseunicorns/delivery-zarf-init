@@ -30,10 +30,20 @@ jobs:
           fetch-depth: 0
 
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
-        if: startsWith(github.head_ref, 'renovate/')
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.40.0
+
+      - name: Check release readiness
+        run: |
+          go_version=$(awk '$1 == "toolchain" { sub(/^go/, "", $2); print $2; exit }' go.mod)
+          go_binary="$RUNNER_TOOL_CACHE/go/$go_version/x64/bin/go"
+          if [ -z "$go_version" ] || [ ! -x "$go_binary" ]; then
+            echo "Go $go_version is not preinstalled on this runner" >&2
+            exit 1
+          fi
+          GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off "$go_binary" run ./cmd/check-release-readiness \
+            "${{ github.event.pull_request.base.sha }}"
 
       - name: Check Renovate readiness
         if: startsWith(github.head_ref, 'renovate/')

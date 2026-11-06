@@ -1,0 +1,58 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+version: "2"
+linters:
+  default: none
+  enable:
+    - errcheck
+    - errorlint
+    - goheader
+    - govet
+    - ineffassign
+    - nolintlint
+    - revive
+    - staticcheck
+    - unused
+    - whitespace
+  settings:
+    errcheck:
+      check-type-assertions: true
+    goheader:
+      template: |-
+        Copyright 2026 Defense Unicorns
+        SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+    govet:
+      disable:
+        - shadow
+        - fieldalignment
+        - unusedwrite
+      enable-all: true
+    nolintlint:
+      require-specific: true
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: if-return
+        - name: increment-decrement
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+formatters:
+  enable:
+    - gofmt
+    - goimports

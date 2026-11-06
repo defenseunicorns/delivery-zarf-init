@@ -23,8 +23,9 @@ validator's `flavors` finding does not resolve that import; CI creates and tests
 ## Shared workflows
 
 The standard auto-update and scan workflows assume one root package and cannot run source vendoring
-for this matrix. Renovate coordinates component updates, the release workflow uses package-scoped
-`uds-pk`, and release builds produce SBOMs.
+for this matrix. Renovate coordinates component updates, the consolidated release workflow evaluates
+every package/flavor entry and publishes only entries at the new repository release version, and
+release builds produce SBOMs.
 
 ## Tests
 
