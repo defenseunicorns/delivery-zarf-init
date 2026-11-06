@@ -14,6 +14,14 @@ package/flavor artifact created its own Git tag and GitHub Release. This produce
 Releases for one logical repository change and made the supported release line difficult for
 consumers to identify.
 
+Chainguard images are rebuilt to pick up security fixes. We want to republish affected init
+artifacts as those images change to maintain a minimal-CVE posture. This can produce frequent
+`-uds.N` revisions without a Zarf version change, making a GitHub Release per revision noisy.
+
+Unlike a typical UDS package, this repository builds three peer init packages in multiple flavors
+from one source tree. Its package/flavor release layout limits direct reuse of the `uds-common` and
+`uds-pk` release and republish workflows.
+
 The OCI artifacts cannot share one version unconditionally. A change may affect one package, one
 flavor across multiple packages, or the complete matrix. Unaffected immutable artifacts should
 remain at their existing versions rather than being rebuilt solely to produce a coordinated GitHub
