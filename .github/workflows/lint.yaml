@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   run:
-    uses: defenseunicorns/uds-common/.github/workflows/callable-lint.yaml@9cb4ebfd9f9a5efd1dbc454bf3aae843d0b57b9f # v1.32.2
+    uses: defenseunicorns/uds-common/.github/workflows/callable-lint.yaml@a7eabbaa898c6425b480506daf3319b974282d73 # v1.33.0
     secrets: inherit
 
   pre-commit:
@@ -25,7 +25,7 @@ jobs:
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
-          version: v0.40.0
+          version: v0.41.0
 
       - name: Generate Zarf values schemas
         run: uds run generate-zarf-values-schemas --no-progress
