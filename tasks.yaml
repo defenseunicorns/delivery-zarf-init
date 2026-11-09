@@ -78,10 +78,11 @@ tasks:
     actions:
       - task: package:resolve
       - task: test:cluster
-      - task: test:package
+      - task: test:bundle-package
         with:
           architecture: ${{ .inputs.architecture }}
       - task: test:health-check
+      - task: test:bundle-overrides
       - task: test:registry-health-check
         if: ${{ ne .variables.PACKAGE "init-agent-only" }}
       - task: test:workload

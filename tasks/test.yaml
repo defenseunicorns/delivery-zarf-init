@@ -33,6 +33,43 @@ tasks:
           artifact="${PACKAGE_PATH}/zarf-init-${architecture}-${version}-${FLAVOR}.tar.zst"
           uds zarf package deploy "$artifact" ${{ .inputs.values }} --confirm
 
+  - name: bundle-package
+    description: Deploy the selected init package through UDS bundle overrides
+    inputs:
+      architecture:
+        description: Package architecture
+        default: ${ARCH}
+    actions:
+      - cmd: |
+          set -eu
+          architecture="${{ .inputs.architecture }}"
+          [ -n "$architecture" ] || architecture="${UDS_ARCH}"
+          version=$(yq -r '.metadata.version' "${PACKAGE_PATH}/zarf.yaml")
+          artifact="$(pwd -P)/${PACKAGE_PATH}/zarf-init-${architecture}-${version}-${FLAVOR}.tar.zst"
+          bundle_dir=$(mktemp -d)
+          trap 'rm -rf "$bundle_dir"' 0
+          cp tests/bundle/uds-bundle.yaml "$bundle_dir/uds-bundle.yaml"
+
+          PACKAGE_NAME="${PACKAGE}" \
+          PACKAGE_ARTIFACT="$artifact" \
+          PACKAGE_REF="$version" \
+          PACKAGE_FLAVOR="${FLAVOR}" \
+            uds zarf tools yq -i '
+              .packages[0].name = strenv(PACKAGE_NAME) |
+              .packages[0].path = strenv(PACKAGE_ARTIFACT) |
+              .packages[0].ref = strenv(PACKAGE_REF) |
+              .packages[0].flavor = strenv(PACKAGE_FLAVOR)
+            ' "$bundle_dir/uds-bundle.yaml"
+
+          uds create "$bundle_dir" \
+            --architecture "$architecture" \
+            --output "$bundle_dir" \
+            --confirm \
+            --no-progress
+          uds deploy "$bundle_dir/uds-bundle-delivery-zarf-init-test-${architecture}-dev.tar.zst" \
+            --confirm \
+            --no-progress
+
   - name: workload
     description: Deploy DOS games to exercise the internal registry and agent mutation
     inputs:
@@ -56,6 +93,53 @@ tasks:
             name: agent-hook
             namespace: zarf
             condition: Available
+
+  - name: bundle-overrides
+    description: Verify UDS bundle overrides configured the registry and Zarf agent charts
+    actions:
+      - cmd: |
+          seed_values=$(mktemp)
+          trap 'rm -f "$seed_values"' 0
+          uds zarf tools helm get values zarf-docker-registry -n zarf \
+            --revision 1 -o json > "$seed_values"
+
+          seed_request=$(uds zarf tools yq -p=json -r \
+            '.resources.requests.memory' "$seed_values")
+          seed_limit=$(uds zarf tools yq -p=json -r \
+            '.resources.limits.memory' "$seed_values")
+          agent_request=$(uds zarf tools kubectl get deployment agent-hook -n zarf \
+            -o jsonpath='{.spec.template.spec.containers[0].resources.requests.memory}')
+          agent_limit=$(uds zarf tools kubectl get deployment agent-hook -n zarf \
+            -o jsonpath='{.spec.template.spec.containers[0].resources.limits.memory}')
+          registry_request=$(uds zarf tools kubectl get deployment zarf-docker-registry -n zarf \
+            -o jsonpath='{.spec.template.spec.containers[0].resources.requests.memory}')
+          registry_limit=$(uds zarf tools kubectl get deployment zarf-docker-registry -n zarf \
+            -o jsonpath='{.spec.template.spec.containers[0].resources.limits.memory}')
+
+          [ "$seed_request" = "128Mi" ] || {
+            echo "expected seed registry memory request 128Mi, got $seed_request" >&2
+            exit 1
+          }
+          [ "$seed_limit" = "256Mi" ] || {
+            echo "expected seed registry memory limit 256Mi, got $seed_limit" >&2
+            exit 1
+          }
+          [ "$agent_request" = "128Mi" ] || {
+            echo "expected agent memory request 128Mi, got $agent_request" >&2
+            exit 1
+          }
+          [ "$agent_limit" = "256Mi" ] || {
+            echo "expected agent memory limit 256Mi, got $agent_limit" >&2
+            exit 1
+          }
+          [ "$registry_request" = "128Mi" ] || {
+            echo "expected registry memory request 128Mi, got $registry_request" >&2
+            exit 1
+          }
+          [ "$registry_limit" = "256Mi" ] || {
+            echo "expected registry memory limit 256Mi, got $registry_limit" >&2
+            exit 1
+          }
 
   - name: registry-health-check
     description: Verify the internal registry is available

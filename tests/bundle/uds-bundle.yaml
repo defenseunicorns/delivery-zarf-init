@@ -1,0 +1,35 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+kind: UDSBundle
+metadata:
+  name: delivery-zarf-init-test
+  description: Exercise init package configuration through UDS bundle overrides
+  version: dev
+
+packages:
+  - name: init
+    path: package-under-test.tar.zst
+    ref: dev
+    overrides:
+      zarf-seed-registry:
+        docker-registry:
+          values:
+            - path: resources.requests.memory
+              value: 128Mi
+            - path: resources.limits.memory
+              value: 256Mi
+      zarf-registry:
+        docker-registry:
+          values:
+            - path: resources.requests.memory
+              value: 128Mi
+            - path: resources.limits.memory
+              value: 256Mi
+      zarf-agent:
+        zarf-agent:
+          values:
+            - path: resources.requests.memory
+              value: 128Mi
+            - path: resources.limits.memory
+              value: 256Mi
