@@ -116,7 +116,13 @@ tasks:
 
           git clone --depth 1 --branch "${ZARF_SOURCE_VERSION}" --filter=blob:none --sparse \
             https://github.com/zarf-dev/zarf.git .zarf-src
-          git -C .zarf-src sparse-checkout set packages/zarf-agent packages/zarf-registry packages/gitea
+          git -C .zarf-src sparse-checkout set \
+            packages/init/v1alpha1/zarf-agent \
+            packages/init/v1alpha1/zarf-registry \
+            packages/init/v1alpha1/gitea
+          mv .zarf-src/packages/init/v1alpha1/zarf-agent .zarf-src/packages/zarf-agent
+          mv .zarf-src/packages/init/v1alpha1/zarf-registry .zarf-src/packages/zarf-registry
+          mv .zarf-src/packages/init/v1alpha1/gitea .zarf-src/packages/gitea
           printf '%s\n' "${ZARF_SOURCE_VERSION}" > .zarf-src/.zarf-version
 
   - name: publish

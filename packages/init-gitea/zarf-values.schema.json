@@ -1039,6 +1039,9 @@
             "null"
           ]
         },
+        "caBundle": {
+          "type": "string"
+        },
         "clusterRole": {
           "properties": {
             "name": {
