@@ -5,10 +5,11 @@
 
 tasks:
   - name: validate-configs
-    description: Validate package metadata and every flavor configuration
+    description: Validate package metadata and the selected flavor version
     actions:
       - cmd: |
           required_keys="pkg_version agent_image agent_image_tag registry_image registry_image_tag proxy_image proxy_image_tag gitea_image"
+          matched_flavor=false
           for config in flavors/*.yaml; do
             for key in $required_keys; do
               value=$(KEY="$key" yq -r '.package.create.set[env(KEY)] // ""' "$config")
@@ -17,13 +18,22 @@ tasks:
                 exit 1
               fi
             done
-            agent_version=$(yq -r '.package.create.set.agent_image_tag' "$config")
-            agent_version=${agent_version%-arm64}
-            if [ "$agent_version" != "${ZARF_SOURCE_VERSION}" ]; then
-              echo "$config: agent image version $agent_version does not match ${ZARF_SOURCE_VERSION}" >&2
-              exit 1
+
+            config_flavor=$(yq -r '.package.create.set.pkg_version' "$config")
+            if [ "$config_flavor" = "${FLAVOR}" ]; then
+              matched_flavor=true
+              agent_version=$(yq -r '.package.create.set.agent_image_tag' "$config")
+              agent_version=${agent_version%-arm64}
+              if [ "$agent_version" != "${ZARF_SOURCE_VERSION}" ]; then
+                echo "$config: agent image version $agent_version does not match ${ZARF_SOURCE_VERSION}" >&2
+                exit 1
+              fi
             fi
           done
+          if [ "$matched_flavor" != true ]; then
+            echo "missing flavor configuration for ${FLAVOR}" >&2
+            exit 1
+          fi
 
           for package in $(yq -r '.packages[].name' releaser.yaml); do
             path=$(PACKAGE_NAME="$package" yq -r \
@@ -43,14 +53,18 @@ tasks:
                 exit 1
               fi
             done
-            for release_version in $(PACKAGE_NAME="$package" yq -r \
-              '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[].version' releaser.yaml); do
-              source_version=${release_version%%-uds.*}
-              if [ "$source_version" != "${ZARF_SOURCE_VERSION}" ]; then
-                echo "$package: release version $release_version does not match ${ZARF_SOURCE_VERSION}" >&2
-                exit 1
-              fi
-            done
+            release_version=$(PACKAGE_NAME="$package" FLAVOR_NAME="${FLAVOR}" yq -r \
+              '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[] | select(.name == env(FLAVOR_NAME)) | .version // ""' \
+              releaser.yaml)
+            if [ -z "$release_version" ]; then
+              echo "$package: missing release version for ${FLAVOR}" >&2
+              exit 1
+            fi
+            source_version=${release_version%%-uds.*}
+            if [ "$source_version" != "${ZARF_SOURCE_VERSION}" ]; then
+              echo "$package: ${FLAVOR} release version $release_version does not match ${ZARF_SOURCE_VERSION}" >&2
+              exit 1
+            fi
           done
 
   - name: resolve
