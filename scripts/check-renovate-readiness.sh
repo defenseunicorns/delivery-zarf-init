@@ -81,6 +81,18 @@ check_lockstep zarf \
   'releaser.yaml|.packages[2].flavors[0].version' \
   'releaser.yaml|.packages[2].flavors[1].version' \
   'releaser.yaml|.packages[2].flavors[2].version'
+zarf_pins_changed=$last_changed
+
+if [ "$zarf_pins_changed" -gt 0 ]; then
+  agent_version=$(read_value worktree flavors/upstream.yaml '.package.create.set.agent_image_tag')
+  agent_version=$(printf '%s\n' "$agent_version" | normalize_version)
+  uds_zarf_version=$(uds zarf version)
+  uds_zarf_version=$(printf '%s\n' "$uds_zarf_version" | normalize_version)
+  if [ "$agent_version" != "$uds_zarf_version" ]; then
+    echo "zarf agent version $agent_version does not match UDS embedded Zarf $uds_zarf_version" >&2
+    ready=false
+  fi
+fi
 
 check_lockstep registry \
   'flavors/upstream.yaml|.package.create.set.registry_image_tag' \

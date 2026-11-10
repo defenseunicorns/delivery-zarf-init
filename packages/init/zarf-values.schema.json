@@ -214,9 +214,7 @@
         "nameOverride": {
           "type": "string"
         },
-        "namespace": {
-          "type": "string"
-        },
+        "namespace": false,
         "nodeSelector": {
           "additionalProperties": {
             "type": "string"
@@ -284,11 +282,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "properties": {
-            "zarf.dev/agent": {
-              "type": "string"
-            }
-          },
+          "properties": {},
           "type": "object"
         },
         "proxy": {
@@ -485,9 +479,7 @@
         "nameOverride": {
           "type": "string"
         },
-        "namespace": {
-          "type": "string"
-        },
+        "namespace": false,
         "nodeSelector": {
           "additionalProperties": {
             "type": "string"
@@ -555,11 +547,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "properties": {
-            "zarf.dev/agent": {
-              "type": "string"
-            }
-          },
+          "properties": {},
           "type": "object"
         },
         "proxy": {
