@@ -13,7 +13,7 @@ packages:
         version: v1.0.0-uds.0
       - name: unicorn
         # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
-        version: v0.89.0-uds.0
+        version: v1.0.0-uds.0
 
   - name: init-agent-only
     path: packages/init-agent-only
@@ -26,7 +26,7 @@ packages:
         version: v1.0.0-uds.0
       - name: unicorn
         # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
-        version: v0.89.0-uds.0
+        version: v1.0.0-uds.0
 
   - name: init-gitea
     path: packages/init-gitea
@@ -39,4 +39,4 @@ packages:
         version: v1.0.0-uds.0
       - name: unicorn
         # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
-        version: v0.89.0-uds.0
+        version: v1.0.0-uds.0
