@@ -14,10 +14,10 @@ last_changed=0
 
 read_value() {
   if [ "$1" = "worktree" ]; then
-    yq -r "$3" "$2"
+    uds zarf tools yq -r "$3" "$2"
   else
     document=$(git show "$1:$2")
-    printf '%s\n' "$document" | yq -r "$3"
+    printf '%s\n' "$document" | uds zarf tools yq -r "$3"
   fi
 }
 

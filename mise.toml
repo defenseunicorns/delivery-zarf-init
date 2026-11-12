@@ -12,7 +12,6 @@ k3d = "5.9.0"
 "pipx:zizmor" = "1.32.0"
 hk = "2.11.1"
 yamllint = "1.38.0"
-yq = "4.54.1"
 
 [env]
 HK_MISE = "1"

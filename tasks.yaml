@@ -10,8 +10,6 @@ includes:
   # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.33.1
   - create: https://raw.githubusercontent.com/defenseunicorns/uds-common/477b80085617150a2a4985ac1e70afae968df764/tasks/create.yaml
   # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.33.1
-  - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/477b80085617150a2a4985ac1e70afae968df764/tasks/lint.yaml
-  # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.33.1
   - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/477b80085617150a2a4985ac1e70afae968df764/tasks/actions.yaml
 
 variables:
@@ -145,11 +143,6 @@ tasks:
       - task: values:test
 
   - name: lint-all
-    description: Run repository lint checks
+    description: Run all repository checks through hk
     actions:
-      - task: lint:yaml
-      - task: lint:shell
-      - cmd: |
-          log=$(mktemp)
-          uds run lint:tasks --no-progress >"$log" 2>&1 || { cat "$log"; exit 1; }
-      - task: lint:license
+      - cmd: hk check --all
