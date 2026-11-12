@@ -153,5 +153,3 @@ tasks:
           log=$(mktemp)
           uds run lint:tasks --no-progress >"$log" 2>&1 || { cat "$log"; exit 1; }
       - task: lint:license
-        with:
-          fix: "true"

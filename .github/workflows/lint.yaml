@@ -17,9 +17,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  run:
-    uses: defenseunicorns/uds-common/.github/workflows/callable-lint.yaml@477b80085617150a2a4985ac1e70afae968df764 # v1.33.1
-
   hk:
     runs-on: ubuntu-26.04
     timeout-minutes: 20
