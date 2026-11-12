@@ -52,6 +52,11 @@ tasks:
               echo "$path/zarf.yaml: metadata.name is $metadata_name, expected $package" >&2
               exit 1
             fi
+            metadata_source=$(yq -r '.metadata.source // ""' "$path/zarf.yaml")
+            if [ "$metadata_source" != "https://github.com/defenseunicorns/delivery-zarf-init" ]; then
+              echo "$path/zarf.yaml: metadata.source must identify this repository" >&2
+              exit 1
+            fi
             for file in zarf-values.yaml zarf-values.schema.json; do
               if [ ! -f "$path/$file" ]; then
                 echo "$package: missing $path/$file" >&2
