@@ -144,18 +144,11 @@ tasks:
       - task: package:vendor
       - task: values:test
 
-  - name: pre-commit-all
-    description: Run pre-commit hooks and repository lint checks
+  - name: lint-all
+    description: Run repository lint checks
     actions:
-      - cmd: pre-commit run --all-files --show-diff-on-fail --color=always
       - task: lint:yaml
       - task: lint:shell
-      - description: Lint GitHub Actions workflows
-        cmd: jactionlint --profile correctness
-      - task: lint:zizmor
-        with:
-          persona: pedantic
-          min-severity: medium
       - cmd: |
           log=$(mktemp)
           uds run lint:tasks --no-progress >"$log" 2>&1 || { cat "$log"; exit 1; }

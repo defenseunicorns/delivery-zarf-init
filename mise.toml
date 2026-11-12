@@ -7,10 +7,19 @@
 "aqua:koalaman/shellcheck" = "v0.11.0"
 "github:jdx/jactionlint" = "2.6.0"
 k3d = "5.9.0"
+"pipx:commitizen" = "4.19.3"
+"pipx:pre-commit-hooks" = "6.0.0"
 "pipx:zizmor" = "1.32.0"
-pre-commit = "4.6.2"
+hk = "2.11.1"
 yamllint = "1.38.0"
 yq = "4.54.1"
 
+# Renovate adds roughly 600 npm dependencies, and mise rejects the current dependency tree's
+# provenance downgrade. Use the hosted Renovate validation until that upstream issue is resolved.
+# "npm:renovate" = "44.222.1"
+
+[env]
+HK_MISE = "1"
+
 [hooks]
-postinstall = "pre-commit install"
+postinstall = "if command -v hk >/dev/null 2>&1; then hk install --mise; fi"

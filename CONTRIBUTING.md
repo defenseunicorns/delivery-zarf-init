@@ -8,7 +8,7 @@ including conventional commits and repository linting.
 
 Install [mise](https://mise.jdx.dev/installing-mise.html), activate it in your shell, and ensure a
 Docker-compatible container runtime is available. Then install the development tools pinned in
-[`mise.toml`](./mise.toml) and configure the repository's pre-commit hook:
+[`mise.toml`](./mise.toml) and configure the repository's hk Git hooks:
 
 ```bash
 mise trust
@@ -22,7 +22,7 @@ Use the UDS CLI task runner from the repository root:
 ```bash
 uds run test-install
 uds run test-zarf-values
-uds run pre-commit-all
+hk check --all
 ```
 
 Select a release with `PACKAGE` and `FLAVOR`. The valid package names are `init`,

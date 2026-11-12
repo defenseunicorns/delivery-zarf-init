@@ -13,6 +13,10 @@ permissions:
   contents: read
   pull-requests: read
 
+concurrency:
+  group: ${{ github.workflow }}-caller-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   run:
     uses: defenseunicorns/uds-common/.github/workflows/callable-commitlint.yaml@477b80085617150a2a4985ac1e70afae968df764 # v1.33.1

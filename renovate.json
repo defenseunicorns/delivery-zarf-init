@@ -24,6 +24,28 @@
   "customManagers": [
     {
       "customType": "regex",
+      "extractVersionTemplate": "^v(?<version>.*)$",
+      "versioningTemplate": "semver-coerced",
+      "managerFilePatterns": [
+        "**/hk.pkl"
+      ],
+      "matchStrings": [
+        "// renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\r?\\n(?<declaration>amends|import)[ \\t]+\"package://github\\.com/jdx/hk/releases/download/v(?<currentValue>[^/]+)/hk@[^#]+#/(?<pklFile>[^\"]+)\""
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "**/hk.pkl"
+      ],
+      "matchStrings": [
+        "(?m)^[ \\t]*(?:\\/\\/|#)[ \\t]*renovate:[ \\t]*datasource=(?<datasource>\\S+)[ \\t]+depName=(?<depName>\\S+)(?:[ \\t]+versioning=(?<versioning>\\S+))?(?:[ \\t]+extractVersion=(?<extractVersion>\\S+))?(?:[ \\t]+registryUrl=(?<registryUrl>\\S+))?[ \\t]*\\r?\\n[ \\t]*[^\\r\\n=]+?[ \\t]*=[ \\t]*['\"]?(?<currentValue>[^'\"\\r\\n]+)['\"]?[ \\t]*$"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}docker{{/if}}",
+      "extractVersionTemplate": "{{#if extractVersion}}{{{extractVersion}}}{{else}}^(?<version>.*)${{/if}}"
+    },
+    {
+      "customType": "regex",
       "description": "Update release metadata and immutable commits for raw GitHub task dependencies.",
       "managerFilePatterns": [
         "/^tasks\\.yaml$/"

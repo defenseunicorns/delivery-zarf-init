@@ -1,0 +1,96 @@
+// Copyright 2026 Defense Unicorns
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+// See https://pkl-lang.org/vscode/current/installation.html for the Pkl VS Code extension.
+
+// renovate: datasource=github-releases depName=jdx/hk
+amends "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Config.pkl"
+// renovate: datasource=github-releases depName=jdx/hk
+import "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Builtins.pkl"
+
+// renovate: datasource=github-releases depName=jdx/hk versioning=semver-coerced extractVersion=^v(?<version>.*)$
+min_hk_version = "2.11.1"
+exclude = List(".zarf-src/**", "build/**", "dist/**", "tmp/**")
+
+local checks = new Mapping<String, Step> {
+  ["check-added-large-files"] = (Builtins.check_added_large_files) {
+    allow_binary = true
+    check = new Command {
+      argv = List("hk", "util", "check-added-large-files", "--maxkb=1024", "{{files}}")
+    }
+  }
+  ["check-merge-conflict"] = Builtins.check_merge_conflict
+  ["detect-aws-credentials"] {
+    types = List("text")
+    check = new Command {
+      argv = List("detect-aws-credentials", "--allow-missing-credentials", "{{files}}")
+    }
+  }
+  ["detect-private-key"] = Builtins.detect_private_key
+  ["end-of-file-fixer"] = Builtins.newlines
+  ["fix-byte-order-marker"] = Builtins.byte_order_marker
+  ["trailing-whitespace"] = Builtins.trailing_whitespace
+  ["check-yaml"] {
+    glob = List("**/*.yaml", "**/*.yml")
+    check = new Command {
+      argv = List("check-yaml", "--allow-multiple-documents", "--unsafe", "{{files}}")
+    }
+  }
+  ["fix-smartquotes"] = Builtins.fix_smart_quotes
+  ["jactionlint"] = Builtins.jactionlint
+  // Offline mode keeps local hooks and CI deterministic without a GitHub token.
+  ["zizmor"] {
+    glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml", ".github/**/action.yml", ".github/**/action.yaml", "zizmor.yml", "zizmor.yaml", "hk.pkl", "mise.toml")
+    check = "zizmor --offline --persona=pedantic --min-severity=medium --strict-collection --format=plain --collect=workflows,actions .github"
+  }
+  // See mise.toml for why hosted Renovate currently owns configuration validation.
+  // ["renovate-config"] {
+  //   glob = "renovate.json"
+  //   check = new Command {
+  //     argv = List("renovate-config-validator", "--no-global", "{{files}}")
+  //   }
+  // }
+}
+
+local repositoryLint = new Step {
+  glob = List("**/*")
+  check = "uds run lint-all --no-progress"
+}
+
+hooks {
+  ["pre-commit"] {
+    fix = true
+    stash = "git"
+    steps = checks
+  }
+  ["pre-push"] {
+    steps {
+      ...checks
+      ["commitizen-branch"] {
+        check = #"cz check --rev-range "$(git merge-base origin/HEAD HEAD)..HEAD""#
+      }
+    }
+  }
+  ["commit-msg"] {
+    steps {
+      ["commitizen"] {
+        check = new Command {
+          argv = List("cz", "check", "--allow-abort", "--commit-msg-file", "{{commit_msg_file}}")
+        }
+      }
+    }
+  }
+  ["check"] {
+    steps {
+      ...checks
+      ["repository-lint"] = repositoryLint
+    }
+  }
+  ["fix"] {
+    fix = true
+    steps {
+      ...checks
+      ["repository-lint"] = repositoryLint
+    }
+  }
+}

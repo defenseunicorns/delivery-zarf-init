@@ -20,6 +20,7 @@ concurrency:
 jobs:
   plan:
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     outputs:
       flavors: ${{ steps.flavors.outputs.flavors }}
       run_e2e: ${{ steps.changes.outputs.run_e2e }}
@@ -65,6 +66,7 @@ jobs:
 
   values:
     runs-on: ubuntu-26.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -167,6 +169,7 @@ jobs:
 
   verify-test:
     runs-on: ubuntu-26.04
+    timeout-minutes: 5
     if: ${{ always() }}
     needs: [plan, values, create-arm64, test-install]
     steps:
