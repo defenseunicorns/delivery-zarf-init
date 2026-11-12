@@ -4,6 +4,17 @@ This repository follows the general
 [`uds-common` contributing guidance](https://github.com/defenseunicorns/uds-common/blob/main/CONTRIBUTING.md),
 including conventional commits and repository linting.
 
+## Local setup
+
+Install [mise](https://mise.jdx.dev/installing-mise.html), activate it in your shell, and ensure a
+Docker-compatible container runtime is available. Then install the development tools pinned in
+[`mise.toml`](./mise.toml) and configure the repository's pre-commit hook:
+
+```bash
+mise trust
+mise install
+```
+
 ## Development workflow
 
 Use the UDS CLI task runner from the repository root:

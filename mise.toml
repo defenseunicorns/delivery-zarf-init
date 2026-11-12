@@ -1,0 +1,11 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+[tools]
+"aqua:defenseunicorns/uds-cli" = "0.41.0"
+k3d = "5.9.0"
+pre-commit = "4.6.2"
+yq = "4.54.1"
+
+[hooks]
+postinstall = "pre-commit install"
