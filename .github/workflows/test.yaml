@@ -25,12 +25,12 @@ jobs:
       flavors: ${{ steps.flavors.outputs.flavors }}
       run_e2e: ${{ steps.changes.outputs.run_e2e }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+      - uses: defenseunicorns/setup-uds@v1.0.2
         if: startsWith(github.head_ref, 'renovate/')
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
@@ -68,11 +68,11 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
-      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+      - uses: defenseunicorns/setup-uds@v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.41.0
@@ -94,11 +94,11 @@ jobs:
         package: [init, init-agent-only, init-gitea]
         flavor: ${{ fromJSON(needs.plan.outputs.flavors) }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
-      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+      - uses: defenseunicorns/setup-uds@v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.41.0
@@ -138,11 +138,11 @@ jobs:
         package: [init, init-gitea]
         flavor: ${{ fromJSON(needs.plan.outputs.flavors) }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
-      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+      - uses: defenseunicorns/setup-uds@v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.41.0
