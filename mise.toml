@@ -14,10 +14,6 @@ hk = "2.11.1"
 yamllint = "1.38.0"
 yq = "4.54.1"
 
-# Renovate adds roughly 600 npm dependencies, and mise rejects the current dependency tree's
-# provenance downgrade. Use the hosted Renovate validation until that upstream issue is resolved.
-# "npm:renovate" = "44.222.1"
-
 [env]
 HK_MISE = "1"
 

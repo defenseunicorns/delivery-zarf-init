@@ -17,7 +17,7 @@ mise install
 
 ## Development workflow
 
-Use the UDS CLI task runner from the repository root:
+Use UDS tasks for package workflows and hk for the complete repository gate:
 
 ```bash
 uds run test-install

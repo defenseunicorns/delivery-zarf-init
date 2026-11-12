@@ -66,7 +66,7 @@ inapplicable because the packages run before UDS Core exists. See
 
 ## Development
 
-The public task names follow the UDS package template:
+The public UDS task names follow the package template:
 
 ```bash
 uds run                                      # create and install-test init/upstream
@@ -74,8 +74,9 @@ uds run create-dev-package                   # create without an SBOM
 uds run test-install                         # create, deploy, and verify on a fresh cluster
 uds run publish-package                      # create both arches, test when deployable, then publish
 uds run test-zarf-values                     # check schemas, manifests, and generated Helm values
-hk check --all                              # run repository checks
 ```
+
+Run the complete repository gate with `hk check --all`.
 
 Select another package or flavor with task variables:
 

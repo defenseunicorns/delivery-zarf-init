@@ -43,13 +43,6 @@ local checks = new Mapping<String, Step> {
     glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml", ".github/**/action.yml", ".github/**/action.yaml", "zizmor.yml", "zizmor.yaml", "hk.pkl", "mise.toml")
     check = "zizmor --offline --persona=pedantic --min-severity=medium --strict-collection --format=plain --collect=workflows,actions .github"
   }
-  // See mise.toml for why hosted Renovate currently owns configuration validation.
-  // ["renovate-config"] {
-  //   glob = "renovate.json"
-  //   check = new Command {
-  //     argv = List("renovate-config-validator", "--no-global", "{{files}}")
-  //   }
-  // }
 }
 
 local repositoryLint = new Step {
