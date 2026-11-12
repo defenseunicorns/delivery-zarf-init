@@ -8,19 +8,15 @@ package:
 
       agent_image_domain: ghcr.io/
       agent_image: zarf-dev/zarf/agent
-      # platform-digest: linux/amd64
       agent_image_tag: v0.89.0@sha256:47048c8129558193b66aec74c32a7d1d2c7f051b27098a9e10c1e04913ef025c
 
       registry_image_domain: docker.io/
       registry_image: library/registry
-      # platform-digest: linux/amd64
       registry_image_tag: 3.1.2@sha256:52b489ad8e6f40d1a676702e3ce398ec796ce38f08fbb786e1f324baa12d84b8
 
       proxy_image_domain: docker.io/
       proxy_image: alpine/socat
-      # platform-digest: linux/amd64
       proxy_image_tag: 1.8.1.3@sha256:6f8beb04f54b9e7bf6f5a983e85bef961070ddb3ccdb3e9c094fc4441583198c
 
       # Keep Gitea on the chart-supported minor.
-      # platform-digest: linux/amd64
       gitea_image: ghcr.io/go-gitea/gitea:1.27.3-rootless@sha256:95b0ae18fb99b4a579b3dd383ea5ad8d8f77534c030c1fe554e6378ac8a5c496

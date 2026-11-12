@@ -32,9 +32,6 @@ variables:
     default: "8443"
   - name: K3D_API_PORT
     default: "6551"
-  # renovate-digest: datasource=docker depName=ghcr.io/defenseunicorns/uds-k3d/k3s versioning=docker
-  - name: K3D_IMAGE
-    default: ghcr.io/defenseunicorns/uds-k3d/k3s:v1.37.2-k3s1@sha256:3be94a957c46a3587847072d8f75295b4d763372fd7f6d6c0411ffd2b33b5236
   - name: TARGET_REPO
     default: ghcr.io/defenseunicorns/delivery-zarf-init
   - name: PUBLISH_RETRIES

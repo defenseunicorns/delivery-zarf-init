@@ -118,8 +118,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # init-gitea exercises the init package's registry and agent paths plus Git server behavior.
-        package: [init-gitea]
+        package: [init, init-gitea]
         flavor: ${{ fromJSON(needs.plan.outputs.flavors) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
