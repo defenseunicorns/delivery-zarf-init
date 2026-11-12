@@ -7,9 +7,13 @@ includes:
   - package: ./tasks/package.yaml
   - test: ./tasks/test.yaml
   - values: ./tasks/values.yaml
-  - create: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.33.1/tasks/create.yaml
-  - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.33.1/tasks/lint.yaml
-  - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/v1.33.1/tasks/actions.yaml
+  - ci: ./tasks/ci.yaml
+  # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.33.1
+  - create: https://raw.githubusercontent.com/defenseunicorns/uds-common/477b80085617150a2a4985ac1e70afae968df764/tasks/create.yaml
+  # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.33.1
+  - lint: https://raw.githubusercontent.com/defenseunicorns/uds-common/477b80085617150a2a4985ac1e70afae968df764/tasks/lint.yaml
+  # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.33.1
+  - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/477b80085617150a2a4985ac1e70afae968df764/tasks/actions.yaml
 
 variables:
   # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker

@@ -1,0 +1,125 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/uds-cli/main/tasks.schema.json
+
+variables:
+  - name: REGISTRY1_USERNAME
+    default: ""
+  - name: REGISTRY1_PASSWORD
+    default: ""
+  - name: GH_TOKEN
+    default: ""
+
+tasks:
+  - name: setup-environment
+    description: Install pinned CI tools and authenticate to package registries
+    actions:
+      - task: install-deps
+      - task: authenticate-registries
+
+  - name: install-deps
+    description: Install checksum-verified CI dependencies
+    actions:
+      - task: install-k3d
+      - task: install-uds-pk
+
+  - name: install-k3d
+    description: Install checksum-verified k3d
+    actions:
+      - description: Install k3d
+        cmd: |
+          set -eu
+          version=v5.9.0
+          case "$(uname -m)" in
+            x86_64)
+              architecture=amd64
+              checksum=06d8f25bc3a971c4eb29e0ff08429b180402db0f4dec838c9eac427e296800a0
+              ;;
+            aarch64|arm64)
+              architecture=arm64
+              checksum=03cde5cf23e6e8e67de5a039ecf26e5b85aca82fba3e5d13dadf904cd218a250
+              ;;
+            *)
+              echo "unsupported architecture: $(uname -m)" >&2
+              exit 1
+              ;;
+          esac
+          artifact=$(mktemp)
+          trap 'rm -f "$artifact"' EXIT
+          curl -fsSL --proto '=https' --tlsv1.2 \
+            "https://github.com/k3d-io/k3d/releases/download/${version}/k3d-linux-${architecture}" \
+            -o "$artifact"
+          printf '%s  %s\n' "$checksum" "$artifact" | sha256sum -c -
+          sudo install -m 0755 "$artifact" /usr/local/bin/k3d
+        shell:
+          linux: sh
+
+  - name: install-uds-pk
+    description: Install checksum-verified uds-pk
+    actions:
+      - description: Install uds-pk
+        cmd: |
+          set -eu
+          version=v0.2.2
+          case "$(uname -m)" in
+            x86_64)
+              architecture=amd64
+              checksum=c540f615b52ac3e56d8ec8a607d62b4eb1153dfbfcc90de1d7fc3030892372eb
+              ;;
+            aarch64|arm64)
+              architecture=arm64
+              checksum=a80491a51eebc859f66fdf9268df9c055afbaaac82bf09f13420a52aec17a7db
+              ;;
+            *)
+              echo "unsupported architecture: $(uname -m)" >&2
+              exit 1
+              ;;
+          esac
+          artifact=$(mktemp)
+          trap 'rm -f "$artifact"' EXIT
+          curl -fsSL --proto '=https' --tlsv1.2 \
+            "https://github.com/defenseunicorns/uds-pk/releases/download/${version}/uds-pk_${version}_Linux_${architecture}" \
+            -o "$artifact"
+          printf '%s  %s\n' "$checksum" "$artifact" | sha256sum -c -
+          sudo install -m 0755 "$artifact" /usr/local/bin/uds-pk
+        shell:
+          linux: sh
+
+  - name: authenticate-registries
+    description: Authenticate to registries not configured by dedicated setup actions
+    actions:
+      - task: registry-login
+        if: ${{ ne .variables.REGISTRY1_USERNAME "" }}
+        with:
+          registry: registry1.dso.mil
+          username: ${{ .variables.REGISTRY1_USERNAME }}
+          token: ${{ .variables.REGISTRY1_PASSWORD }}
+      - task: registry-login
+        if: ${{ ne .variables.GH_TOKEN "" }}
+        with:
+          registry: ghcr.io
+          username: dummy
+          token: ${{ .variables.GH_TOKEN }}
+
+  - name: registry-login
+    description: Authenticate to an OCI registry
+    inputs:
+      registry:
+        required: true
+      username:
+        required: true
+      token:
+        required: true
+    actions:
+      - env:
+          - REGISTRY=${{ .inputs.registry }}
+          - REGISTRY_USERNAME=${{ .inputs.username }}
+          - REGISTRY_TOKEN=${{ .inputs.token }}
+        cmd: |
+          printf '%s' "$REGISTRY_TOKEN" | \
+            uds zarf tools registry login \
+              --username "$REGISTRY_USERNAME" \
+              --password-stdin "$REGISTRY"
+        shell:
+          linux: sh

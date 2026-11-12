@@ -17,7 +17,22 @@ tasks:
                 exit 1
               fi
             done
+            for key in agent_image_tag registry_image_tag proxy_image_tag gitea_image; do
+              value=$(KEY="$key" yq -r '.package.create.set[env(KEY)]' "$config")
+              case "$value" in
+                *@sha256:*) digest=${value##*@sha256:} ;;
+                *) digest= ;;
+              esac
+              case "$digest" in
+                *[!0-9a-f]*|"") digest= ;;
+              esac
+              if [ "${#digest}" -ne 64 ]; then
+                echo "$config: package.create.set.$key must end with an immutable sha256 digest" >&2
+                exit 1
+              fi
+            done
             agent_version=$(yq -r '.package.create.set.agent_image_tag' "$config")
+            agent_version=${agent_version%@sha256:*}
             agent_version=${agent_version%-arm64}
             if [ "$agent_version" != "${ZARF_SOURCE_VERSION}" ]; then
               echo "$config: agent image version $agent_version does not match ${ZARF_SOURCE_VERSION}" >&2
@@ -82,8 +97,9 @@ tasks:
           - name: PACKAGE_ARCH
       - cmd: |
           config="flavors/${FLAVOR}.yaml"
-          if [ "$FLAVOR" = "registry1" ] && [ "$PACKAGE_ARCH" = "arm64" ]; then
-            config="flavors/registry1-arm64.yaml"
+          architecture_config="flavors/${FLAVOR}-${PACKAGE_ARCH}.yaml"
+          if [ -f "$architecture_config" ]; then
+            config="$architecture_config"
           fi
           if [ ! -f "$config" ]; then
             echo "missing Zarf config: $config" >&2

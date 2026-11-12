@@ -54,7 +54,7 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Install release tooling
-        run: uds run actions:setup-environment --no-progress
+        run: uds run ci:install-uds-pk --no-progress
 
       - name: Create package release
         env:
