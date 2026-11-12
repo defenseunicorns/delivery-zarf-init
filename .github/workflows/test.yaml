@@ -12,7 +12,6 @@ permissions:
   contents: read
   packages: read
   pull-requests: read
-  id-token: write
 
 concurrency:
   group: test-${{ github.ref }}
@@ -28,6 +27,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         if: startsWith(github.head_ref, 'renovate/')
@@ -67,6 +67,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
@@ -78,6 +80,10 @@ jobs:
 
   create-arm64:
     needs: plan
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
     runs-on: ubuntu-26.04-arm
     timeout-minutes: 30
     strategy:
@@ -87,6 +93,8 @@ jobs:
         flavor: ${{ fromJSON(needs.plan.outputs.flavors) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
@@ -103,16 +111,23 @@ jobs:
             --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
 
       - name: Create ${{ matrix.package }} (${{ matrix.flavor }} / arm64)
+        env:
+          PACKAGE: ${{ matrix.package }}
+          FLAVOR: ${{ matrix.flavor }}
         run: |
           uds run create-dev-package \
-            --set PACKAGE="${{ matrix.package }}" \
-            --set FLAVOR="${{ matrix.flavor }}" \
+            --set PACKAGE="$PACKAGE" \
+            --set FLAVOR="$FLAVOR" \
             --set ARCH=arm64 \
             --no-progress
 
   test-install:
     needs: plan
     if: needs.plan.outputs.run_e2e == 'true'
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     strategy:
@@ -122,6 +137,8 @@ jobs:
         flavor: ${{ fromJSON(needs.plan.outputs.flavors) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
@@ -138,10 +155,13 @@ jobs:
             --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
 
       - name: Install-test ${{ matrix.package }} (${{ matrix.flavor }})
+        env:
+          PACKAGE: ${{ matrix.package }}
+          FLAVOR: ${{ matrix.flavor }}
         run: |
           uds run test-install \
-            --set PACKAGE="${{ matrix.package }}" \
-            --set FLAVOR="${{ matrix.flavor }}" \
+            --set PACKAGE="$PACKAGE" \
+            --set FLAVOR="$FLAVOR" \
             --set ARCH=amd64 \
             --no-progress
 

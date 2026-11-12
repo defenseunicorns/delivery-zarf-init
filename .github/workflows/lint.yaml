@@ -15,17 +15,15 @@ permissions:
 jobs:
   run:
     uses: defenseunicorns/uds-common/.github/workflows/callable-lint.yaml@477b80085617150a2a4985ac1e70afae968df764 # v1.33.1
-    secrets: inherit
 
   pre-commit:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
         with:
-          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
-          version: v0.41.0
+          persist-credentials: false
+
+      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
 
       - name: Generate Zarf values schemas
         run: uds run generate-zarf-values-schemas --no-progress
@@ -33,6 +31,5 @@ jobs:
       - name: Verify generated Zarf values schemas
         run: git diff --exit-code -- 'packages/*/zarf-values.schema.json'
 
-      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
-        with:
-          extra_args: --all-files --show-diff-on-failure
+      - name: Run repository pre-commit checks
+        run: uds run pre-commit-all --no-progress

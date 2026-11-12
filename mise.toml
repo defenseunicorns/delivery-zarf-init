@@ -3,8 +3,13 @@
 
 [tools]
 "aqua:defenseunicorns/uds-cli" = "0.41.0"
+"aqua:google/addlicense" = "v1.2.0"
+"aqua:koalaman/shellcheck" = "v0.11.0"
+"github:jdx/jactionlint" = "2.6.0"
 k3d = "5.9.0"
+"pipx:zizmor" = "1.32.0"
 pre-commit = "4.6.2"
+yamllint = "1.38.0"
 yq = "4.54.1"
 
 [hooks]
