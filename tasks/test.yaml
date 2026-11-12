@@ -9,12 +9,24 @@ tasks:
     actions:
       - cmd: |
           k3d cluster delete "${CLUSTER_NAME}" >/dev/null 2>&1 || true
-          # renovate: datasource=docker depName=ghcr.io/defenseunicorns/packages/uds-k3d versioning=docker
-          uds zarf package deploy oci://ghcr.io/defenseunicorns/packages/uds-k3d:0.21.4 \
-            --set CLUSTER_NAME="${CLUSTER_NAME}" \
-            --set K3D_HTTP_PORT="${K3D_HTTP_PORT}" \
-            --set K3D_HTTPS_PORT="${K3D_HTTPS_PORT}" \
-            --set K3D_API_PORT="${K3D_API_PORT}" --confirm
+          k3d cluster create "${CLUSTER_NAME}" \
+            --image "${K3D_IMAGE}" \
+            --api-port "${K3D_API_PORT}" \
+            --runtime-ulimit nofile=1048576:1048576 \
+            --port "${K3D_HTTP_PORT}:80@server:*" \
+            --port "${K3D_HTTPS_PORT}:443@server:*" \
+            --k3s-arg "--disable=traefik@server:*" \
+            --k3s-arg "--disable=metrics-server@server:*" \
+            --k3s-arg "--disable=servicelb@server:*" \
+            --k3s-arg "--disable=gateway-api-crd@server:*" \
+            --k3s-arg "--kube-cloud-controller-manager-arg=requestheader-client-ca-file=/var/lib/rancher/k3s/server/tls/request-header-ca.crt@server:*" \
+            --k3s-arg "--kube-cloud-controller-manager-arg=client-ca-file=/var/lib/rancher/k3s/server/tls/client-ca.crt@server:*"
+      - wait:
+          cluster:
+            kind: Pod
+            name: k8s-app=kube-dns
+            namespace: kube-system
+            condition: Ready
 
   - name: package
     description: Deploy the selected init package

@@ -70,6 +70,7 @@ check_lockstep() {
 check_lockstep zarf \
   'tasks.yaml|.variables[] | select(.name == "ZARF_SOURCE_VERSION") | .default' \
   'flavors/upstream.yaml|.package.create.set.agent_image_tag' \
+  'flavors/upstream-arm64.yaml|.package.create.set.agent_image_tag' \
   'flavors/registry1.yaml|.package.create.set.agent_image_tag' \
   'flavors/registry1-arm64.yaml|.package.create.set.agent_image_tag' \
   'flavors/unicorn.yaml|.package.create.set.agent_image_tag' \
@@ -86,6 +87,7 @@ check_lockstep zarf \
 
 check_lockstep registry \
   'flavors/upstream.yaml|.package.create.set.registry_image_tag' \
+  'flavors/upstream-arm64.yaml|.package.create.set.registry_image_tag' \
   'flavors/registry1.yaml|.package.create.set.registry_image_tag' \
   'flavors/registry1-arm64.yaml|.package.create.set.registry_image_tag' \
   'flavors/unicorn.yaml|.package.create.set.registry_image_tag' \
@@ -93,6 +95,7 @@ check_lockstep registry \
 
 check_lockstep socat \
   'flavors/upstream.yaml|.package.create.set.proxy_image_tag' \
+  'flavors/upstream-arm64.yaml|.package.create.set.proxy_image_tag' \
   'flavors/registry1.yaml|.package.create.set.proxy_image_tag' \
   'flavors/registry1-arm64.yaml|.package.create.set.proxy_image_tag' \
   'flavors/unicorn.yaml|.package.create.set.proxy_image_tag' \
@@ -100,6 +103,7 @@ check_lockstep socat \
 
 check_lockstep gitea \
   'flavors/upstream.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")' \
+  'flavors/upstream-arm64.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")' \
   'flavors/registry1.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")' \
   'flavors/registry1-arm64.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")' \
   'flavors/unicorn.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")' \

@@ -7,7 +7,6 @@ includes:
   - package: ./tasks/package.yaml
   - test: ./tasks/test.yaml
   - values: ./tasks/values.yaml
-  - ci: ./tasks/ci.yaml
   # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.33.1
   - create: https://raw.githubusercontent.com/defenseunicorns/uds-common/477b80085617150a2a4985ac1e70afae968df764/tasks/create.yaml
   # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.33.1
@@ -33,6 +32,9 @@ variables:
     default: "8443"
   - name: K3D_API_PORT
     default: "6551"
+  # renovate-digest: datasource=docker depName=ghcr.io/defenseunicorns/uds-k3d/k3s versioning=docker
+  - name: K3D_IMAGE
+    default: ghcr.io/defenseunicorns/uds-k3d/k3s:v1.37.2-k3s1@sha256:3be94a957c46a3587847072d8f75295b4d763372fd7f6d6c0411ffd2b33b5236
   - name: TARGET_REPO
     default: ghcr.io/defenseunicorns/delivery-zarf-init
   - name: PUBLISH_RETRIES

@@ -87,18 +87,14 @@ jobs:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.41.0
 
-      - uses: chainguard-dev/setup-chainctl@034867260d5224a48ef0dddb684735e70169b7c7 # main
-        with:
-          identity: ${{ secrets.CHAINGUARD_IDENTITY }}
-          version: 0.2.402
-
       - name: Environment setup
         run: |
           echo "MARU_AUTH=\"{\"raw.githubusercontent.com\": \"${{ secrets.GITHUB_TOKEN }}\"}\"" >> "$GITHUB_ENV"
-          uds run ci:setup-environment \
+          uds run actions:setup-environment \
             --set REGISTRY1_USERNAME="${{ secrets.IRON_BANK_ROBOT_USERNAME }}" \
             --set REGISTRY1_PASSWORD="${{ secrets.IRON_BANK_ROBOT_PASSWORD }}" \
-            --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+            --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
 
       - name: Create, test, sign, verify, and publish
         run: |

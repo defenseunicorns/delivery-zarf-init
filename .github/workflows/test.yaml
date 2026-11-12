@@ -93,18 +93,14 @@ jobs:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.41.0
 
-      - uses: chainguard-dev/setup-chainctl@034867260d5224a48ef0dddb684735e70169b7c7 # main
-        with:
-          identity: ${{ secrets.CHAINGUARD_IDENTITY }}
-          version: 0.2.402
-
       - name: Environment setup
         run: |
           echo "MARU_AUTH=\"{\"raw.githubusercontent.com\": \"${{ secrets.GITHUB_TOKEN }}\"}\"" >> "$GITHUB_ENV"
-          uds run ci:setup-environment \
+          uds run actions:setup-environment \
             --set REGISTRY1_USERNAME="${{ secrets.IRON_BANK_ROBOT_USERNAME }}" \
             --set REGISTRY1_PASSWORD="${{ secrets.IRON_BANK_ROBOT_PASSWORD }}" \
-            --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+            --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
 
       - name: Create ${{ matrix.package }} (${{ matrix.flavor }} / arm64)
         run: |
@@ -122,7 +118,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [init, init-gitea]
+        # init-gitea exercises the init package's registry and agent paths plus Git server behavior.
+        package: [init-gitea]
         flavor: ${{ fromJSON(needs.plan.outputs.flavors) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -132,18 +129,14 @@ jobs:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.41.0
 
-      - uses: chainguard-dev/setup-chainctl@034867260d5224a48ef0dddb684735e70169b7c7 # main
-        with:
-          identity: ${{ secrets.CHAINGUARD_IDENTITY }}
-          version: 0.2.402
-
       - name: Environment setup
         run: |
           echo "MARU_AUTH=\"{\"raw.githubusercontent.com\": \"${{ secrets.GITHUB_TOKEN }}\"}\"" >> "$GITHUB_ENV"
-          uds run ci:setup-environment \
+          uds run actions:setup-environment \
             --set REGISTRY1_USERNAME="${{ secrets.IRON_BANK_ROBOT_USERNAME }}" \
             --set REGISTRY1_PASSWORD="${{ secrets.IRON_BANK_ROBOT_PASSWORD }}" \
-            --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            --set GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+            --set CHAINGUARD_IDENTITY="${{ secrets.CHAINGUARD_IDENTITY }}"
 
       - name: Install-test ${{ matrix.package }} (${{ matrix.flavor }})
         run: |

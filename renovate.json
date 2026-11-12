@@ -36,10 +36,20 @@
       "customType": "regex",
       "description": "Update tag and digest pins in flavor image fields.",
       "managerFilePatterns": [
-        "/^flavors/.*\\.yaml$/"
+        "/^flavors/(?:registry1|unicorn)(?:-arm64)?\\.yaml$/"
       ],
       "matchStrings": [
         "# renovate-digest: datasource=(?<datasource>docker) depName=(?<depName>[^\\s]+) versioning=(?<versioning>[^\\s]+)\\s+(?:[^\\n]+_image_tag: |gitea_image: [^\\s]+:)(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Update the multi-platform k3s test cluster image.",
+      "managerFilePatterns": [
+        "/^tasks\\.yaml$/"
+      ],
+      "matchStrings": [
+        "# renovate-digest: datasource=(?<datasource>docker) depName=(?<depName>[^\\s]+) versioning=(?<versioning>[^\\s]+)\\s+- name: K3D_IMAGE\\s+default: [^\\s]+:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
       ]
     },
     {
