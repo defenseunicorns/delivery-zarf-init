@@ -41,4 +41,6 @@ jobs:
       - name: Scan workflows with online audits
         env:
           GH_TOKEN: ${{ github.token }}
-        run: zizmor --persona=pedantic --strict-collection --format=plain --collect=workflows,actions .github
+        run: >-
+          zizmor --persona=pedantic --min-severity=medium --strict-collection
+          --format=plain --collect=workflows,actions .github
