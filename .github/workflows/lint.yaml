@@ -37,3 +37,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: hk check --all
+
+      - name: Scan workflows with online audits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: zizmor --persona=pedantic --strict-collection --format=plain --collect=workflows,actions .github

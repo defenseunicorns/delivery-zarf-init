@@ -37,10 +37,10 @@ jobs:
       - name: Resolve package release
         id: release
         run: |
-          for package in $(yq -r '.packages[].name' releaser.yaml); do
-            for flavor in $(PACKAGE_NAME="$package" yq -r \
+          for package in $(uds zarf tools yq -r '.packages[].name' releaser.yaml); do
+            for flavor in $(PACKAGE_NAME="$package" uds zarf tools yq -r \
               '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[].name' releaser.yaml); do
-              version=$(PACKAGE_NAME="$package" FLAVOR_NAME="$flavor" yq -r \
+              version=$(PACKAGE_NAME="$package" FLAVOR_NAME="$flavor" uds zarf tools yq -r \
                 '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[] | select(.name == env(FLAVOR_NAME)) | .version' \
                 releaser.yaml)
               if [ "${package}-${version}-${flavor}" = "$GITHUB_REF_NAME" ]; then

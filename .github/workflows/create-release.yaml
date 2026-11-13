@@ -66,7 +66,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          package_path=$(PACKAGE_NAME="${{ matrix.package }}" yq -r \
+          package_path=$(PACKAGE_NAME="${{ matrix.package }}" uds zarf tools yq -r \
             '.packages[] | select(.name == env(PACKAGE_NAME)) | .path // ""' releaser.yaml)
           if [ -z "$package_path" ]; then
             echo "unknown package: ${{ matrix.package }}" >&2

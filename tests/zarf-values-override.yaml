@@ -11,10 +11,14 @@ zarf-agent:
     limits:
       memory: 256Mi
 zarf-seed-registry:
+  replicaCount: 2
   podLabels:
     values-test: seed-registry
   persistence:
     enabled: false
+  extraEnvVars:
+    - name: REGISTRY_STORAGE
+      value: inmemory
 zarf-registry:
   podLabels:
     values-test: registry

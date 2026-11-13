@@ -133,3 +133,6 @@ trigger the tag-based release workflow.
 
 The registry can be backed by S3-compatible object storage; see
 [`docs/s3-backed-registry.md`](./docs/s3-backed-registry.md).
+
+When upgrading from a release before `v0.87.0-uds.2`, review the
+[`zarf-seed-registry` migration guidance](./docs/upgrading.md#v0870-uds2).
