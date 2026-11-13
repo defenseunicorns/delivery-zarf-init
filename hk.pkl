@@ -74,10 +74,14 @@ local repositoryChecks = new Mapping<String, Step> {
       done
       """
   }
-  // Keep license settings and ignore rules in .license_config.yaml and .gitignore.
   ["license"] {
     types = List("text")
-    check = "bash scripts/check-license.sh"
+    check = new Command {
+      argv = List("addlicense", "-check", "-s=only", "-l", "AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial", "-c", "Defense Unicorns", "--", "{{files}}")
+    }
+    fix = new Command {
+      argv = List("addlicense", "-s=only", "-l", "AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial", "-c", "Defense Unicorns", "--", "{{files}}")
+    }
   }
 }
 
