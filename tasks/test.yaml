@@ -29,7 +29,7 @@ tasks:
       - cmd: |
           architecture="${{ .inputs.architecture }}"
           [ -n "$architecture" ] || architecture="${UDS_ARCH}"
-          version=$(yq -r '.metadata.version' "${PACKAGE_PATH}/zarf.yaml")
+          version=$(uds zarf tools yq -r '.metadata.version' "${PACKAGE_PATH}/zarf.yaml")
           artifact="${PACKAGE_PATH}/zarf-init-${architecture}-${version}-${FLAVOR}.tar.zst"
           uds zarf package deploy "$artifact" ${{ .inputs.values }} --confirm
 
@@ -44,7 +44,7 @@ tasks:
           set -eu
           architecture="${{ .inputs.architecture }}"
           [ -n "$architecture" ] || architecture="${UDS_ARCH}"
-          version=$(yq -r '.metadata.version' "${PACKAGE_PATH}/zarf.yaml")
+          version=$(uds zarf tools yq -r '.metadata.version' "${PACKAGE_PATH}/zarf.yaml")
           artifact="$(pwd -P)/${PACKAGE_PATH}/zarf-init-${architecture}-${version}-${FLAVOR}.tar.zst"
           bundle_dir=$(mktemp -d)
           trap 'rm -rf "$bundle_dir"' 0

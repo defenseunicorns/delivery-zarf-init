@@ -14,10 +14,10 @@ last_changed=0
 
 read_value() {
   if [ "$1" = "worktree" ]; then
-    yq -r "$3" "$2"
+    uds zarf tools yq -r "$3" "$2"
   else
     document=$(git show "$1:$2")
-    printf '%s\n' "$document" | yq -r "$3"
+    printf '%s\n' "$document" | uds zarf tools yq -r "$3"
   fi
 }
 
@@ -38,15 +38,16 @@ check_lockstep() {
     lockstep_query=${lockstep_spec#*|}
     lockstep_old_value=$(read_value "$base_ref" "$lockstep_file" "$lockstep_query")
     lockstep_new_value=$(read_value worktree "$lockstep_file" "$lockstep_query")
+    lockstep_old_normalized=$(printf '%s\n' "$lockstep_old_value" | normalize_version)
+    lockstep_new_normalized=$(printf '%s\n' "$lockstep_new_value" | normalize_version)
 
-    if [ "$lockstep_old_value" != "$lockstep_new_value" ]; then
+    if [ "$lockstep_old_normalized" != "$lockstep_new_normalized" ]; then
       lockstep_changed=$((lockstep_changed + 1))
     fi
 
-    lockstep_normalized=$(printf '%s\n' "$lockstep_new_value" | normalize_version)
     if [ -z "$lockstep_expected" ]; then
-      lockstep_expected="$lockstep_normalized"
-    elif [ "$lockstep_normalized" != "$lockstep_expected" ]; then
+      lockstep_expected="$lockstep_new_normalized"
+    elif [ "$lockstep_new_normalized" != "$lockstep_expected" ]; then
       lockstep_mismatched=true
     fi
   done
@@ -69,9 +70,11 @@ check_lockstep() {
 check_lockstep zarf \
   'tasks.yaml|.variables[] | select(.name == "ZARF_SOURCE_VERSION") | .default' \
   'flavors/upstream.yaml|.package.create.set.agent_image_tag' \
+  'flavors/upstream-arm64.yaml|.package.create.set.agent_image_tag' \
   'flavors/registry1.yaml|.package.create.set.agent_image_tag' \
   'flavors/registry1-arm64.yaml|.package.create.set.agent_image_tag' \
   'flavors/unicorn.yaml|.package.create.set.agent_image_tag' \
+  'flavors/unicorn-arm64.yaml|.package.create.set.agent_image_tag' \
   'releaser.yaml|.packages[0].flavors[0].version' \
   'releaser.yaml|.packages[0].flavors[1].version' \
   'releaser.yaml|.packages[0].flavors[2].version' \
@@ -84,21 +87,27 @@ check_lockstep zarf \
 
 check_lockstep registry \
   'flavors/upstream.yaml|.package.create.set.registry_image_tag' \
+  'flavors/upstream-arm64.yaml|.package.create.set.registry_image_tag' \
   'flavors/registry1.yaml|.package.create.set.registry_image_tag' \
   'flavors/registry1-arm64.yaml|.package.create.set.registry_image_tag' \
-  'flavors/unicorn.yaml|.package.create.set.registry_image_tag'
+  'flavors/unicorn.yaml|.package.create.set.registry_image_tag' \
+  'flavors/unicorn-arm64.yaml|.package.create.set.registry_image_tag'
 
 check_lockstep socat \
   'flavors/upstream.yaml|.package.create.set.proxy_image_tag' \
+  'flavors/upstream-arm64.yaml|.package.create.set.proxy_image_tag' \
   'flavors/registry1.yaml|.package.create.set.proxy_image_tag' \
   'flavors/registry1-arm64.yaml|.package.create.set.proxy_image_tag' \
-  'flavors/unicorn.yaml|.package.create.set.proxy_image_tag'
+  'flavors/unicorn.yaml|.package.create.set.proxy_image_tag' \
+  'flavors/unicorn-arm64.yaml|.package.create.set.proxy_image_tag'
 
 check_lockstep gitea \
-  'flavors/upstream.yaml|.package.create.set.gitea_image | split(":")[-1]' \
-  'flavors/registry1.yaml|.package.create.set.gitea_image | split(":")[-1]' \
-  'flavors/registry1-arm64.yaml|.package.create.set.gitea_image | split(":")[-1]' \
-  'flavors/unicorn.yaml|.package.create.set.gitea_image | split(":")[-1]'
+  'flavors/upstream.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")' \
+  'flavors/upstream-arm64.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")' \
+  'flavors/registry1.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")' \
+  'flavors/registry1-arm64.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")' \
+  'flavors/unicorn.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")' \
+  'flavors/unicorn-arm64.yaml|.package.create.set.gitea_image | split("@")[0] | sub("^.*:"; "")'
 gitea_images_changed=$last_changed
 
 old_chart=$(read_value "$base_ref" components/common/zarf.yaml '.components[] | select(.name == "git-server") | .charts[0].version')

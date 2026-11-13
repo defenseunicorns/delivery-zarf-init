@@ -1,0 +1,124 @@
+// Copyright 2026 Defense Unicorns
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+// See https://pkl-lang.org/vscode/current/installation.html for the Pkl VS Code extension.
+
+amends "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Builtins.pkl"
+
+min_hk_version = "2.11.1"
+exclude = List(".zarf-src/**", "build/**", "dist/**", "tmp/**")
+
+local checks = new Mapping<String, Step> {
+  ["check-added-large-files"] = (Builtins.check_added_large_files) {
+    allow_binary = true
+    check = new Command {
+      argv = List("hk", "util", "check-added-large-files", "--maxkb=1024", "{{files}}")
+    }
+  }
+  ["check-merge-conflict"] = Builtins.check_merge_conflict
+  ["detect-aws-credentials"] {
+    types = List("text")
+    check = new Command {
+      argv = List("detect-aws-credentials", "--allow-missing-credentials", "{{files}}")
+    }
+  }
+  ["detect-private-key"] = Builtins.detect_private_key
+  ["end-of-file-fixer"] = Builtins.newlines
+  ["fix-byte-order-marker"] = Builtins.byte_order_marker
+  ["trailing-whitespace"] = Builtins.trailing_whitespace
+  ["yamllint"] {
+    glob = List("**/*.yaml", "**/*.yml", ".yamllint")
+    check = new Command {
+      argv = List("yamllint", "--config-file", ".yamllint", "--no-warnings", "{{files}}")
+    }
+  }
+  ["shellcheck"] {
+    glob = List("*.sh", "**/*.sh")
+    check = new Command {
+      argv = List("shellcheck", "-x", "-e", "SC2016,SC2050,SC2001,SC2002,SC2181", "{{files}}")
+    }
+  }
+  ["fix-smartquotes"] = Builtins.fix_smart_quotes
+  ["jactionlint"] = Builtins.jactionlint
+  ["actions-lock"] {
+    glob = List(".github/actions/**", ".github/workflows/**")
+    check = """
+      if [ -n "${CI:-}" ]; then
+        gh-actions-lock --verify
+      else
+        gh-actions-lock --verify-local
+      fi
+      """
+  }
+  // Offline mode keeps local hooks and CI deterministic without a GitHub token.
+  ["zizmor"] {
+    glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml", ".github/**/action.yml", ".github/**/action.yaml", "zizmor.yml", "zizmor.yaml", "hk.pkl", "mise.toml")
+    check = "zizmor --offline --persona=pedantic --min-severity=medium --strict-collection --format=plain --collect=workflows,actions .github"
+  }
+}
+
+local repositoryChecks = new Mapping<String, Step> {
+  ["embedded-shellcheck"] {
+    glob = List("tasks.yaml", "tasks/**", "**/zarf.yaml", "scripts/lint-embedded-shell.sh")
+    check = "bash scripts/lint-embedded-shell.sh"
+  }
+  ["tasks"] {
+    glob = List("tasks.yaml", "tasks/**", "hk.pkl", "mise.toml")
+    check = """
+      log=$(mktemp)
+      trap 'rm -f "$log"' 0
+      tasks=$(uds run --list=md | awk -F '|' 'NR > 2 {gsub(/[*[:space:]]/, "", $2); if ($2 != "") print $2}')
+      for task in $tasks; do
+        uds run "$task" --dry-run >>"$log" 2>&1 || { cat "$log"; exit 1; }
+      done
+      """
+  }
+  ["license"] {
+    types = List("text")
+    check = new Command {
+      argv = List("addlicense", "-check", "-s=only", "-l", "AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial", "-c", "Defense Unicorns", "--", "{{files}}")
+    }
+    fix = new Command {
+      argv = List("addlicense", "-s=only", "-l", "AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial", "-c", "Defense Unicorns", "--", "{{files}}")
+    }
+  }
+}
+
+hooks {
+  ["pre-commit"] {
+    fix = true
+    stash = "git"
+    steps = checks
+  }
+  ["pre-push"] {
+    steps {
+      ...checks
+      ["commitizen-branch"] {
+        check = #"cz check --rev-range "$(git merge-base origin/HEAD HEAD)..HEAD""#
+      }
+    }
+  }
+  ["commit-msg"] {
+    steps {
+      ["commitizen"] {
+        check = new Command {
+          argv = List("cz", "check", "--allow-abort", "--commit-msg-file", "{{commit_msg_file}}")
+        }
+      }
+    }
+  }
+  ["check"] {
+    steps {
+      ...checks
+      ...repositoryChecks
+    }
+  }
+  ["fix"] {
+    fix = true
+    steps {
+      ...checks
+      ...repositoryChecks
+    }
+  }
+}

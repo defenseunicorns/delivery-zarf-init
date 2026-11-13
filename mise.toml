@@ -1,0 +1,21 @@
+# Copyright 2026 Defense Unicorns
+# SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Defense-Unicorns-Commercial
+
+[tools]
+"aqua:defenseunicorns/uds-cli" = "0.41.0"
+"aqua:google/addlicense" = "v1.2.0"
+"aqua:koalaman/shellcheck" = "v0.11.0"
+"github:jdx/jactionlint" = "2.6.0"
+"github:github/gh-actions-lock" = { version = "0.4.1", rename_exe = "gh-actions-lock" }
+k3d = "5.9.0"
+"pipx:commitizen" = "4.19.3"
+"pipx:pre-commit-hooks" = "6.0.0"
+"pipx:zizmor" = "1.32.0"
+hk = "2.11.1"
+yamllint = "1.38.0"
+
+[env]
+HK_MISE = "1"
+
+[hooks]
+postinstall = "if command -v hk >/dev/null 2>&1; then hk install --mise; fi"

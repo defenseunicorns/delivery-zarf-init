@@ -11,13 +11,28 @@ tasks:
           required_keys="pkg_version agent_image agent_image_tag registry_image registry_image_tag proxy_image proxy_image_tag gitea_image"
           for config in flavors/*.yaml; do
             for key in $required_keys; do
-              value=$(KEY="$key" yq -r '.package.create.set[env(KEY)] // ""' "$config")
+              value=$(KEY="$key" uds zarf tools yq -r '.package.create.set[env(KEY)] // ""' "$config")
               if [ -z "$value" ]; then
                 echo "$config: missing package.create.set.$key" >&2
                 exit 1
               fi
             done
-            agent_version=$(yq -r '.package.create.set.agent_image_tag' "$config")
+            for key in agent_image_tag registry_image_tag proxy_image_tag gitea_image; do
+              value=$(KEY="$key" uds zarf tools yq -r '.package.create.set[env(KEY)]' "$config")
+              case "$value" in
+                *@sha256:*) digest=${value##*@sha256:} ;;
+                *) digest= ;;
+              esac
+              case "$digest" in
+                *[!0-9a-f]*|"") digest= ;;
+              esac
+              if [ "${#digest}" -ne 64 ]; then
+                echo "$config: package.create.set.$key must end with an immutable sha256 digest" >&2
+                exit 1
+              fi
+            done
+            agent_version=$(uds zarf tools yq -r '.package.create.set.agent_image_tag' "$config")
+            agent_version=${agent_version%@sha256:*}
             agent_version=${agent_version%-arm64}
             if [ "$agent_version" != "${ZARF_SOURCE_VERSION}" ]; then
               echo "$config: agent image version $agent_version does not match ${ZARF_SOURCE_VERSION}" >&2
@@ -25,16 +40,21 @@ tasks:
             fi
           done
 
-          for package in $(yq -r '.packages[].name' releaser.yaml); do
-            path=$(PACKAGE_NAME="$package" yq -r \
+          for package in $(uds zarf tools yq -r '.packages[].name' releaser.yaml); do
+            path=$(PACKAGE_NAME="$package" uds zarf tools yq -r \
               '.packages[] | select(.name == env(PACKAGE_NAME)) | .path // ""' releaser.yaml)
             if [ ! -f "$path/zarf.yaml" ]; then
               echo "$package: missing package definition at $path/zarf.yaml" >&2
               exit 1
             fi
-            metadata_name=$(yq -r '.metadata.name // ""' "$path/zarf.yaml")
+            metadata_name=$(uds zarf tools yq -r '.metadata.name // ""' "$path/zarf.yaml")
             if [ "$metadata_name" != "$package" ]; then
               echo "$path/zarf.yaml: metadata.name is $metadata_name, expected $package" >&2
+              exit 1
+            fi
+            metadata_source=$(uds zarf tools yq -r '.metadata.source // ""' "$path/zarf.yaml")
+            if [ "$metadata_source" != "https://github.com/defenseunicorns/delivery-zarf-init" ]; then
+              echo "$path/zarf.yaml: metadata.source must identify this repository" >&2
               exit 1
             fi
             for file in zarf-values.yaml zarf-values.schema.json; do
@@ -43,7 +63,7 @@ tasks:
                 exit 1
               fi
             done
-            for release_version in $(PACKAGE_NAME="$package" yq -r \
+            for release_version in $(PACKAGE_NAME="$package" uds zarf tools yq -r \
               '.packages[] | select(.name == env(PACKAGE_NAME)) | .flavors[].version' releaser.yaml); do
               source_version=${release_version%%-uds.*}
               if [ "$source_version" != "${ZARF_SOURCE_VERSION}" ]; then
@@ -57,7 +77,7 @@ tasks:
     description: Resolve PACKAGE to its path from releaser.yaml
     actions:
       - cmd: |
-          path=$(PACKAGE_NAME="${PACKAGE}" yq -r \
+          path=$(PACKAGE_NAME="${PACKAGE}" uds zarf tools yq -r \
             '.packages[] | select(.name == env(PACKAGE_NAME)) | .path // ""' releaser.yaml)
           if [ -z "$path" ]; then
             echo "unknown PACKAGE: ${PACKAGE}" >&2
@@ -82,8 +102,9 @@ tasks:
           - name: PACKAGE_ARCH
       - cmd: |
           config="flavors/${FLAVOR}.yaml"
-          if [ "$FLAVOR" = "registry1" ] && [ "$PACKAGE_ARCH" = "arm64" ]; then
-            config="flavors/registry1-arm64.yaml"
+          architecture_config="flavors/${FLAVOR}-${PACKAGE_ARCH}.yaml"
+          if [ -f "$architecture_config" ]; then
+            config="$architecture_config"
           fi
           if [ ! -f "$config" ]; then
             echo "missing Zarf config: $config" >&2
@@ -136,7 +157,7 @@ tasks:
       - cmd: |
           architecture="${{ .inputs.architecture }}"
           [ -n "$architecture" ] || architecture="${UDS_ARCH}"
-          version=$(yq -r '.metadata.version' "${PACKAGE_PATH}/zarf.yaml")
+          version=$(uds zarf tools yq -r '.metadata.version' "${PACKAGE_PATH}/zarf.yaml")
           artifact="${PACKAGE_PATH}/zarf-init-${architecture}-${version}-${FLAVOR}.tar.zst"
           if [ ! -f "$artifact" ]; then
             echo "missing package artifact: $artifact" >&2

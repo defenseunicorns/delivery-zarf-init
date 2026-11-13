@@ -12,20 +12,20 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-caller-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  run:
-    uses: defenseunicorns/uds-common/.github/workflows/callable-lint.yaml@477b80085617150a2a4985ac1e70afae968df764 # v1.33.1
-    secrets: inherit
-
-  pre-commit:
+  hk:
     runs-on: ubuntu-26.04
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+      - uses: actions/checkout@v7.0.1
         with:
-          # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
-          version: v0.41.0
+          persist-credentials: false
+
+      - uses: jdx/mise-action@v5.2.8
 
       - name: Generate Zarf values schemas
         run: uds run generate-zarf-values-schemas --no-progress
@@ -33,6 +33,14 @@ jobs:
       - name: Verify generated Zarf values schemas
         run: git diff --exit-code -- 'packages/*/zarf-values.schema.json'
 
-      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
-        with:
-          extra_args: --all-files --show-diff-on-failure
+      - name: Run repository lint checks
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: hk check --all
+
+      - name: Scan workflows with online audits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          zizmor --persona=pedantic --min-severity=medium --strict-collection
+          --format=plain --collect=workflows,actions .github

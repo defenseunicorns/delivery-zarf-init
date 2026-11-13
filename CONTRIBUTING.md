@@ -4,14 +4,25 @@ This repository follows the general
 [`uds-common` contributing guidance](https://github.com/defenseunicorns/uds-common/blob/main/CONTRIBUTING.md),
 including conventional commits and repository linting.
 
+## Local setup
+
+Install [mise](https://mise.jdx.dev/installing-mise.html), activate it in your shell, and ensure a
+Docker-compatible container runtime is available. Then install the development tools pinned in
+[`mise.toml`](./mise.toml) and configure the repository's hk Git hooks:
+
+```bash
+mise trust
+mise install
+```
+
 ## Development workflow
 
-Use the UDS CLI task runner from the repository root:
+Use UDS tasks for package workflows and hk for the complete repository gate:
 
 ```bash
 uds run test-install
 uds run test-zarf-values
-uds run pre-commit-all
+hk check --all
 ```
 
 Select a release with `PACKAGE` and `FLAVOR`. The valid package names are `init`,

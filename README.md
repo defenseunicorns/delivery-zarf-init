@@ -66,7 +66,7 @@ inapplicable because the packages run before UDS Core exists. See
 
 ## Development
 
-The public task names follow the UDS package template:
+The public UDS task names follow the package template:
 
 ```bash
 uds run                                      # create and install-test init/upstream
@@ -74,8 +74,9 @@ uds run create-dev-package                   # create without an SBOM
 uds run test-install                         # create, deploy, and verify on a fresh cluster
 uds run publish-package                      # create both arches, test when deployable, then publish
 uds run test-zarf-values                     # check schemas, manifests, and generated Helm values
-uds run pre-commit-all                       # run repository checks
 ```
+
+Run the complete repository gate with `hk check --all`.
 
 Select another package or flavor with task variables:
 
@@ -132,3 +133,6 @@ trigger the tag-based release workflow.
 
 The registry can be backed by S3-compatible object storage; see
 [`docs/s3-backed-registry.md`](./docs/s3-backed-registry.md).
+
+When upgrading from a release before `v0.87.0-uds.2`, review the
+[`zarf-seed-registry` migration guidance](./docs/upgrading.md#v0870-uds2).

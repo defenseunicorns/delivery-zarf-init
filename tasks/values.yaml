@@ -170,7 +170,11 @@ tasks:
             packages/init-agent-only/zarf-values.schema.json > /dev/null
 
           assert_seed '.podLabels."values-test" == "seed-registry"'
+          assert_seed '.replicaCount == 2'
           assert_seed '.persistence.enabled == false'
+          assert_seed '(.extraEnvVars | length) == 1'
+          assert_seed '.extraEnvVars[0].name == "REGISTRY_STORAGE"'
+          assert_seed '.extraEnvVars[0].value == "inmemory"'
 
           assert_registry '.podLabels."values-test" == "registry"'
           assert_registry '.persistence.enabled == false'

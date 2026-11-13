@@ -17,9 +17,12 @@ concurrency:
 jobs:
   values:
     runs-on: ubuntu-26.04
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: defenseunicorns/setup-uds@v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.41.0
@@ -29,6 +32,7 @@ jobs:
   release:
     needs: values
     runs-on: ubuntu-26.04
+    timeout-minutes: 30
     environment: uds-release
     strategy:
       fail-fast: false
@@ -36,11 +40,12 @@ jobs:
         package: [init, init-agent-only, init-gitea]
         flavor: [upstream, registry1, unicorn]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: defenseunicorns/setup-uds@d6add59d4c2ca789ed7c92741e91bd340b4e950b # v1.0.2
+      - uses: defenseunicorns/setup-uds@v1.0.2
         with:
           # renovate: datasource=github-tags depName=defenseunicorns/uds-cli versioning=semver
           version: v0.41.0
@@ -48,10 +53,11 @@ jobs:
       # GITHUB_TOKEN-created tags do not trigger the tag release workflow.
       - name: Create GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@v3.3.0
         with:
           client-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-contents: write
 
       - name: Install release tooling
         run: uds run actions:setup-environment --no-progress
@@ -60,7 +66,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          package_path=$(PACKAGE_NAME="${{ matrix.package }}" yq -r \
+          package_path=$(PACKAGE_NAME="${{ matrix.package }}" uds zarf tools yq -r \
             '.packages[] | select(.name == env(PACKAGE_NAME)) | .path // ""' releaser.yaml)
           if [ -z "$package_path" ]; then
             echo "unknown package: ${{ matrix.package }}" >&2
