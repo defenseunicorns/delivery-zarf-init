@@ -10,7 +10,7 @@ packages:
         version: v1.0.1-uds.0
       - name: registry1
         # renovate-uds: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
-        version: v1.0.0-uds.0
+        version: v1.0.1-uds.0
       - name: unicorn
         # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
         version: v1.0.1-uds.0
@@ -23,7 +23,7 @@ packages:
         version: v1.0.1-uds.0
       - name: registry1
         # renovate-uds: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
-        version: v1.0.0-uds.0
+        version: v1.0.1-uds.0
       - name: unicorn
         # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
         version: v1.0.1-uds.0
@@ -36,7 +36,7 @@ packages:
         version: v1.0.1-uds.0
       - name: registry1
         # renovate-uds: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
-        version: v1.0.0-uds.0
+        version: v1.0.1-uds.0
       - name: unicorn
         # renovate-uds: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
         version: v1.0.1-uds.0

@@ -9,7 +9,7 @@ package:
       agent_image_domain: registry1.dso.mil/
       agent_image: ironbank/opensource/zarf-dev/zarf/zarf-agent
       # renovate-digest: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
-      agent_image_tag: v1.0.0@sha256:713d1bf3cc76e00d53b57c8285870a41df6e16012f26ae2e9d3ac1ca6d10f494
+      agent_image_tag: v1.0.1@sha256:724c6b2dc06218ef3955ec1d3e176a25d88c420682b4eded6142c615308db3ab
 
       registry_image_domain: registry1.dso.mil/
       registry_image: ironbank/opensource/docker/registry-v3
