@@ -9,12 +9,12 @@ package:
       agent_image_domain: cgr.dev/
       agent_image: defenseunicorns.com/zarf-agent-fips
       # renovate-digest: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
-      agent_image_tag: v1.0.1@sha256:183658f070bfc770995d260f92a62805608168701f56a92afa50b93e3d1bcf4d
+      agent_image_tag: v1.0.1@sha256:36f8e9f024ea4f16e3eb28d130d04992bde11e7cceb078c8fc28d89494c01e55
 
       registry_image_domain: cgr.dev/
       registry_image: defenseunicorns.com/distribution-fips
       # renovate-digest: datasource=docker depName=cgr.dev/defenseunicorns.com/distribution-fips versioning=docker
-      registry_image_tag: v3.1.2@sha256:89e10d5034e7aa3cd197881ff7875391c5379abcb0748dccedb946126b4b40de
+      registry_image_tag: v3.1.2@sha256:6950b13c1f69b47ad15e7bfb541841f5ceedea646558d7d7f2eb9ac383281f47
 
       proxy_image_domain: cgr.dev/
       proxy_image: defenseunicorns.com/socat-fips
