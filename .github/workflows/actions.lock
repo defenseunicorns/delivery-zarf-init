@@ -10,7 +10,7 @@ workflows:
         - 'defenseunicorns/setup-uds@v1.0.2'
     '.github/workflows/lint.yaml':
         - 'actions/checkout@v7.0.1'
-        - 'jdx/mise-action@v5.2.8'
+        - 'jdx/mise-action@v5.2.9'
     '.github/workflows/release.yaml':
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
@@ -39,8 +39,8 @@ dependencies:
         commit: 'sha1-d6add59d4c2ca789ed7c92741e91bd340b4e950b'
         owner_id: 87975021
         repo_id: 866727340
-    'jdx/mise-action@v5.2.8':
-        ref: 'v5.2.8'
-        commit: 'sha1-d5574b52816a478f9d4e6529a3f6ff17a8a36785'
+    'jdx/mise-action@v5.2.9':
+        ref: 'v5.2.9'
+        commit: 'sha1-236a21c3b91f5db6d4e174b348674a0f0caac06d'
         owner_id: 216188
         repo_id: 738284564

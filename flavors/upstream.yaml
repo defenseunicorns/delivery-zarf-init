@@ -9,7 +9,7 @@ package:
       agent_image_domain: ghcr.io/
       agent_image: zarf-dev/zarf/agent
       # renovate-digest: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
-      agent_image_tag: v0.89.0@sha256:47048c8129558193b66aec74c32a7d1d2c7f051b27098a9e10c1e04913ef025c
+      agent_image_tag: v1.0.1@sha256:93b1cf3533cf8a0ffaedc74d0123f1ba09c70f0c3fd5cfca341e33a58118bfdb
 
       registry_image_domain: docker.io/
       registry_image: library/registry
@@ -19,7 +19,7 @@ package:
       proxy_image_domain: docker.io/
       proxy_image: alpine/socat
       # renovate-digest: datasource=docker depName=alpine/socat versioning=docker
-      proxy_image_tag: 1.8.1.3@sha256:6f8beb04f54b9e7bf6f5a983e85bef961070ddb3ccdb3e9c094fc4441583198c
+      proxy_image_tag: 1.8.1.3@sha256:207803b703993bbca500b64c682595518ef99123856df70f04fbc875675a39d6
 
       # Keep Gitea on the chart-supported minor.
       # renovate-digest: datasource=docker depName=ghcr.io/go-gitea/gitea versioning=docker

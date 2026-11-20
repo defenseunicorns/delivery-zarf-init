@@ -7,15 +7,15 @@ includes:
   - package: ./tasks/package.yaml
   - test: ./tasks/test.yaml
   - values: ./tasks/values.yaml
-  # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.34.0
-  - create: https://raw.githubusercontent.com/defenseunicorns/uds-common/7a86081440df7e1f4df1f4a6f9286642f9fd4d10/tasks/create.yaml
-  # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.34.0
-  - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/7a86081440df7e1f4df1f4a6f9286642f9fd4d10/tasks/actions.yaml
+  # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.34.1
+  - create: https://raw.githubusercontent.com/defenseunicorns/uds-common/807de6f4efca9f51ee5e8d3e466d5f089c9eaab8/tasks/create.yaml
+  # renovate: datasource=github-tags depName=defenseunicorns/uds-common versioning=semver currentValue=v1.34.1
+  - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/807de6f4efca9f51ee5e8d3e466d5f089c9eaab8/tasks/actions.yaml
 
 variables:
   # renovate: datasource=docker depName=ghcr.io/zarf-dev/zarf/agent versioning=docker
   - name: ZARF_SOURCE_VERSION
-    default: v0.89.0
+    default: v1.0.1
   - name: FLAVOR
     default: upstream
   - name: PACKAGE
