@@ -10,17 +10,17 @@ package:
       agent_image_domain: registry1.dso.mil/
       agent_image: ironbank/opensource/zarf-dev/zarf/zarf-agent
       # renovate-digest: datasource=docker depName=registry1.dso.mil/ironbank/opensource/zarf-dev/zarf/zarf-agent versioning=docker
-      agent_image_tag: v1.0.1-arm64@sha256:6c641861dc0f2a9b289026ae2a470785121f0de3dd9328227670b979c607d1f0
+      agent_image_tag: v1.0.1-arm64@sha256:09f9ee0f4c09b9ea12cd60c07e0fec113eb775902334d9d0056ec4504d0c103c
 
       registry_image_domain: registry1.dso.mil/
       registry_image: ironbank/opensource/docker/registry-v3
       # renovate-digest: datasource=docker depName=registry1.dso.mil/ironbank/opensource/docker/registry-v3 versioning=docker
-      registry_image_tag: 3.1.2-arm64@sha256:abf1baae0c14ded3d2d710b7feaa02d34a56dcdd2c478e247d0b6c500c4d9318
+      registry_image_tag: 3.1.2-arm64@sha256:d53e3344ccc344d79ab2453dd638d32891d29c45fa1f12f07be1371f424f4828
 
       proxy_image_domain: registry1.dso.mil/
       proxy_image: ironbank/opensource/alpine/socat/socat
       # renovate-digest: datasource=docker depName=registry1.dso.mil/ironbank/opensource/alpine/socat/socat versioning=docker
-      proxy_image_tag: 1.8.0.3@sha256:43f32d02196fe036ca87cf852aa79705c86a690db84cbffc50853936767b21eb
+      proxy_image_tag: 1.8.0.3@sha256:608115c447068a37f7cd72956b1889d6fad7df3f73d0f9642bb1f8dea911d96e
 
       # renovate-digest: datasource=docker depName=registry1.dso.mil/ironbank/opensource/go-gitea/gitea versioning=docker
       gitea_image: registry1.dso.mil/ironbank/opensource/go-gitea/gitea:1.27.3-arm64@sha256:1da043c3063b55e9a0d70f8c6822ba96614bf8186e32ab325cf9c8e16c0b8d69

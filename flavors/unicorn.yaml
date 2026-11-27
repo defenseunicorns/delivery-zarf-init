@@ -9,17 +9,17 @@ package:
       agent_image_domain: cgr.dev/
       agent_image: defenseunicorns.com/zarf-agent-fips
       # renovate-digest: datasource=docker depName=cgr.dev/defenseunicorns.com/zarf-agent-fips versioning=docker
-      agent_image_tag: v1.0.1@sha256:36f8e9f024ea4f16e3eb28d130d04992bde11e7cceb078c8fc28d89494c01e55
+      agent_image_tag: v1.0.1@sha256:8323f107164bf702b20ca56fd4282e00b5f6fde0e2499b5b1abb445fc1100047
 
       registry_image_domain: cgr.dev/
       registry_image: defenseunicorns.com/distribution-fips
       # renovate-digest: datasource=docker depName=cgr.dev/defenseunicorns.com/distribution-fips versioning=docker
-      registry_image_tag: v3.1.2@sha256:6950b13c1f69b47ad15e7bfb541841f5ceedea646558d7d7f2eb9ac383281f47
+      registry_image_tag: v3.1.2@sha256:3a92b5be680fd0c76302973208ff038e1eb3dea2449ffef7c78e86ef38ee2973
 
       proxy_image_domain: cgr.dev/
       proxy_image: defenseunicorns.com/socat-fips
       # renovate-digest: datasource=docker depName=cgr.dev/defenseunicorns.com/socat-fips versioning=docker
-      proxy_image_tag: 1.8.1.3@sha256:d396e4c829852f973d3356d872dcbfe5dcdb4cf05ff582fd08fcbc9a8677b2ac
+      proxy_image_tag: 1.8.1.3@sha256:5e8ec96504373fc1d7724d2015fa994a0f3d148133090c4c69791541e50e3eaf
 
       # renovate-digest: datasource=docker depName=cgr.dev/defenseunicorns.com/gitea-fips versioning=docker
       gitea_image: cgr.dev/defenseunicorns.com/gitea-fips:v1.27.3@sha256:d39562815b5affb77f38a5f9a0768581359986ea44fce4f6d94fdae2049871a4
