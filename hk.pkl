@@ -3,10 +3,10 @@
 
 // See https://pkl-lang.org/vscode/current/installation.html for the Pkl VS Code extension.
 
-amends "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Config.pkl"
-import "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Builtins.pkl"
+amends "package://github.com/jdx/hk/releases/download/v2.14.0/hk@2.14.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.14.0/hk@2.14.0#/Builtins.pkl"
 
-min_hk_version = "2.12.0"
+min_hk_version = "2.14.0"
 exclude = List(".zarf-src/**", "build/**", "dist/**", "tmp/**")
 
 local checks = new Mapping<String, Step> {
