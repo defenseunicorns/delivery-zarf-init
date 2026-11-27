@@ -6,12 +6,12 @@
 "aqua:google/addlicense" = "v1.2.0"
 "aqua:koalaman/shellcheck" = "v0.11.0"
 "github:jdx/jactionlint" = "2.6.0"
-"github:github/gh-actions-lock" = { version = "0.4.1", rename_exe = "gh-actions-lock" }
+"github:github/gh-actions-lock" = { version = "0.5.1", rename_exe = "gh-actions-lock" }
 k3d = "5.9.0"
-"pipx:commitizen" = "4.19.3"
+"pipx:commitizen" = "4.20.1"
 "pipx:pre-commit-hooks" = "6.0.0"
-"pipx:zizmor" = "1.32.0"
-hk = "2.12.0"
+"pipx:zizmor" = "1.33.1"
+hk = "2.14.0"
 yamllint = "1.38.0"
 
 [env]
